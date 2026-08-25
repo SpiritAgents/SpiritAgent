@@ -1,7 +1,7 @@
-appId: ai.spiritagent.desktop
-productName: Spirit Agent
+appId: fast.spirit.desktop
+productName: Spirit
 icon: build/icon.ico
-artifactName: SpiritAgent-Desktop-${version}-${os}-${arch}.${ext}
+artifactName: Spirit-Desktop-${version}-${os}-${arch}.${ext}
 directories:
   buildResources: build
   output: release
@@ -38,7 +38,7 @@ npmRebuild: true
 buildDependenciesFromSource: false
 publish: null
 win:
-  executableName: Spirit Agent
+  executableName: Spirit
   target:
     - nsis
     - zip
@@ -49,7 +49,7 @@ nsis:
   allowToChangeInstallationDirectory: true
 mac:
   # Prefer darwin over electron-builder's default ${os}=mac for release URL alignment.
-  artifactName: SpiritAgent-Desktop-${version}-darwin-${arch}.${ext}
+  artifactName: Spirit-Desktop-${version}-darwin-${arch}.${ext}
   icon: build/icon.png
   # Info.plist LSApplicationCategoryType; mapped to "效率与财务" (Productivity & Finance) in the Apps app (Tahoe+).
   # Do not rely on Electron's default developer-tools category (the new Apps app no longer has it).
@@ -79,8 +79,8 @@ dmg:
       type: link
       path: /Applications
 linux:
-  executableName: spirit-agent
-  maintainer: Spirit Agent contributors <121384036+N123999@users.noreply.github.com>
+  executableName: spirit-desktop
+  maintainer: Spirit contributors <121384036+N123999@users.noreply.github.com>
   target:
     - AppImage
     - deb

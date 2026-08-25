@@ -18,7 +18,7 @@ import {
 import { cloneDesktopConfig } from "./service-utils.js";
 import { modelExistsInGroup } from "./model-config-access.js";
 import { loadGitHubAccessToken } from "./github-auth-storage.js";
-import { spiritAgentDataDir, type DesktopConfigFile } from "./storage.js";
+import { spiritDataDir, type DesktopConfigFile } from "./storage.js";
 import { runDesktopAutomationOnce } from "./automation-runner.js";
 
 export const AUTOMATION_SCHEDULER_MONITOR_INTERVAL_MS = 60_000;
@@ -50,7 +50,7 @@ export function startAutomationSchedulerMonitorIfNeeded(
   void (async () => {
     try {
       const affected = await failDanglingAutomationRuns(
-        createHostAutomationStore(spiritAgentDataDir()),
+        createHostAutomationStore(spiritDataDir()),
         "Run interrupted: application exited before the run completed.",
       );
       for (const automationId of affected) {
@@ -107,7 +107,7 @@ export async function tickAutomationScheduler(
     return;
   }
 
-  const store = createHostAutomationStore(spiritAgentDataDir());
+  const store = createHostAutomationStore(spiritDataDir());
   const definitions = await store.listEnabledDefinitions();
   const now = Date.now();
 

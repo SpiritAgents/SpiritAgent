@@ -9,25 +9,25 @@ import {
 test("resolveEffectiveWorkspaceRoot prefers bundle workspaceRoot", () => {
   assert.equal(
     resolveEffectiveWorkspaceRoot(
-      { workspaceRoot: "D:\\SpiritAgent.worktrees\\spirit-a" },
-      { workspaceRoot: "D:\\SpiritAgent" },
+      { workspaceRoot: "D:\\Spirit.worktrees\\spirit-a" },
+      { workspaceRoot: "D:\\Spirit" },
     ),
-    "D:\\SpiritAgent.worktrees\\spirit-a",
+    "D:\\Spirit.worktrees\\spirit-a",
   );
 });
 
 test("resolveEffectiveWorkspaceRoot falls back to host state when bundle empty", () => {
   assert.equal(
-    resolveEffectiveWorkspaceRoot({ workspaceRoot: "" }, { workspaceRoot: "D:\\SpiritAgent" }),
-    "D:\\SpiritAgent",
+    resolveEffectiveWorkspaceRoot({ workspaceRoot: "" }, { workspaceRoot: "D:\\Spirit" }),
+    "D:\\Spirit",
   );
 });
 
 test("needsHostWorkspaceRootSync is true when bundle worktree differs from host primary repo", () => {
   assert.equal(
     needsHostWorkspaceRootSync(
-      { workspaceRoot: "D:\\SpiritAgent.worktrees\\spirit-a" },
-      { workspaceRoot: "D:\\SpiritAgent" },
+      { workspaceRoot: "D:\\Spirit.worktrees\\spirit-a" },
+      { workspaceRoot: "D:\\Spirit" },
     ),
     true,
   );
@@ -36,8 +36,8 @@ test("needsHostWorkspaceRootSync is true when bundle worktree differs from host 
 test("needsHostWorkspaceRootSync is false when paths match case-insensitively", () => {
   assert.equal(
     needsHostWorkspaceRootSync(
-      { workspaceRoot: "d:/spiritagent.worktrees/spirit-a" },
-      { workspaceRoot: "D:\\SpiritAgent.worktrees\\spirit-a" },
+      { workspaceRoot: "d:/spirit.worktrees/spirit-a" },
+      { workspaceRoot: "D:\\Spirit.worktrees\\spirit-a" },
     ),
     false,
   );
@@ -45,10 +45,7 @@ test("needsHostWorkspaceRootSync is false when paths match case-insensitively", 
 
 test("needsHostWorkspaceRootSync is false when both use primary repo", () => {
   assert.equal(
-    needsHostWorkspaceRootSync(
-      { workspaceRoot: "D:\\SpiritAgent" },
-      { workspaceRoot: "D:\\SpiritAgent" },
-    ),
+    needsHostWorkspaceRootSync({ workspaceRoot: "D:\\Spirit" }, { workspaceRoot: "D:\\Spirit" }),
     false,
   );
 });

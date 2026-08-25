@@ -15,6 +15,7 @@
     "**/NOTICE.md",
     "apps/site/public/notice.md",
     "apps/cli/about.hbs",
+    "apps/cli/about/NOTICE.hbs",
     "scripts/**"
   ]
 }

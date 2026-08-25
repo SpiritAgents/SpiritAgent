@@ -29,7 +29,7 @@ example-extension/
 {
   "name": "@example/spirit-extension",
   "version": "0.1.0",
-  "description": "Example Spirit Agent extension.",
+  "description": "Example Spirit extension.",
   "author": { "name": "example" },
   "homepage": "https://example.com/spirit-extension",
   "main": "dist/index.js",
@@ -352,7 +352,7 @@ export function activate(ctx) {
 
 它也會讀取 `name`、`version`、`description`、`author`、`repository`、`homepage`、`keywords` 以及選用的 `spiritExtension.icon`。如果您設定了 `icon`，請將該檔案包含在發布的套件中。缺少 `spiritExtension` 物件會導致該版本的註冊表建置失敗。
 
-官方範例：[`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo)（`spiritagent.system-message-demo`）。
+官方範例：[`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo)（`spirit.system-message-demo`）。
 
 ### 2. 列出套件
 
@@ -368,7 +368,7 @@ export function activate(ctx) {
 - `registry/catalog.json`
 - `registry/extensions/<extension-id>/detail.json`
 
-`extensionId` 需要至少兩個以點分隔的區段，使用小寫字母和數字，區段內可包含點或連字號。範例：`spiritagent.system-message-demo`、`yourteam.some-extension`。`packageName` 和 `extensionId` 在儲存庫中必須是唯一的。
+`extensionId` 需要至少兩個以點分隔的區段，使用小寫字母和數字，區段內可包含點或連字號。範例：`spirit.system-message-demo`、`yourteam.some-extension`。`packageName` 和 `extensionId` 在儲存庫中必須是唯一的。
 
 ### `entry.json`
 

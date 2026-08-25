@@ -7,7 +7,7 @@ import { runProviderWizard } from "./run-interactive-setup.js";
  * Writes provider credentials to the shared Spirit keyring and config.json.
  */
 export async function runSetup(): Promise<void> {
-  console.error("Spirit Agent — provider setup\n");
+  console.error("Spirit — provider setup\n");
   try {
     const setup = await runProviderWizard();
     await saveProviderSetup(resolveSpiritDataDir(), setup);

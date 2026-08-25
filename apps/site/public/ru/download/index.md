@@ -1,10 +1,10 @@
 # Тот же агент, во всех ваших задачах.
 
-Скачайте Spirit Agent для Desktop, установите CLI или следите за ACP.
+Скачайте Spirit для Desktop, установите CLI или следите за ACP.
 
 ## Desktop
 
-[Скачать](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Скачать](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 
@@ -18,4 +18,4 @@ curl -fsSL https://spirit.fast/install | bash
 
 Скоро™
 
-[Spirit Agent](/ru) · [Скачать](/ru/download)
+[Spirit](/ru) · [Скачать](/ru/download)

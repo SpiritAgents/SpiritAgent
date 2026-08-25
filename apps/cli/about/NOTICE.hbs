@@ -1,41 +1,26 @@
 {{! cargo about generate about/NOTICE.hbs -o NOTICE.md --all-features }}
-# Third-party notices ## Summary
+# Third-party notices
 
-{{#each overview}}
-  -
-  {{{name}}}
-  (`{{id}}`):
-  {{count}}
-  crate(s)
+## Summary
+
+{{#each overview}}- {{{name}}} (`{{id}}`): {{count}} crate(s)
 {{/each}}
 
 ## Components
 
-{{#each crates}}
-  - **{{package.name}}**
-  {{package.version}}
-  —
-  {{license}}
-  -
-  {{#if
-    package.repository
-  }}{{package.repository}}{{else}}https://crates.io/crates/{{package.name}}{{/if}}
+{{#each crates}}- **{{package.name}}** {{package.version}} — {{license}}
+  - {{#if package.repository}}{{package.repository}}{{else}}https://crates.io/crates/{{package.name}}{{/if}}
 {{/each}}
 
 ## License texts
 
-{{#each licenses}}
-  ###
-  {{name}}
-  ({{id}}) **Used by:**
-  {{#each used_by}}
-    -
-    {{crate.name}}
-    {{crate.version}}
-  {{/each}}
+{{#each licenses}}### {{name}} ({{id}})
 
-  ```
-  {{{text}}}
-  ```
+**Used by:**
+{{#each used_by}}- {{crate.name}} {{crate.version}}
+{{/each}}
+```
+{{{text}}}
+```
 
 {{/each}}

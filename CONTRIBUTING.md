@@ -1,6 +1,6 @@
-# Contributing to Spirit Agent
+# Contributing to Spirit
 
-Thank you for your interest in Spirit Agent! This project is an open-source, tool-using coding agent monorepo — Desktop (Electron), CLI (Rust), a shared daemon (`packages/server`), and the core runtime (`packages/agent-core`). Whether you are fixing docs, squashing bugs, or building new features, we welcome your help. If you are unsure where to start, feel free to open an Issue and say hello.
+Thank you for your interest in Spirit! This project is an open-source, tool-using coding agent monorepo — Desktop (Electron), CLI (Rust), a shared daemon (`packages/server`), and the core runtime (`packages/agent-core`). Whether you are fixing docs, squashing bugs, or building new features, we welcome your help. If you are unsure where to start, feel free to open an Issue and say hello.
 
 ## Before you contribute
 
@@ -32,7 +32,7 @@ Agents can speed up implementation; they cannot replace your judgment.
 
 ## Architecture and scope
 
-Spirit Agent has a clear layering model. Before touching multiple packages, read [`.github/instructions/agent-core-host-boundary.instructions.md`](.github/instructions/agent-core-host-boundary.instructions.md):
+Spirit has a clear layering model. Before touching multiple packages, read [`.github/instructions/agent-core-host-boundary.instructions.md`](.github/instructions/agent-core-host-boundary.instructions.md):
 
 | Layer             | Path                                                                              | Role                                                        |
 | ----------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -69,7 +69,7 @@ See [README.md — Development](README.md#development) and each app/package READ
 1. Fork the repository and create a feature branch from `main`
 2. Keep commits focused and diffs reviewable
 3. Aim for cross-platform compatibility (Windows, macOS, Linux), including conditional compilation where needed
-4. Spirit Agent is in active early development — when changing config or persistence formats, prefer direct, evolvable structures over heavy compatibility shims; if a change is breaking, explain the rationale and migration path in your PR
+4. Spirit is in active early development — when changing config or persistence formats, prefer direct, evolvable structures over heavy compatibility shims; if a change is breaking, explain the rationale and migration path in your PR
 
 ## Commit messages
 
@@ -106,8 +106,8 @@ pnpm run lint        # oxlint --deny-warnings packages apps/desktop apps/site
 pnpm run format      # oxfmt --check packages apps/desktop apps/site
 pnpm run lint:fix && pnpm run format:fix  # before commit
 pnpm --filter @spiritagent/agent-core test   # if you changed agent-core
-cargo test -p spirit-agent                   # if you changed the CLI
-cargo clippy -p spirit-agent -- -D warnings
+cargo test -p spirit                   # if you changed the CLI
+cargo clippy -p spirit -- -D warnings
 pnpm run eval:compare                        # if you changed model-visible agent-core behavior
 ```
 

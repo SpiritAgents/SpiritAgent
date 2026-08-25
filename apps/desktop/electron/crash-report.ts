@@ -181,7 +181,7 @@ export interface CrashFeedbackEnvironment {
   packaged: boolean;
 }
 
-const ISSUE_FEEDBACK_REPO_URL = "https://github.com/SpiritAgents/SpiritAgent";
+const ISSUE_FEEDBACK_REPO_URL = "https://github.com/SpiritAgents/spirit";
 /** The body rides in the issue URL; keep the whole URL comfortably below browser/GitHub length limits. */
 const ISSUE_FEEDBACK_MAX_LOG_CHARS = 3_000;
 
@@ -229,7 +229,7 @@ ${truncatedLog}
 ## Environment
 
 - OS / platform: ${input.env.platform} ${input.env.arch} (${input.env.osRelease})
-- Spirit Agent version: ${input.env.version} (Electron ${input.env.electronVersion})
+- Spirit version: ${input.env.version} (Electron ${input.env.electronVersion})
 - Install source: ${input.env.packaged ? "packaged build" : "pnpm dev"}
 
 ## Additional Context

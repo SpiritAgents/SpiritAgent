@@ -2,7 +2,7 @@
 applyTo: "**/*"
 ---
 
-# Spirit Agent Capability Boundary
+# Spirit Capability Boundary
 
 ## Purpose
 

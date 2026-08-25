@@ -45,9 +45,9 @@ test("resolveFileDiffToolEditorTarget: absolute path under workspace becomes rel
       {
         toolName: "edit_file",
         phase: "succeeded",
-        argsExcerpt: '{"path":"D:\\\\SpiritAgent\\\\README.md","old_text":"a","new_text":"b"}',
+        argsExcerpt: '{"path":"D:\\\\Spirit\\\\README.md","old_text":"a","new_text":"b"}',
       },
-      "D:\\SpiritAgent",
+      "D:\\Spirit",
     ),
     {
       scope: "workspace",
@@ -65,7 +65,7 @@ test("resolveFileDiffToolEditorTarget: path outside workspace uses external scop
         phase: "succeeded",
         argsExcerpt: '{"path":"C:\\\\outside\\\\note.txt","old_text":"a","new_text":"b"}',
       },
-      "D:\\SpiritAgent",
+      "D:\\Spirit",
     ),
     {
       scope: "external",

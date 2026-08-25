@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { resolveSpiritDataDir as resolveSharedSpiritDataDir } from "@spiritagent/host-internal";
 
 /**
- * Resolves the Spirit Agent data directory (shared with Desktop / CLI /
+ * Resolves the Spirit data directory (shared with Desktop / CLI /
  * acp-server). The server honors SPIRIT_SERVER_DATA_DIR first, then the
- * shared resolution (SPIRIT_AGENT_DATA_DIR → platform conventions).
+ * shared resolution (SPIRIT_DATA_DIR → platform conventions).
  */
 export function resolveSpiritDataDir(): string {
   return process.env["SPIRIT_SERVER_DATA_DIR"]?.trim() || resolveSharedSpiritDataDir();

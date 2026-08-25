@@ -2,7 +2,7 @@
 
 根植於您的工作區，配備真實工具，隨時準備與您一起規劃、執行和交付。
 
-[下載](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[下載](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，�
 
 ## 試用 Spirit。
 
-[下載](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[下載](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，�
 ### 資源
 
 - [文件](/zh-TW/docs)
-- [變更日誌](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [變更日誌](https://github.com/SpiritAgents/spirit/releases)
 - [開放原始碼授權](/notice.md)
 
-© 2026 Spirit Agent。開放原始碼 AI 智慧體。
+© 2026 Spirit。開放原始碼 AI 智慧體。
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

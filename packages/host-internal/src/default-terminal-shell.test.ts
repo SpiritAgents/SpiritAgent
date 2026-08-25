@@ -78,7 +78,7 @@ test.skipIf(process.platform !== "win32")(
     if (!isWindowsPowerShellExecutable(file)) {
       return;
     }
-    const sample = "你好，Spirit Agent 中文输出测试";
+    const sample = "你好，Spirit 中文输出测试";
     const command = prepareShellForHostExecution(file, `Write-Output "${sample}"`);
     const result = await exec(command, {
       shell: file,

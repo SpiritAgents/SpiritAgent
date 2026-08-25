@@ -1,6 +1,6 @@
 ---
 name: create-hook
-description: Create or update Spirit Agent command hooks in hooks.json and hook scripts under the managed hook roots.
+description: Create or update Spirit command hooks in hooks.json and hook scripts under the managed hook roots.
 ---
 
 Create or update hooks from the user's request. Hooks are command scripts that receive JSON on stdin and may return JSON on stdout to observe, allow, deny, ask, inject context, rewrite tool input, or schedule follow-up work.

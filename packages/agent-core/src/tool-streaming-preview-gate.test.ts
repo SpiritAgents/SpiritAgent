@@ -26,8 +26,8 @@ test("shouldEmitStreamingToolNamePreview fires once when name first appears", ()
 });
 
 test("tryExtractPartialToolPath reads path from incomplete JSON", () => {
-  const partial = '{"path":"D:\\\\SpiritAgent\\\\README.md","old_text":"';
-  assert.equal(tryExtractPartialToolPath(partial), "D:\\SpiritAgent\\README.md");
+  const partial = '{"path":"D:\\\\Spirit\\\\README.md","old_text":"';
+  assert.equal(tryExtractPartialToolPath(partial), "D:\\Spirit\\README.md");
 });
 
 test("apply_patch early preview when operation.path is streamed", () => {
@@ -153,12 +153,12 @@ test("resolveStreamingToolPreviewEmit repeats edit_file when line delta changes"
 });
 
 test("web_search early preview extracts query from incomplete JSON", () => {
-  const partial = '{"query":"what is the Spirit Agent project"';
-  assert.equal(tryExtractPartialWebSearchQuery(partial), "what is the Spirit Agent project");
+  const partial = '{"query":"what is the Spirit project"';
+  assert.equal(tryExtractPartialWebSearchQuery(partial), "what is the Spirit project");
   assert.equal(hostToolArgumentsReadyForEarlyStreamingPreview("web_search", partial), true);
   assert.equal(hostToolArgumentsReadyForPreview("web_search", partial), false);
   assert.deepEqual(previewRequestFromStreamingArguments("web_search", partial), {
-    query: "what is the Spirit Agent project",
+    query: "what is the Spirit project",
   });
 });
 
@@ -170,7 +170,7 @@ test("resolveStreamingToolPreviewEmit repeats web_search preview when query grow
   assert.equal(first.emit, true);
   assert.equal(webSearchStreamingPreviewSignature(partial), "Spirit");
 
-  const longer = '{"query":"Spirit Agent"';
+  const longer = '{"query":"Spirit docs"';
   const second = resolveStreamingToolPreviewEmit("web_search", longer, first.nextState);
   assert.equal(second.emit, true);
 

@@ -1,5 +1,5 @@
 // Desktop is the first consumer: generates the session title asynchronously after the first user message; CLI integration awaits product definition.
-import { buildSpiritAgentCoreHostPrompt, createJsonSchemaTransport } from "@spiritagent/agent-core";
+import { buildSpiritCoreHostPrompt, createJsonSchemaTransport } from "@spiritagent/agent-core";
 import {
   buildSessionTitlePrompt,
   normalizeGeneratedSessionTitle,
@@ -51,7 +51,7 @@ export async function generateSessionTitleFromModelTask(
     schemaName: "session_title",
     schema: SESSION_TITLE_JSON_SCHEMA,
     includeToolAgentHostPrompt: false,
-    systemSections: [buildSpiritAgentCoreHostPrompt(resolved.name, resolved.profile.provider)],
+    systemSections: [buildSpiritCoreHostPrompt(resolved.name, resolved.profile.provider)],
   });
 
   return {

@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{logging, mcp::spirit_agent_data_dir};
+use crate::{logging, mcp::spirit_data_dir};
 
 pub const SPIRIT_DIR_NAME: &str = ".spirit";
 pub const AGENTS_DIR_NAME: &str = ".agents";
@@ -140,7 +140,7 @@ pub fn workspace_agents_skills_dir(workspace_root: &Path) -> PathBuf {
 }
 
 pub fn user_skills_dir() -> PathBuf {
-    spirit_agent_data_dir().join(SKILLS_DIR_NAME)
+    spirit_data_dir().join(SKILLS_DIR_NAME)
 }
 
 pub fn skill_path_for_scope(workspace_root: &Path, scope: SkillScope, skill_name: &str) -> PathBuf {
@@ -153,7 +153,7 @@ pub fn skill_path_for_scope(workspace_root: &Path, scope: SkillScope, skill_name
 }
 
 pub fn skills_state_file_path() -> PathBuf {
-    spirit_agent_data_dir().join(SKILLS_STATE_FILE_NAME)
+    spirit_data_dir().join(SKILLS_STATE_FILE_NAME)
 }
 
 pub fn load_skill_state() -> Result<SkillStateFile> {
@@ -697,7 +697,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time")
             .as_nanos();
-        let dir = env::temp_dir().join(format!("spirit-agent-skills-{label}-{unique}"));
+        let dir = env::temp_dir().join(format!("spirit-skills-{label}-{unique}"));
         fs::create_dir_all(&dir).expect("create temp dir");
         dir
     }
@@ -715,7 +715,7 @@ mod tests {
     }
 
     #[test]
-    fn user_skills_dir_lives_under_spirit_agent_data_dir() {
+    fn user_skills_dir_lives_under_spirit_data_dir() {
         let _guard = shared_env_lock()
             .lock()
             .unwrap_or_else(|err| err.into_inner());
@@ -727,7 +727,7 @@ mod tests {
 
         assert_eq!(
             user_skills_dir(),
-            appdata.join("SpiritAgent").join(SKILLS_DIR_NAME)
+            appdata.join("Spirit").join(SKILLS_DIR_NAME)
         );
     }
 
@@ -749,7 +749,7 @@ mod tests {
 
         assert_eq!(
             path,
-            appdata.join("SpiritAgent").join(SKILLS_STATE_FILE_NAME)
+            appdata.join("Spirit").join(SKILLS_STATE_FILE_NAME)
         );
         assert_eq!(load_skill_state().expect("load skill state"), state);
     }
@@ -903,7 +903,7 @@ mod tests {
                     description: "Analyze data.".to_string(),
                     short_label: "skills/data-analysis/SKILL.md".to_string(),
                     path: PathBuf::from(
-                        "C:/users/demo/AppData/Roaming/SpiritAgent/skills/data-analysis/SKILL.md",
+                        "C:/users/demo/AppData/Roaming/Spirit/skills/data-analysis/SKILL.md",
                     ),
                 },
                 enabled: false,

@@ -287,7 +287,7 @@ test("compactHistoryImmediate syncs pre-truncation history and compacts post-tru
 
 test("compactHistoryImmediate persists tool output archive path in truncated excerpt", async () => {
   const longToolOutput = "y".repeat(20_000);
-  const archivePath = "/SpiritAgent/tool-output-archives/smoke-sess/call-1.txt";
+  const archivePath = "/Spirit/tool-output-archives/smoke-sess/call-1.txt";
   const history: LlmMessage[] = [
     { role: "user", content: createLlmMessageContentFromText("investigate") },
     {
@@ -361,7 +361,7 @@ test("compactHistoryImmediate persists tool output archive path in truncated exc
   assert.equal(persistedContent, longToolOutput);
   assert.match(
     compactionToolText,
-    /Full output archived at: \/SpiritAgent\/tool-output-archives\/smoke-sess\/call-1\.txt/u,
+    /Full output archived at: \/Spirit\/tool-output-archives\/smoke-sess\/call-1\.txt/u,
   );
   assert.match(
     compactionToolText,

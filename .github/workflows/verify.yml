@@ -75,10 +75,10 @@ jobs:
         run: pnpm exec oxfmt --check packages apps/desktop apps/site
 
       - name: Build CLI
-        run: cargo build -p spirit-agent
+        run: cargo build -p spirit
 
       - name: Clippy CLI (deny warnings)
-        run: cargo clippy --all-targets -p spirit-agent -- -D warnings
+        run: cargo clippy --all-targets -p spirit -- -D warnings
 
       - name: Test CLI
-        run: cargo test -p spirit-agent
+        run: cargo test -p spirit

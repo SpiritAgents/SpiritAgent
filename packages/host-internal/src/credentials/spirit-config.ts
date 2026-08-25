@@ -17,17 +17,17 @@ import {
 import type { SpiritConfigFile, SpiritModelProfile } from "./types.js";
 
 const CONFIG_FILE_NAME = "config.json";
-const APP_DATA_DIR_NAME = "SpiritAgent";
+const APP_DATA_DIR_NAME = "Spirit";
 
 export { SpiritConfigSchemaError };
 
 /**
- * Resolves the shared Spirit Agent data directory. Hosts with their own env
+ * Resolves the shared Spirit data directory. Hosts with their own env
  * override (e.g. SPIRIT_ACP_DATA_DIR, SPIRIT_SERVER_DATA_DIR) should check it
  * before falling back to this function.
  */
 export function resolveSpiritDataDir(): string {
-  const envOverride = process.env["SPIRIT_AGENT_DATA_DIR"]?.trim();
+  const envOverride = process.env["SPIRIT_DATA_DIR"]?.trim();
   if (envOverride) {
     return envOverride;
   }
@@ -49,15 +49,15 @@ export function resolveSpiritDataDir(): string {
       }
       return join(home, ".local", "share", APP_DATA_DIR_NAME);
     }
-    return join(home, ".spirit-agent");
+    return join(home, ".spirit-data");
   }
 
   const userProfile = process.env["USERPROFILE"]?.trim();
   if (userProfile) {
-    return join(userProfile, ".spirit-agent");
+    return join(userProfile, ".spirit-data");
   }
 
-  return join(homedir(), ".spirit-agent");
+  return join(homedir(), ".spirit-data");
 }
 
 export function configFilePath(spiritDataDir: string): string {

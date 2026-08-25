@@ -2,7 +2,7 @@
 
 Verwurzelt in Ihrem Arbeitsbereich, ausgestattet mit echten Werkzeugen und bereit, gemeinsam mit Ihnen zu planen, auszuführen und auszuliefern.
 
-[Herunterladen](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Herunterladen](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Platzhalter vorerst.
 
 ## Probier Spirit aus.
 
-[Herunterladen](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Herunterladen](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Platzhalter vorerst.
 ### Ressourcen
 
 - [Dokumentation](/de/docs)
-- [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [Changelog](https://github.com/SpiritAgents/spirit/releases)
 - [Open-Source-Lizenzen](/notice.md)
 
-© 2026 Spirit Agent. Open-Source-KI-Agent.
+© 2026 Spirit. Open-Source-KI-Agent.
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

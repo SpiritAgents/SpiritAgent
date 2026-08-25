@@ -99,7 +99,7 @@ async function main(): Promise<void> {
               type: "response.function_call_arguments.delta",
               item_id: "fc_stream_1",
               output_index: 1,
-              delta: ':"Spirit Agent deepseek"}',
+              delta: ':"Spirit deepseek"}',
             }),
             sseEvent({
               type: "response.output_item.done",
@@ -109,7 +109,7 @@ async function main(): Promise<void> {
                 id: "fc_stream_1",
                 call_id: "call_deepseek_stream_1",
                 name: "demo_lookup",
-                arguments: '{"query":"Spirit Agent deepseek"}',
+                arguments: '{"query":"Spirit deepseek"}',
                 status: "completed",
               },
             }),
@@ -267,7 +267,7 @@ async function main(): Promise<void> {
   const resumedState = appendOpenAiToolResultMessage(
     firstCompletion.result.state,
     "call_deepseek_stream_1",
-    '{"query":"Spirit Agent deepseek","result":"official provider ok"}',
+    '{"query":"Spirit deepseek","result":"official provider ok"}',
   );
 
   const secondStarted = await transport.startToolAgentRoundStreaming(

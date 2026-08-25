@@ -13,7 +13,7 @@ import {
 } from "@spiritagent/host-internal";
 
 import type { CreateSkillRequest, DeleteSkillRequest, DesktopSkillRootKind } from "../types.js";
-import { type HostMetadataSummary, spiritAgentDataDir } from "./storage.js";
+import { type HostMetadataSummary, spiritDataDir } from "./storage.js";
 import { formatYamlScalarForSkillFrontmatter } from "./service-utils.js";
 
 const ACTIVE_SKILL_CONTENT_MAX_CHARS = 12_000;
@@ -30,7 +30,7 @@ const ACTIVE_SKILL_RESOURCE_DIRS: ReadonlyArray<{
 export function desktopInstructionPaths(workspaceRoot: string) {
   return resolveInstructionPaths({
     workspaceRoot,
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
   });
 }
 
@@ -138,7 +138,7 @@ export async function deleteSkillDir(
 
   // Write the tombstone before deleting: prevents a successful unlink without persisted state from re-seeding the built-in skill.
   if (rootKind === "user" && isBuiltInSkillName(name)) {
-    await noteBuiltInSkillRemoved(spiritAgentDataDir(), name);
+    await noteBuiltInSkillRemoved(spiritDataDir(), name);
   }
   await rm(skillDir, { recursive: true, force: true });
 }

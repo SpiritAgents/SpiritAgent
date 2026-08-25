@@ -94,7 +94,7 @@
     "custom": "自定义"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "继续",
     "back": "返回",
     "done": "完成",
@@ -244,7 +244,7 @@
     "envVars": "环境变量",
     "command": "命令",
     "mcpUrlExample": "例如 https://example.com/mcp",
-    "mcpCommandExample": "例如 npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent",
+    "mcpCommandExample": "例如 npx -y @modelcontextprotocol/server-filesystem D:/Spirit",
     "mcpCountsSummary": "已发现 {{tools}} tools · {{resources}} resources · {{prompts}} prompts",
     "active": "活跃",
     "failed": "失败",
@@ -532,10 +532,10 @@
     "recent": "最近",
     "more": "更多",
     "newSession": "新会话",
-    "openApp": "打开 Spirit Agent",
+    "openApp": "打开 Spirit",
     "settings": "设置",
-    "quitApp": "退出 Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "退出 Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "文件",
@@ -564,7 +564,7 @@
     "close": "关闭",
     "zoom": "缩放",
     "bringAllToFront": "全部置于最前",
-    "about": "关于 Spirit Agent",
+    "about": "关于 Spirit",
     "settings": "设置",
     "services": "服务",
     "hideApp": "隐藏 {{appName}}",
@@ -1257,7 +1257,7 @@
     "autoWorktreeNameFailedNotObject": "自动生成 Worktree 名称失败：模型返回的 JSON 不是对象。"
   },
   "crashPage": {
-    "title": "Spirit Agent 已崩溃",
+    "title": "Spirit 已崩溃",
     "description": "渲染进程意外终止。以下日志可能有助于定位原因。",
     "reportOnGitHub": "在 GitHub 上报告"
   },

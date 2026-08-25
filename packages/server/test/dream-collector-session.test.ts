@@ -41,7 +41,7 @@ function withMockKeyring(run: () => Promise<void>): Promise<void> {
       store.delete(`${service}/${account}`);
     },
   });
-  store.set(`SpiritAgent/${groupKeyAccount("openai")}`, "test-key");
+  store.set(`Spirit/${groupKeyAccount("openai")}`, "test-key");
   return run().finally(() => setKeyringStoreForTests(undefined));
 }
 

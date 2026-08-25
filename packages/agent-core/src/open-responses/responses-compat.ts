@@ -1,4 +1,4 @@
-import type { JsonObject, JsonValue, SpiritAgentMode } from "../ports.js";
+import type { JsonObject, JsonValue, AgentMode } from "../ports.js";
 import type { LlmModelCapabilities, TransportRequestProfile } from "../llm-provider-shared.js";
 import type {
   OpenAiImageGenerationConfig,
@@ -54,7 +54,7 @@ export interface OpenResponsesTransportConfig {
   reasoningSummary?: OpenResponsesReasoningSummary;
   truncation?: "disabled" | "auto";
   /** Host run mode; Ask disables apply_patch injection. */
-  spiritAgentMode?: SpiritAgentMode;
+  agentMode?: AgentMode;
   /** Optional dedicated model role used by the `generate_image` tool. */
   imageGeneration?: OpenAiImageGenerationConfig;
   /** Optional dedicated model role used by the `generate_video` tool. */

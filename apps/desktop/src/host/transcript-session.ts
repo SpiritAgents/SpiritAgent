@@ -6,7 +6,7 @@ import {
   resolveSessionTranscriptFilePath,
 } from "@spiritagent/host-internal";
 
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 /** Transcript sessionKey is the resolved chat file path (conversationKey); dir name is hashed in host-internal. */
 export function resolveTranscriptSessionKeyForChatPath(chatPath: string): string {
@@ -15,13 +15,13 @@ export function resolveTranscriptSessionKeyForChatPath(chatPath: string): string
 
 export function resolveDesktopSessionTranscriptPath(chatPath: string): string {
   return resolveSessionTranscriptFilePath(
-    spiritAgentDataDir(),
+    spiritDataDir(),
     resolveTranscriptSessionKeyForChatPath(chatPath),
   );
 }
 
 export async function ensureDesktopTranscriptSessionDir(sessionKey: string): Promise<string> {
-  return ensureTranscriptSessionDir(spiritAgentDataDir(), sessionKey);
+  return ensureTranscriptSessionDir(spiritDataDir(), sessionKey);
 }
 
 export async function ensureDesktopTranscriptSessionDirForChatPath(
@@ -31,7 +31,7 @@ export async function ensureDesktopTranscriptSessionDirForChatPath(
 }
 
 export async function deleteDesktopTranscriptSessionDir(sessionKey: string): Promise<void> {
-  await deleteTranscriptSessionDir(spiritAgentDataDir(), sessionKey);
+  await deleteTranscriptSessionDir(spiritDataDir(), sessionKey);
 }
 
 export async function deleteDesktopTranscriptSessionDirForChatPath(

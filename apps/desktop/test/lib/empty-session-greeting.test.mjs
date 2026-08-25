@@ -94,8 +94,8 @@ test("resolveEmptySessionGreeting passes workspace to t", () => {
     calls.push({ key, options });
     return `${key}:${options?.workspace ?? ""}`;
   };
-  const resolved = resolveEmptySessionGreeting(t, "doSomethingIn", "SpiritAgent");
-  assert.equal(resolved, "app.emptySessionGreeting.doSomethingIn:SpiritAgent");
+  const resolved = resolveEmptySessionGreeting(t, "doSomethingIn", "Spirit");
+  assert.equal(resolved, "app.emptySessionGreeting.doSomethingIn:Spirit");
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].options.workspace, "SpiritAgent");
+  assert.equal(calls[0].options.workspace, "Spirit");
 });

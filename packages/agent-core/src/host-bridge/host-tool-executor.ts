@@ -17,7 +17,7 @@ import {
   shouldUseApplyPatchFileTools,
 } from "../open-responses/apply-patch-eligibility.js";
 import { isOpenResponsesTransportConfig } from "../provider-config.js";
-import type { SpiritAgentMode } from "../ports.js";
+import type { AgentMode } from "../ports.js";
 import {
   applyHostToolDescriptionHints,
   assertAgentModeAllowsHostTool,
@@ -91,7 +91,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
   private loopToolDefinitionsCache: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitionsCache: JsonValue[] = [];
-  private agentMode: SpiritAgentMode = "agent";
+  private agentMode: AgentMode = "agent";
   private hostToolDefinitionsLoaded = false;
   private toolDefinitionsCache: JsonValue = [];
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
@@ -169,7 +169,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
     this.refreshMergedToolDefinitions();
   }
 
-  setAgentModeToolExposure(agentMode: SpiritAgentMode): void {
+  setAgentModeToolExposure(agentMode: AgentMode): void {
     this.agentMode = agentMode;
     this.planToolDefinitionsCache = isPlanAgentMode(agentMode)
       ? buildPlanModeHostToolDefinitions()

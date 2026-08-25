@@ -244,7 +244,7 @@ async function main() {
     throw new Error(`CLI release binary not found: ${targetBinaryPath}`);
   }
 
-  const bundleName = `SpiritAgent-CLI-${version}-${targetInfo.packageTarget}`;
+  const bundleName = `Spirit-CLI-${version}-${targetInfo.packageTarget}`;
   const bundleRoot = path.join(releaseRoot, 'cli', bundleName);
   await rm(bundleRoot, { recursive: true, force: true });
   await mkdir(path.join(bundleRoot, 'bin'), { recursive: true });
@@ -258,7 +258,7 @@ async function main() {
     path.join(bundleRoot, 'release-manifest.json'),
     `${JSON.stringify(
       {
-        name: 'Spirit Agent CLI',
+        name: 'Spirit CLI',
         version,
         target,
         packageTarget: targetInfo.packageTarget,

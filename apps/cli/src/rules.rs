@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::mcp::spirit_agent_data_dir;
+use crate::mcp::spirit_data_dir;
 
 pub const SPIRIT_DIR_NAME: &str = ".spirit";
 pub const WORKSPACE_SPIRIT_RULE_FILE_NAME: &str = "rule.md";
@@ -92,7 +92,7 @@ pub fn workspace_spirit_rule_path(workspace_root: &Path) -> PathBuf {
 }
 
 pub fn user_rule_path() -> PathBuf {
-    spirit_agent_data_dir().join(USER_RULE_FILE_NAME)
+    spirit_data_dir().join(USER_RULE_FILE_NAME)
 }
 
 pub fn rule_path_for_scope(workspace_root: &Path, scope: RuleScope) -> PathBuf {
@@ -113,7 +113,7 @@ pub fn ensure_workspace_spirit_dir(workspace_root: &Path) -> Result<()> {
 }
 
 pub fn rules_state_file_path() -> PathBuf {
-    spirit_agent_data_dir().join(RULES_STATE_FILE_NAME)
+    spirit_data_dir().join(RULES_STATE_FILE_NAME)
 }
 
 pub fn default_rule_sources(workspace_root: &Path) -> Vec<RuleSource> {
@@ -304,7 +304,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time")
             .as_nanos();
-        let dir = env::temp_dir().join(format!("spirit-agent-rules-{label}-{unique}"));
+        let dir = env::temp_dir().join(format!("spirit-rules-{label}-{unique}"));
         fs::create_dir_all(&dir).expect("create temp dir");
         dir
     }
@@ -330,7 +330,7 @@ mod tests {
     }
 
     #[test]
-    fn user_rule_path_lives_under_spirit_agent_data_dir() {
+    fn user_rule_path_lives_under_spirit_data_dir() {
         let _guard = shared_env_lock()
             .lock()
             .unwrap_or_else(|err| err.into_inner());
@@ -342,7 +342,7 @@ mod tests {
 
         let path = user_rule_path();
 
-        assert_eq!(path, appdata.join("SpiritAgent").join(USER_RULE_FILE_NAME));
+        assert_eq!(path, appdata.join("Spirit").join(USER_RULE_FILE_NAME));
     }
 
     #[test]
@@ -380,7 +380,7 @@ mod tests {
 
         assert_eq!(
             saved_path,
-            appdata.join("SpiritAgent").join(RULES_STATE_FILE_NAME)
+            appdata.join("Spirit").join(RULES_STATE_FILE_NAME)
         );
         assert_eq!(loaded, state);
     }
@@ -407,7 +407,7 @@ mod tests {
             "# agents rule\nagents body",
         )
         .expect("write agents rule");
-        fs::create_dir_all(appdata.join("SpiritAgent")).expect("create appdata dir");
+        fs::create_dir_all(appdata.join("Spirit")).expect("create appdata dir");
         fs::write(user_rule_path(), "# user rule\nuser body").expect("write user rule");
 
         let entries = discover_rule_entries(&workspace_root, &RuleStateFile::default())
@@ -495,7 +495,7 @@ mod tests {
                     scope: RuleScope::User,
                     title: "User rule".to_string(),
                     short_label: "rule.md".to_string(),
-                    path: PathBuf::from("C:/users/demo/AppData/Roaming/SpiritAgent/rule.md"),
+                    path: PathBuf::from("C:/users/demo/AppData/Roaming/Spirit/rule.md"),
                 },
                 exists: true,
                 enabled: false,

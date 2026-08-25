@@ -94,7 +94,7 @@
     "custom": "사용자 정의"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "계속",
     "back": "뒤로",
     "done": "완료",
@@ -244,7 +244,7 @@
     "envVars": "환경 변수",
     "command": "명령어",
     "mcpUrlExample": "예: https://example.com/mcp",
-    "mcpCommandExample": "예: npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent",
+    "mcpCommandExample": "예: npx -y @modelcontextprotocol/server-filesystem D:/Spirit",
     "mcpCountsSummary": "도구 {{tools}}개 · 리소스 {{resources}}개 · 프롬프트 {{prompts}}개",
     "active": "활성",
     "failed": "실패",
@@ -535,10 +535,10 @@
     "recent": "최근",
     "more": "더 보기",
     "newSession": "새 세션",
-    "openApp": "Spirit Agent 열기",
+    "openApp": "Spirit 열기",
     "settings": "설정",
-    "quitApp": "Spirit Agent 종료",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Spirit 종료",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "파일",
@@ -567,7 +567,7 @@
     "close": "닫기",
     "zoom": "확대/축소",
     "bringAllToFront": "모두 앞으로 가져오기",
-    "about": "Spirit Agent 정보",
+    "about": "Spirit 정보",
     "settings": "설정",
     "services": "서비스",
     "hideApp": "{{appName}} 숨기기",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Worktree 이름 자동 생성 실패: 모델이 객체가 아닌 JSON을 반환했습니다."
   },
   "crashPage": {
-    "title": "Spirit Agent가 충돌했습니다",
+    "title": "Spirit가 충돌했습니다",
     "description": "렌더러 프로세스가 예기치 않게 종료되었습니다. 아래 로그가 원인 파악에 도움이 될 수 있습니다.",
     "reportOnGitHub": "GitHub에서 보고"
   },

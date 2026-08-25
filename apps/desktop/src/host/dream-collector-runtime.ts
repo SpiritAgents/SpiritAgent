@@ -11,7 +11,7 @@ import {
   replyRemoteWorkspaceCapabilityTrust,
 } from "./remote-runtime.js";
 import { buildEmptyAutomationArchive } from "./automation-runtime.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 export interface CreateDreamCollectorRuntimeInput {
   workspaceRoot: string;
@@ -38,7 +38,7 @@ export function buildDreamCollectorRemoteCreateInput(input: CreateDreamCollector
   dreamSourceSession: HostDreamSourceSessionRef;
 } {
   return {
-    dataDir: spiritAgentDataDir(),
+    dataDir: spiritDataDir(),
     workspaceRoot: input.workspaceRoot,
     modelRef: input.modelRef,
     agentMode: "agent",

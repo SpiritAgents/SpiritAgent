@@ -1,15 +1,15 @@
 {
   "name": "@spiritagent/acp-server",
   "version": "1.0.0-alpha.0",
-  "description": "ACP (Agent Client Protocol) server adapter for Spirit Agent",
+  "description": "ACP (Agent Client Protocol) server adapter for Spirit",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
+    "url": "git+https://github.com/SpiritAgents/spirit.git",
     "directory": "packages/acp-server"
   },
   "bin": {
-    "spirit-agent-acp": "./dist/src/stdio-entry.js"
+    "spirit-acp": "./dist/src/stdio-entry.js"
   },
   "files": [
     "dist",

@@ -8,7 +8,7 @@ import {
 } from "@spiritagent/host-internal";
 
 import type { DesktopTodoItem } from "../types.js";
-import { isProvisionalSessionPath, spiritAgentDataDir } from "./storage.js";
+import { isProvisionalSessionPath, spiritDataDir } from "./storage.js";
 
 /** Per-bundle TODO scope while the chat file is still the shared provisional slot. */
 export function createTodoSessionScopeKey(): string {
@@ -46,7 +46,7 @@ export function createTodoScope(sessionKey: string): HostTodoScope {
 
 export async function listSessionTodos(sessionKey: string): Promise<HostTodoRecord[]> {
   const store = createHostTodoStore({
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     scope: createTodoScope(sessionKey),
   });
   return store.list({ includeCompleted: true });
@@ -57,7 +57,7 @@ export async function replaceSessionTodos(
   records: HostTodoRecord[],
 ): Promise<void> {
   const store = createHostTodoStore({
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     scope: createTodoScope(sessionKey),
   });
   await store.replaceAll(records);
@@ -65,7 +65,7 @@ export async function replaceSessionTodos(
 
 export async function purgeSessionTodos(sessionKey: string): Promise<void> {
   const store = createHostTodoStore({
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     scope: createTodoScope(sessionKey),
   });
   await store.purge();

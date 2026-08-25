@@ -252,7 +252,7 @@ impl DaemonRuntime {
         self.active_plan_path =
             plan::extract_active_plan_path_from_archived_llm_history(llm_history);
         self.plan_metadata = plan::plan_metadata_snapshot(
-            self.plan_metadata.spirit_agent_mode(),
+            self.plan_metadata.agent_mode(),
             self.active_plan_path.as_deref(),
         );
     }
@@ -643,7 +643,7 @@ impl DaemonRuntime {
         self.set_todo_session_key(&session_key)?;
         self.active_plan_path = None;
         self.plan_metadata =
-            plan::plan_metadata_snapshot(self.plan_metadata.spirit_agent_mode(), None);
+            plan::plan_metadata_snapshot(self.plan_metadata.agent_mode(), None);
         self.sync_snapshot_remote()?;
         Ok(())
     }
@@ -774,7 +774,7 @@ impl DaemonRuntime {
         if let Err(err) = self.call_daemon(
             "session.reloadHostMetadata",
             Some(json!({
-                "mode": self.plan_metadata.spirit_agent_mode(),
+                "mode": self.plan_metadata.agent_mode(),
             })),
         ) {
             self.handle_daemon_error(err);
@@ -1131,7 +1131,7 @@ impl DaemonRuntime {
         self.active_plan_path =
             plan::extract_active_plan_path_from_archived_llm_history(&archive.llm_history);
         self.plan_metadata = plan::plan_metadata_snapshot(
-            self.plan_metadata.spirit_agent_mode(),
+            self.plan_metadata.agent_mode(),
             self.active_plan_path.as_deref(),
         );
     }
@@ -1146,7 +1146,7 @@ impl DaemonRuntime {
         self.active_plan_path =
             plan::extract_active_plan_path_from_archived_llm_history(&archive.llm_history);
         self.plan_metadata = plan::plan_metadata_snapshot(
-            self.plan_metadata.spirit_agent_mode(),
+            self.plan_metadata.agent_mode(),
             self.active_plan_path.as_deref(),
         );
         let session_key = self.rewind.session_id.clone();
@@ -1220,7 +1220,7 @@ impl DaemonRuntime {
             message_index,
             self.rewind.next_sequence(),
         );
-        let spirit_data_dir = crate::mcp::spirit_agent_data_dir();
+        let spirit_data_dir = crate::mcp::spirit_data_dir();
         rewind::save_rewind_checkpoint_snapshot(
             &spirit_data_dir,
             &self.rewind.session_id,
@@ -1237,7 +1237,7 @@ impl DaemonRuntime {
             .checkpoint_for_message_id(message_id)
             .cloned()
             .ok_or_else(|| anyhow!("This message has no rewind checkpoint available."))?;
-        let spirit_data_dir = crate::mcp::spirit_agent_data_dir();
+        let spirit_data_dir = crate::mcp::spirit_data_dir();
         let snapshot = rewind::load_rewind_checkpoint_snapshot(
             &spirit_data_dir,
             &self.rewind.session_id,
@@ -1296,12 +1296,12 @@ impl DaemonRuntime {
         if change.tool_name == "create_plan" && change.after.exists {
             self.active_plan_path = Some(PathBuf::from(change.resolved_path.clone()));
             self.plan_metadata = plan::plan_metadata_snapshot(
-                self.plan_metadata.spirit_agent_mode(),
+                self.plan_metadata.agent_mode(),
                 self.active_plan_path.as_deref(),
             );
         }
 
-        let spirit_data_dir = crate::mcp::spirit_agent_data_dir();
+        let spirit_data_dir = crate::mcp::spirit_data_dir();
         let stored = rewind::to_desktop_file_change(change, self.rewind.next_sequence());
         rewind::save_rewind_file_change(&spirit_data_dir, &self.rewind.session_id, &stored)?;
         self.rewind

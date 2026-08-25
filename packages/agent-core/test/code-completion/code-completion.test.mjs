@@ -12,7 +12,7 @@ import {
 
 test("buildCodeCompletionIdentityPrompt includes model and CJK guidance", () => {
   const prompt = buildCodeCompletionIdentityPrompt("gpt-test", "openai");
-  assert.match(prompt, /You are Spirit Agent/);
+  assert.match(prompt, /You are Spirit/);
   assert.match(prompt, /The user's model is gpt-test from openai/);
   assert.match(prompt, /CJK/);
 });
@@ -140,7 +140,7 @@ test("codeCompletionOperationToInlineItemAtCursor insert keeps suffix at cursor"
 });
 
 test("codeCompletionOperationToInlineItemAtCursor replace hyphen suffix extension", () => {
-  const lineText = "# Spirit Agent- comment";
+  const lineText = "# Sample Token- comment";
   const item = codeCompletionOperationToInlineItemAtCursor(
     {
       kind: "replace",
@@ -177,7 +177,7 @@ test("codeCompletionOperationToInlineItemAtCursor rejects cross-line replace", (
 });
 
 test("codeCompletionOperationToInlineItemAtCursor rejects replace when cursor outside span", () => {
-  const lineText = "# Spirit Agent- comment";
+  const lineText = "# Sample Token- comment";
   const item = codeCompletionOperationToInlineItemAtCursor(
     {
       kind: "replace",
@@ -193,7 +193,7 @@ test("codeCompletionOperationToInlineItemAtCursor rejects replace when cursor ou
 });
 
 test("codeCompletionOperationToInlineItemAtCursor rejects non-prefix replace span", () => {
-  const lineText = "# Spirit Agent- comment";
+  const lineText = "# Sample Token- comment";
   assert.equal(
     isCodeCompletionInlineGhostRenderable(
       {

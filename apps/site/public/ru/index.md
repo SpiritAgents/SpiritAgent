@@ -2,7 +2,7 @@
 
 Привязан к вашему рабочему пространству, оснащён реальными инструментами и готов планировать, выполнять и поставлять код вместе с вами.
 
-[Скачать](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Скачать](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Spirit не привязывает вас к облачному стеку. Пр
 
 ## Попробуйте Spirit.
 
-[Скачать](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Скачать](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Spirit не привязывает вас к облачному стеку. Пр
 ### Ресурсы
 
 - [Документация](/ru/docs)
-- [История изменений](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [История изменений](https://github.com/SpiritAgents/spirit/releases)
 - [Лицензии с открытым исходным кодом](/notice.md)
 
-© 2026 Spirit Agent. ИИ-агент с открытым исходным кодом.
+© 2026 Spirit. ИИ-агент с открытым исходным кодом.
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

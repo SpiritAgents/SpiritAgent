@@ -24,7 +24,7 @@ import {
   mcpWorkspaceConfigPath,
   mergeMcpConfigFiles,
   mcpServerScopesFromFiles,
-  spiritAgentDataDir,
+  spiritDataDir,
   type McpConfigScope,
   normalizeMcpServerConfig,
 } from "./config.js";
@@ -977,7 +977,7 @@ function mcpConfigDigest(config: McpConfigFile): string {
 
 function resolveMcpConfigPaths(workspaceRoot: string): { userPath: string; workspacePath: string } {
   return {
-    userPath: mcpUserConfigPath(spiritAgentDataDir()),
+    userPath: mcpUserConfigPath(spiritDataDir()),
     workspacePath: mcpWorkspaceConfigPath(workspaceRoot),
   };
 }

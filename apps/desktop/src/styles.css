@@ -617,31 +617,31 @@ html.spirit-launch-splash-exiting
    * Light UI by default; `html.dark` is the dark variant (the original spiritagent.app CTA white-stroke scheme).
    */
   .spirit-glass-logo {
-    --spirit-agent-fill-strong: rgba(31, 31, 31, 0.06);
-    --spirit-agent-fill-mid: rgba(31, 31, 31, 0.025);
-    --spirit-agent-fill-tail: rgba(31, 31, 31, 0.01);
-    --spirit-agent-inner-strong: rgba(255, 255, 255, 0.28);
-    --spirit-agent-inner-tail: rgba(31, 31, 31, 0.018);
-    --spirit-agent-fresnel-a: rgba(31, 31, 31, 0.12);
-    --spirit-agent-fresnel-b: rgba(31, 31, 31, 0.055);
-    --spirit-agent-fresnel-c: rgba(31, 31, 31, 0.045);
-    --spirit-agent-fresnel-d: rgba(31, 31, 31, 0.1);
-    --spirit-agent-stroke-main: rgba(31, 31, 31, 0.34);
-    --spirit-agent-stroke-soft: rgba(31, 31, 31, 0.1);
+    --spirit-fill-strong: rgba(31, 31, 31, 0.06);
+    --spirit-fill-mid: rgba(31, 31, 31, 0.025);
+    --spirit-fill-tail: rgba(31, 31, 31, 0.01);
+    --spirit-inner-strong: rgba(255, 255, 255, 0.28);
+    --spirit-inner-tail: rgba(31, 31, 31, 0.018);
+    --spirit-fresnel-a: rgba(31, 31, 31, 0.12);
+    --spirit-fresnel-b: rgba(31, 31, 31, 0.055);
+    --spirit-fresnel-c: rgba(31, 31, 31, 0.045);
+    --spirit-fresnel-d: rgba(31, 31, 31, 0.1);
+    --spirit-stroke-main: rgba(31, 31, 31, 0.34);
+    --spirit-stroke-soft: rgba(31, 31, 31, 0.1);
   }
 
   html.dark .spirit-glass-logo {
-    --spirit-agent-fill-strong: rgba(255, 255, 255, 0.16);
-    --spirit-agent-fill-mid: rgba(255, 255, 255, 0.04);
-    --spirit-agent-fill-tail: rgba(220, 230, 255, 0.02);
-    --spirit-agent-inner-strong: rgba(255, 255, 255, 0.06);
-    --spirit-agent-inner-tail: rgba(200, 220, 255, 0.03);
-    --spirit-agent-fresnel-a: rgba(190, 215, 255, 0.35);
-    --spirit-agent-fresnel-b: rgba(255, 200, 200, 0.1);
-    --spirit-agent-fresnel-c: rgba(200, 255, 215, 0.1);
-    --spirit-agent-fresnel-d: rgba(215, 200, 255, 0.25);
-    --spirit-agent-stroke-main: rgba(255, 255, 255, 0.65);
-    --spirit-agent-stroke-soft: rgba(255, 255, 255, 0.2);
+    --spirit-fill-strong: rgba(255, 255, 255, 0.16);
+    --spirit-fill-mid: rgba(255, 255, 255, 0.04);
+    --spirit-fill-tail: rgba(220, 230, 255, 0.02);
+    --spirit-inner-strong: rgba(255, 255, 255, 0.06);
+    --spirit-inner-tail: rgba(200, 220, 255, 0.03);
+    --spirit-fresnel-a: rgba(190, 215, 255, 0.35);
+    --spirit-fresnel-b: rgba(255, 200, 200, 0.1);
+    --spirit-fresnel-c: rgba(200, 255, 215, 0.1);
+    --spirit-fresnel-d: rgba(215, 200, 255, 0.25);
+    --spirit-stroke-main: rgba(255, 255, 255, 0.65);
+    --spirit-stroke-soft: rgba(255, 255, 255, 0.2);
   }
 
   /* Skeleton style: wide soft gradient + translating background, avoiding the retro feel of a narrow "chrome highlight" strip */

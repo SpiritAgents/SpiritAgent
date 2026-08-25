@@ -15,7 +15,7 @@ impl TuiShell {
             .map(|d| d.as_secs())
             .unwrap_or(0);
         let target = env::temp_dir().join(format!(
-            "spirit-agent-cli-log-{exported_at_unix_secs}-{}.log",
+            "spirit-cli-log-{exported_at_unix_secs}-{}.log",
             std::process::id()
         ));
         fs::copy(&source, &target).with_context(|| {
@@ -76,7 +76,7 @@ impl TuiShell {
         let json = serde_json::to_string_pretty(&export)
             .context(t!("tui.log.serialize_failed").into_owned())?;
         let path = env::temp_dir().join(format!(
-            "spirit-agent-llm-export-{exported_at_unix_secs}-{}.json",
+            "spirit-llm-export-{exported_at_unix_secs}-{}.json",
             std::process::id()
         ));
         fs::write(&path, json)

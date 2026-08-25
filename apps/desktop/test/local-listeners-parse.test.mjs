@@ -138,10 +138,7 @@ test("isHtmlContentType accepts html and xhtml", () => {
 });
 
 test("extractHtmlTitle reads non-empty title", () => {
-  assert.equal(
-    extractHtmlTitle("<html><head><title>Spirit Agent</title></head></html>"),
-    "Spirit Agent",
-  );
+  assert.equal(extractHtmlTitle("<html><head><title>Spirit</title></head></html>"), "Spirit");
   assert.equal(extractHtmlTitle("<html><head><title>  </title></head></html>"), null);
 });
 

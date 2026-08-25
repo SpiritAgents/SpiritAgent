@@ -13,7 +13,7 @@ import {
   shouldUseWindowsToastXml,
 } from "../src/lib/windows-toast-xml.js";
 
-const DESKTOP_APP_USER_MODEL_ID = "ai.spiritagent.desktop";
+const DESKTOP_APP_USER_MODEL_ID = "fast.spirit.desktop";
 
 export type DesktopNotificationPayload = {
   title: string;

@@ -32,7 +32,7 @@ import {
 } from "@spiritagent/agent-core";
 import { buildApplyPatchFileToolsPromptSection } from "@spiritagent/agent-core";
 import { buildProviderWebSearchPromptSection } from "@spiritagent/agent-core";
-import type { SpiritAgentMode } from "@spiritagent/agent-core";
+import type { AgentMode } from "@spiritagent/agent-core";
 import type { LocalHostToolService } from "@spiritagent/agent-core/host-bridge";
 import { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
 
@@ -65,7 +65,7 @@ export interface AcpRuntimeResult {
   /** Mutable array reference — mutations are seen by state factory closures */
   activeSkills: LlmActiveSkill[];
   /** Switch agent mode: updates tool exposure + planMetadata seen by closures */
-  setAgentMode: (mode: SpiritAgentMode) => Promise<void>;
+  setAgentMode: (mode: AgentMode) => Promise<void>;
 }
 
 /**
@@ -86,7 +86,7 @@ function hostPromptProviderId(config: LlmTransportConfig): string | undefined {
 export async function createAcpRuntime(
   config: AcpServerConfig,
   onEvent: (event: RuntimeEvent<JsonValue>) => void,
-  initialMode: SpiritAgentMode = "agent",
+  initialMode: AgentMode = "agent",
   transcriptSessionKey?: string,
 ): Promise<AcpRuntimeResult> {
   const transportConfig = resolveTransportConfig(config);
@@ -298,7 +298,7 @@ export async function createAcpRuntime(
   });
 
   // 10. Mode switching: update planMetadata binding seen by closures + tool exposure
-  const setAgentMode = async (mode: SpiritAgentMode): Promise<void> => {
+  const setAgentMode = async (mode: AgentMode): Promise<void> => {
     toolExecutor.setAgentModeToolExposure(mode);
     const refreshed = await loadHostInstructionMetadata(
       { workspaceRoot, spiritDataDir },

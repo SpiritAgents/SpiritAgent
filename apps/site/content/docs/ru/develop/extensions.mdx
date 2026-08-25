@@ -29,7 +29,7 @@ example-extension/
 {
   "name": "@example/spirit-extension",
   "version": "0.1.0",
-  "description": "Example Spirit Agent extension.",
+  "description": "Example Spirit extension.",
   "author": { "name": "example" },
   "homepage": "https://example.com/spirit-extension",
   "main": "dist/index.js",
@@ -352,7 +352,7 @@ export function activate(ctx) {
 
 Он также читает `name`, `version`, `description`, `author`, `repository`, `homepage`, `keywords` и опциональный `spiritExtension.icon`. Если вы установили `icon`, включите этот файл в опубликованный пакет. Отсутствие объекта `spiritExtension` приводит к сбою сборки реестра для этой версии.
 
-Официальный пример: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spiritagent.system-message-demo`).
+Официальный пример: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spirit.system-message-demo`).
 
 ### 2. Укажите пакет
 
@@ -368,7 +368,7 @@ export function activate(ctx) {
 - `registry/catalog.json`
 - `registry/extensions/<extension-id>/detail.json`
 
-`extensionId` должен содержать как минимум два сегмента, разделенных точкой, состоящих из строчных букв и цифр, с точками или дефисами внутри сегмента. Примеры: `spiritagent.system-message-demo`, `yourteam.some-extension`. `packageName` и `extensionId` должны быть уникальными в репозитории.
+`extensionId` должен содержать как минимум два сегмента, разделенных точкой, состоящих из строчных букв и цифр, с точками или дефисами внутри сегмента. Примеры: `spirit.system-message-demo`, `yourteam.some-extension`. `packageName` и `extensionId` должны быть уникальными в репозитории.
 
 ### `entry.json`
 

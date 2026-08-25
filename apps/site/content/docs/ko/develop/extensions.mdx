@@ -29,7 +29,7 @@ example-extension/
 {
   "name": "@example/spirit-extension",
   "version": "0.1.0",
-  "description": "Example Spirit Agent extension.",
+  "description": "Example Spirit extension.",
   "author": { "name": "example" },
   "homepage": "https://example.com/spirit-extension",
   "main": "dist/index.js",
@@ -352,7 +352,7 @@ export function activate(ctx) {
 
 또한 `name`, `version`, `description`, `author`, `repository`, `homepage`, `keywords`, 그리고 선택적으로 `spiritExtension.icon`을 읽습니다. `icon`을 설정한 경우 해당 파일을 게시된 패키지에 포함하세요. `spiritExtension` 객체가 없으면 해당 버전의 레지스트리 빌드가 실패합니다.
 
-공식 예시: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spiritagent.system-message-demo`).
+공식 예시: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spirit.system-message-demo`).
 
 ### 2. 패키지 나열
 
@@ -368,7 +368,7 @@ export function activate(ctx) {
 - `registry/catalog.json`
 - `registry/extensions/<extension-id>/detail.json`
 
-`extensionId`에는 최소한 두 개의 점으로 구분된 세그먼트가 필요하며, 소문자와 숫자만 사용하고 각 세그먼트 내부에는 점이나 하이픈을 사용할 수 있습니다. 예: `spiritagent.system-message-demo`, `yourteam.some-extension`. `packageName`과 `extensionId`는 저장소 내에서 고유해야 합니다.
+`extensionId`에는 최소한 두 개의 점으로 구분된 세그먼트가 필요하며, 소문자와 숫자만 사용하고 각 세그먼트 내부에는 점이나 하이픈을 사용할 수 있습니다. 예: `spirit.system-message-demo`, `yourteam.some-extension`. `packageName`과 `extensionId`는 저장소 내에서 고유해야 합니다.
 
 ### `entry.json`
 

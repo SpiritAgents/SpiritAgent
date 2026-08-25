@@ -3,9 +3,9 @@ title: ACP
 description: Implemented for ACP clients. The download page does not list a channel yet.
 ---
 
-ACP (Agent Client Protocol) is implemented as `spirit-agent-acp` (`@spiritagent/acp-server`). It speaks stdio ndJSON, shares the same data directory and keyring as Desktop and the CLI, and can run `--setup` to connect a provider.
+ACP (Agent Client Protocol) is implemented as `spirit-acp` (`@spiritagent/acp-server`). It speaks stdio ndJSON, shares the same data directory and keyring as Desktop and the CLI, and can run `--setup` to connect a provider.
 
-**The public download page does not list ACP yet.** Spirit Agent is still preparing to list it on the ACP registry.
+**The public download page does not list ACP yet.** Spirit is still preparing to list it on the ACP registry.
 
 ## Temporary setup before listing
 
@@ -19,7 +19,7 @@ Or point an ACP client (for example Zed) at the stdio entry:
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -28,7 +28,7 @@ Or point an ACP client (for example Zed) at the stdio entry:
 
 Authenticate with **Run in terminal**, finish `--setup`, then `authenticate` and `session/new`.
 
-| Variable               | Role                                                                        |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `SPIRIT_ACP_WORKSPACE` | Workspace root (defaults to the client cwd)                                 |
-| `SPIRIT_ACP_DATA_DIR`  | Data directory; otherwise `SPIRIT_AGENT_DATA_DIR` then the platform default |
+| Variable               | Role                                                                  |
+| ---------------------- | --------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | Workspace root (defaults to the client cwd)                           |
+| `SPIRIT_ACP_DATA_DIR`  | Data directory; otherwise `SPIRIT_DATA_DIR` then the platform default |

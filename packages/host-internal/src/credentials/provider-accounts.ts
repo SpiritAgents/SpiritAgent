@@ -1,6 +1,6 @@
 import type { ModelProviderId } from "../model-provider-presets.js";
 
-export const KEYRING_SERVICE = "SpiritAgent";
+export const KEYRING_SERVICE = "Spirit";
 export const KEYRING_GLOBAL_ACCOUNT = "openai_api_key";
 
 /**

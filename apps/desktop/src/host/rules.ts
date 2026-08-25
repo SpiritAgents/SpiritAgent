@@ -11,7 +11,7 @@ import {
 import i18n from "../lib/i18n-host.js";
 import type { CreateRuleRequest, DeleteRuleRequest, DesktopSkillRootKind } from "../types.js";
 import { desktopInstructionPaths, parseSkillRootKind } from "./skills.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 export function resolveRuleFilePath(
   instructionPaths: ReturnType<typeof resolveInstructionPaths>,
@@ -112,7 +112,7 @@ export function buildRuleDiscoveryContext(
 ): InstructionDiscoveryContext {
   return {
     workspaceRoot,
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     includeWorkspaceScope: workspaceBinding === "project",
   };
 }

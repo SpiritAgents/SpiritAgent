@@ -19,6 +19,6 @@
 **/.source/
 **/.vercel/
 **/out/
-**/.spirit-agent/
+**/.spirit-data/
 **/.env
 !**/.env.example

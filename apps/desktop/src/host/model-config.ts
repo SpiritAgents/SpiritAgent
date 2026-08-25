@@ -373,7 +373,7 @@ export function buildPrimaryTransportConfig(input: {
     | "supportsThinkingSwitch"
   >;
 }): LlmTransportConfig {
-  const spiritAgentMode = input.agentMode ?? "agent";
+  const agentMode = input.agentMode ?? "agent";
   const transportKind = resolveDesktopTransportKind(input.profile);
 
   if (input.profile?.provider === "amazon-bedrock" && isBedrockMantleOpenAiModel(input.model)) {
@@ -414,7 +414,7 @@ export function buildPrimaryTransportConfig(input: {
       model: input.model,
       baseUrl: mantleBaseUrl,
       workspaceRoot: input.workspaceRoot,
-      spiritAgentMode,
+      agentMode,
       responsesProvider: "openai",
       llmVendor: "openai",
       ...(input.profile?.capabilities
@@ -471,7 +471,7 @@ export function buildPrimaryTransportConfig(input: {
       model: input.model,
       baseUrl: input.baseUrl,
       workspaceRoot: input.workspaceRoot,
-      spiritAgentMode,
+      agentMode,
       ...(responsesProvider ? { responsesProvider } : {}),
       ...(llmVendor ? { llmVendor } : {}),
       ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),

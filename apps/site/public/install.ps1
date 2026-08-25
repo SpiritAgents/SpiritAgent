@@ -1,4 +1,4 @@
-# Spirit Agent CLI installer for Windows.
+# Spirit CLI installer for Windows.
 # Usage: irm https://spirit.fast/install.ps1 | iex
 #
 # Optional environment variables:
@@ -30,13 +30,13 @@ function Get-SpiritArch {
     return 'x64'
   }
   if ($arch -eq 'x86') {
-    throw '32-bit Windows (x86) is not supported. Spirit Agent CLI requires 64-bit Windows (x64 or ARM64).'
+    throw '32-bit Windows (x86) is not supported. Spirit CLI requires 64-bit Windows (x64 or ARM64).'
   }
   throw "Unsupported architecture: $arch (supported: x64, arm64)"
 }
 
 function Get-CliArchiveName([string]$Arch) {
-  return "SpiritAgent-CLI-windows-$Arch.zip"
+  return "Spirit-CLI-windows-$Arch.zip"
 }
 
 function Get-CliDownloadUrl([string]$Arch, [string]$Version) {
@@ -115,7 +115,7 @@ $cliDir = Join-Path $SpiritHome 'cli'
 $currentDir = Join-Path $cliDir 'current'
 $stagingDir = Join-Path $cliDir 'current.next'
 
-Write-Info 'Installing Spirit Agent CLI'
+Write-Info 'Installing Spirit CLI'
 Write-Info "Platform: windows/$arch"
 Write-Info "SPIRIT_HOME: $SpiritHome"
 Write-Info "Version: $SpiritVersion"

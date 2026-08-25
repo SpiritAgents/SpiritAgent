@@ -245,14 +245,14 @@ test("completed turn result reuses the finalized assistant text row instead of d
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
-    { kind: "assistant-chunk", text: "Hi! I'm the Spirit Agent." },
+    { kind: "assistant-chunk", text: "Hi! I'm the Spirit." },
     { kind: "assistant-thinking-segment-finalized", text: "The user greeted me." },
     { kind: "assistant-response-completed" },
   ]);
 
   harness.setCompletedTurnResult({
     kind: "completed",
-    assistantText: "Hi! I'm the Spirit Agent.",
+    assistantText: "Hi! I'm the Spirit.",
     toolExecutions: [],
   });
   harness.orchestrator.consumeCompletedTurnResult();
@@ -260,7 +260,7 @@ test("completed turn result reuses the finalized assistant text row instead of d
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
     "user",
     "thinking:The user greeted me.",
-    "assistant:Hi! I'm the Spirit Agent.",
+    "assistant:Hi! I'm the Spirit.",
   ]);
 });
 

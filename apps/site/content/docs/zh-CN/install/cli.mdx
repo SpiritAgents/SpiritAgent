@@ -1,6 +1,6 @@
 ---
 title: 安装 CLI
-description: 用安装脚本、SPIRIT_HOME 与 SPIRIT_VERSION 安装 Spirit Agent 命令行。
+description: 用安装脚本、SPIRIT_HOME 与 SPIRIT_VERSION 安装 Spirit 命令行。
 ---
 
 CLI 是终端宿主，带 TUI 和非交互 `-p` 模式。它与 [Desktop](./desktop.mdx) 连同一套本机守护进程。
@@ -29,14 +29,14 @@ spirit --version
 
 ## 装到哪里
 
-安装根目录 **不是** Spirit Agent 的数据目录。
+安装根目录 **不是** Spirit 的数据目录。
 
-|                        | 默认                                                                                                                        | 覆盖                    |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI 二进制             | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| 会话、配置、钥匙串指针 | macOS：`~/Library/Application Support/SpiritAgent` · Windows：`%APPDATA%\SpiritAgent` · Linux：`~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+|                        | 默认                                                                                                         | 覆盖              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI 二进制             | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
+| 会话、配置、钥匙串指针 | macOS：`~/Library/Application Support/Spirit` · Windows：`%APPDATA%\Spirit` · Linux：`~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
-在 Unix 上，脚本把 `$SPIRIT_HOME/bin/spirit` 链到 `$SPIRIT_HOME/cli/current/bin/spirit`，并在 `~/.profile`、`~/.bashrc`、`~/.zshrc` 追加 `export PATH="$SPIRIT_HOME/bin:$PATH"`（标记 `# spirit-agent cli`）。
+在 Unix 上，脚本把 `$SPIRIT_HOME/bin/spirit` 链到 `$SPIRIT_HOME/cli/current/bin/spirit`，并在 `~/.profile`、`~/.bashrc`、`~/.zshrc` 追加 `export PATH="$SPIRIT_HOME/bin:$PATH"`（标记 `# spirit cli`）。
 
 ## 钉版本或换镜像
 
@@ -50,7 +50,7 @@ spirit --version
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
 ```
 
-也可以从[下载页](/zh-CN/download)或 [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) 自行下载 CLI 压缩包再解压。
+也可以从[下载页](/zh-CN/download)或 [GitHub Releases](https://github.com/SpiritAgents/spirit/releases/latest) 自行下载 CLI 压缩包再解压。
 
 ## 第一次运行
 

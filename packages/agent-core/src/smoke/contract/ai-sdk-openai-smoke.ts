@@ -45,7 +45,7 @@ async function main(): Promise<void> {
                     type: "function",
                     function: {
                       name: "demo_lookup",
-                      arguments: '{"query":"Spirit Agent migration"}',
+                      arguments: '{"query":"Spirit migration"}',
                     },
                   },
                 ],
@@ -107,7 +107,7 @@ async function main(): Promise<void> {
 
   const initialState = startOpenAiToolAgentState(
     [],
-    'First call demo_lookup exactly once with query "Spirit Agent migration". After the tool result is returned, answer with exactly "AI_SDK_OK" and nothing else.',
+    'First call demo_lookup exactly once with query "Spirit migration". After the tool result is returned, answer with exactly "AI_SDK_OK" and nothing else.',
     process.cwd(),
     [],
     [],
@@ -132,7 +132,7 @@ async function main(): Promise<void> {
   const resumedState = appendOpenAiToolResultMessage(
     firstRound.result.state,
     firstCall.id,
-    '{"query":"Spirit Agent migration","result":"transport bridge ok"}',
+    '{"query":"Spirit migration","result":"transport bridge ok"}',
   );
 
   const secondRound = await transport.startToolAgentRound(config, resumedState, tools);

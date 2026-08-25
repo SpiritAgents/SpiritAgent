@@ -9,7 +9,7 @@ export {
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
   buildMcpCatalogSystemMessage,
-  buildSpiritAgentCoreHostPrompt,
+  buildSpiritCoreHostPrompt,
   buildToolAgentHostPrompt,
   appendOpenAiToolResultMessage as appendLlmToolResultMessage,
   appendOpenAiToolResultMessages as appendLlmToolResultMessages,

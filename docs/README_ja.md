@@ -1,6 +1,6 @@
 <div align="center">
 
-# Spirit Agent
+# Spirit
 
 生産性を何倍にも引き上げるオープンソース AI エージェント。
 
@@ -10,13 +10,13 @@
 
 [English](../README.md)
 
-<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+<img width="1552" height="1032" alt="Spirit Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
 </div>
 
 ## 概要
 
-Spirit Agent は、実プロジェクトのルートをコンテキストに動作する**ツール利用型コーディングエージェント**です。同一ランタイムがネイティブ Desktop ワークスペースとターミナル UI の両方を駆動します。共有ロジックは TypeScript パッケージにあり、各ホストがプラットフォーム固有の実行・探索・ UI を追加します。
+Spirit は、実プロジェクトのルートをコンテキストに動作する**ツール利用型コーディングエージェント**です。同一ランタイムがネイティブ Desktop ワークスペースとターミナル UI の両方を駆動します。共有ロジックは TypeScript パッケージにあり、各ホストがプラットフォーム固有の実行・探索・ UI を追加します。
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -116,12 +116,12 @@ pnpm run dev:site
 
 ## CLI
 
-<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+<img width="1014" height="744" alt="Spirit CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-[Rust CLI](../apps/cli)（`spirit-agent`）はターミナル優先ホストで、オプションの Ratatui UI を提供。WebSocket 経由で共有 Spirit Server デーモンに接続し、スクリプト、SSH セッション、最小環境に適します。
+[Rust CLI](../apps/cli)（`spirit`）はターミナル優先ホストで、オプションの Ratatui UI を提供。WebSocket 経由で共有 Spirit Server デーモンに接続し、スクリプト、SSH セッション、最小環境に適します。
 
 ```bash
-pnpm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit
 ```
 
 ## Server
@@ -133,13 +133,13 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 - **Bearer 認証** — ホームレベルのトークンは `{spiritDataDir}/server.token`（パーミッション 0600）に保存され、`Authorization` ヘッダーまたは `?token=` クエリで受け付けます。`spirit-server rotate-token` でローテーションすると新規接続に適用されます。
 - **新規依存ゼロ** — WebSocket 層（RFC 6455）はパッケージ内に実装されています。
 
-**CLI と Desktop のエージェント実行は daemon-only** です（[Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) を参照）。Desktop Web Host クライアントは Desktop ホストから認証済みスナップショットを受け取り、エージェント実行はデーモン内で行われます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
+**CLI と Desktop のエージェント実行は daemon-only** です（[Epic #274](https://github.com/SpiritAgents/spirit/issues/274) を参照）。Desktop Web Host クライアントは Desktop ホストから認証済みスナップショットを受け取り、エージェント実行はデーモン内で行われます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
 
 ## ACP Server
 
-[`packages/acp-server`](../packages/acp-server) は薄いアダプターで、stdio / ndJSON 経由で Spirit Agent を [Agent Client Protocol](https://agentclientprotocol.com)（ACP）サーバーとして公開します。**Zed** や **JetBrains Junie** など ACP 対応エディタが、カスタム統合なしで Spirit Agent を AI コーディングエンジンとして接続できます。
+[`packages/acp-server`](../packages/acp-server) は薄いアダプターで、stdio / ndJSON 経由で Spirit を [Agent Client Protocol](https://agentclientprotocol.com)（ACP）サーバーとして公開します。**Zed** や **JetBrains Junie** など ACP 対応エディタが、カスタム統合なしで Spirit を AI コーディングエンジンとして接続できます。
 
-- **Terminal Auth** — `initialize` が `type: "terminal"` 認証を告知；クライアントは `spirit-agent-acp --setup` で対話的 provider 設定後、`authenticate` → `session/new`。
+- **Terminal Auth** — `initialize` が `type: "terminal"` 認証を告知；クライアントは `spirit-acp --setup` で対話的 provider 設定後、`authenticate` → `session/new`。
 - **プロトコル面** — `initialize`、`authenticate`、`logout`、`session/new`、`session/prompt`、`session/cancel`、`session/close`、`session/set_mode`。
 - **ストリーミングと思考** — リアルタイム `agent_message_chunk` と推論出力向け `agent_thought_chunk`。
 - **権限ブリッジ** — ACP `request_permission` によるツール承認（allow-once / always-allow / reject）。
@@ -153,7 +153,7 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -172,7 +172,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | 環境変数               | 必須   | 説明                                                                                      |
 | ---------------------- | ------ | ----------------------------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | いいえ | ワークスペースルート（デフォルト：クライアント `cwd`）                                    |
-| `SPIRIT_ACP_DATA_DIR`  | いいえ | Spirit データディレクトリ（デフォルト：`%APPDATA%/SpiritAgent` または `~/.spirit-agent`） |
+| `SPIRIT_ACP_DATA_DIR`  | いいえ | Spirit データディレクトリ（デフォルト：`%APPDATA%/Spirit` または `~/.spirit-data`） |
 
 ## 開発
 

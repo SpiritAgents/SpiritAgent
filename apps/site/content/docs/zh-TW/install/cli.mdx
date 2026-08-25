@@ -1,6 +1,6 @@
 ---
 title: 安裝 CLI
-description: 使用安裝腳本、SPIRIT_HOME 和 SPIRIT_VERSION 安裝 Spirit Agent CLI。
+description: 使用安裝腳本、SPIRIT_HOME 和 SPIRIT_VERSION 安裝 Spirit CLI。
 ---
 
 CLI 是一個終端主機，具有 TUI 和非互動式 `-p` 模式。它與 [Desktop](./desktop.mdx) 使用相同的本地守護程序。
@@ -29,14 +29,14 @@ spirit --version
 
 ## 安裝位置
 
-安裝根目錄**不是** Spirit Agent 資料目錄。
+安裝根目錄**不是** Spirit 資料目錄。
 
-|                            | 預設                                                                                                                        | 覆寫                    |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI 二進位檔               | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| 工作階段、設定、金鑰環指標 | macOS：`~/Library/Application Support/SpiritAgent` · Windows：`%APPDATA%\SpiritAgent` · Linux：`~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+|                            | 預設                                                                                                         | 覆寫              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI 二進位檔               | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
+| 工作階段、設定、金鑰環指標 | macOS：`~/Library/Application Support/Spirit` · Windows：`%APPDATA%\Spirit` · Linux：`~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
-在 Unix 上，腳本會建立 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 的符號連結，並將 `export PATH="$SPIRIT_HOME/bin:$PATH"` 附加到 `~/.profile`、`~/.bashrc` 和 `~/.zshrc`（標記為 `# spirit-agent cli`）。
+在 Unix 上，腳本會建立 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 的符號連結，並將 `export PATH="$SPIRIT_HOME/bin:$PATH"` 附加到 `~/.profile`、`~/.bashrc` 和 `~/.zshrc`（標記為 `# spirit cli`）。
 
 ## 固定版本或鏡像
 
@@ -50,7 +50,7 @@ spirit --version
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
 ```
 
-您也可以從[下載頁面](/en-US/download)或 [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) 下載 CLI 壓縮檔，然後自行解壓縮。
+您也可以從[下載頁面](/en-US/download)或 [GitHub Releases](https://github.com/SpiritAgents/spirit/releases/latest) 下載 CLI 壓縮檔，然後自行解壓縮。
 
 ## 首次執行
 

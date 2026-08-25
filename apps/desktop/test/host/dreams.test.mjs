@@ -11,7 +11,7 @@ import {
   buildDreamCollectorPlanMetadata,
   buildDreamContextText,
 } from "../../dist-electron/src/host/dreams.js";
-import { spiritAgentDataDir } from "../../dist-electron/src/host/storage.js";
+import { spiritDataDir } from "../../dist-electron/src/host/storage.js";
 import { DesktopToolExecutor } from "../../dist-electron/src/host/tool-executor.js";
 
 function functionToolNames(definitions) {
@@ -27,16 +27,16 @@ function functionToolNames(definitions) {
 }
 
 test("desktop dreams context is injected into the main agent system message", async () => {
-  const tempRoot = await mkdtemp(path.join(tmpdir(), "spirit-agent-dreams-"));
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "spirit-dreams-"));
   const previousAppData = process.env.APPDATA;
 
   try {
     process.env.APPDATA = tempRoot;
 
     const dreamStore = createHostDreamStore({
-      spiritDataDir: spiritAgentDataDir(),
+      spiritDataDir: spiritDataDir(),
       scope: {
-        workspaceRoot: "D:/SpiritAgent",
+        workspaceRoot: "D:/Spirit",
         gitBranch: "main",
       },
     });
@@ -49,7 +49,7 @@ test("desktop dreams context is injected into the main agent system message", as
     });
 
     const dreamsContextText = await buildDreamContextText({
-      workspaceRoot: "D:/SpiritAgent",
+      workspaceRoot: "D:/Spirit",
       gitBranch: "main",
     });
 
@@ -98,7 +98,7 @@ test("desktop dreams context is injected into the main agent system message", as
 
 test("dream collector plan metadata is always normalized to agent mode", () => {
   const collectorPlanMetadata = buildDreamCollectorPlanMetadata({
-    path: "D:/SpiritAgent/plans/demo-plan.md",
+    path: "D:/Spirit/plans/demo-plan.md",
     exists: true,
     agentMode: "plan",
     planMode: true,
@@ -111,7 +111,7 @@ test("dream collector plan metadata is always normalized to agent mode", () => {
 test("desktop runtime exposes Dreams as read-only tools", async () => {
   const toolExecutor = new DesktopToolExecutor(process.cwd(), {
     dreamScope: {
-      workspaceRoot: "D:/SpiritAgent",
+      workspaceRoot: "D:/Spirit",
       gitBranch: "main",
     },
     dreamToolMode: "read-only",

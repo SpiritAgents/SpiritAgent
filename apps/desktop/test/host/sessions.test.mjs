@@ -18,7 +18,7 @@ test("restoreStoredSessionState hydrates messages from v2 timeline", () => {
   });
 
   const restored = restoreStoredSessionState({
-    filePath: "D:/SpiritAgent/test-session.json",
+    filePath: "D:/Spirit/test-session.json",
     loaded,
   });
 
@@ -37,7 +37,7 @@ test("buildStoredDesktopSession and restoreStoredSessionState roundtrip contextU
   const stored = buildStoredDesktopSession({
     llmHistory: [],
     sessionDisplayName: "hello",
-    workspaceRoot: "D:/SpiritAgent",
+    workspaceRoot: "D:/Spirit",
     desktopMessageTimeline: timeline.snapshot(),
     rewind: createDesktopRewindMetadata(),
     loopEnabled: false,
@@ -50,7 +50,7 @@ test("buildStoredDesktopSession and restoreStoredSessionState roundtrip contextU
   assert.equal("messages" in stored, false);
 
   const restored = restoreStoredSessionState({
-    filePath: "D:/SpiritAgent/test-session.json",
+    filePath: "D:/Spirit/test-session.json",
     loaded: stored,
   });
 

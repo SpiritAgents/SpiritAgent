@@ -1,4 +1,4 @@
-export const THEME_STORAGE_KEY = "spirit-agent-desktop-theme" as const;
+export const THEME_STORAGE_KEY = "spirit-desktop-theme" as const;
 
 export type ThemePreference = "system" | "light" | "dark";
 

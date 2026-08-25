@@ -14,7 +14,7 @@ import type {
   PreviewModelCatalogPricing,
 } from "../types.js";
 
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 /** Model catalog cache TTL (24h). */
 export const MODEL_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -41,7 +41,7 @@ export function modelCatalogApiKeyFingerprint(apiKey: string): string {
 const CACHE_DIR_NAME = "model-catalog-cache";
 
 function modelCatalogCacheDir(): string {
-  return path.join(spiritAgentDataDir(), CACHE_DIR_NAME);
+  return path.join(spiritDataDir(), CACHE_DIR_NAME);
 }
 
 function modelCatalogCacheKey(

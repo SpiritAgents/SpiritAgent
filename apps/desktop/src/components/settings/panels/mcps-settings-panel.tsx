@@ -43,7 +43,7 @@ function mcpEndpointPlaceholder(type: DesktopMcpTransportType): string {
 
 function mcpMetadataPlaceholder(type: DesktopMcpTransportType): string {
   return type === "http"
-    ? "Authorization: Bearer ${env:GITHUB_TOKEN}; X-Client: spirit-agent"
+    ? "Authorization: Bearer ${env:GITHUB_TOKEN}; X-Client: spirit"
     : "PATH=C:/Tools; NODE_ENV=production";
 }
 

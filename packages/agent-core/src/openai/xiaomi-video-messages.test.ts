@@ -13,7 +13,7 @@ const MINIMAL_MP4_HEADER = Buffer.from([
 ]);
 
 test("resolveXiaomiVideoUrlsInOpenAiMessages embeds local video as data URL base64", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-xiaomi-video-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-xiaomi-video-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   try {
     await writeFile(videoPath, MINIMAL_MP4_HEADER);

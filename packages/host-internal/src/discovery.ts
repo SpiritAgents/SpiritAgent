@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 
-import { normalizeSpiritAgentMode, type SpiritAgentMode } from "@spiritagent/agent-core";
+import { normalizeAgentMode, type AgentMode } from "@spiritagent/agent-core";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -114,7 +114,7 @@ export interface HostSkillDiscoveryResult {
 export interface HostPlanMetadata {
   path: string;
   exists: boolean;
-  agentMode: SpiritAgentMode;
+  agentMode: AgentMode;
   /** @deprecated Use agentMode === 'plan'. */
   planMode: boolean;
 }
@@ -138,7 +138,7 @@ export interface HostInstructionDiscovery<Rule, Skill, PlanMetadata> {
 }
 
 export interface LoadHostInstructionMetadataOptions {
-  agentMode?: SpiritAgentMode;
+  agentMode?: AgentMode;
   /** @deprecated Use agentMode. */
   planMode?: boolean;
   useApplyPatchFileTools?: boolean;
@@ -164,7 +164,7 @@ export async function loadHostInstructionMetadata(
   return {
     rules,
     skills,
-    planMetadata: planMetadataSnapshot(context, normalizeSpiritAgentMode(options), {
+    planMetadata: planMetadataSnapshot(context, normalizeAgentMode(options), {
       useApplyPatchFileTools: options.useApplyPatchFileTools === true,
       ...(options.activePlanPath?.trim() ? { activePlanPath: options.activePlanPath.trim() } : {}),
     }),
@@ -348,7 +348,7 @@ export interface PlanMetadataSnapshotOptions {
 
 export function planMetadataSnapshot(
   _context: InstructionDiscoveryContext,
-  agentModeInput: SpiritAgentMode | boolean,
+  agentModeInput: AgentMode | boolean,
   options?: PlanMetadataSnapshotOptions,
 ): HostPlanMetadata {
   const agentMode =

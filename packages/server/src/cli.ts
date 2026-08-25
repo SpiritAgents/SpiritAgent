@@ -3,7 +3,7 @@ import { rotateToken, tokenFilePath } from "./auth-token.js";
 import { isProcessAlive, listInstances } from "./instance-registry.js";
 import { startDaemon } from "./daemon.js";
 
-const USAGE = `spirit-server — Spirit Agent shared daemon
+const USAGE = `spirit-server — Spirit shared daemon
 
 Usage:
   spirit-server [serve] [--hostname <host>] [--port <port>]

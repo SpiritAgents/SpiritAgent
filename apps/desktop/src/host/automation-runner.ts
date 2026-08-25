@@ -28,7 +28,7 @@ import {
   chatsDirPath,
   resolveApiKeyForConfigModel,
   saveStoredSession,
-  spiritAgentDataDir,
+  spiritDataDir,
   type DesktopConfigFile,
 } from "./storage.js";
 import type { DesktopHostRuntime } from "./runtime.js";
@@ -52,7 +52,7 @@ export async function runDesktopAutomationOnce(
   input: RunDesktopAutomationOnceInput,
   deps: RunDesktopAutomationOnceDeps,
 ): Promise<HostAutomationRun | undefined> {
-  const store = createHostAutomationStore(spiritAgentDataDir());
+  const store = createHostAutomationStore(spiritDataDir());
   const activeRun = await store.getActiveRun(input.definition.id);
   if (activeRun) {
     return undefined;

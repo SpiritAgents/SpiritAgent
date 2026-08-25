@@ -21,7 +21,7 @@ export function spiritGlassLogoMaskStyle() {
 
 /**
  * spiritagent.app footer CTA glass brand logo (no shimmer).
- * Fill/stroke colors come from consumer-provided --spirit-agent-* CSS variables.
+ * Fill/stroke colors come from consumer-provided --spirit-* CSS variables.
  */
 export function SpiritGlassLogo({ width = 72, className, ...props }) {
   const uid = useId().replace(/:/g, "");
@@ -46,22 +46,22 @@ export function SpiritGlassLogo({ width = 72, className, ...props }) {
     >
       <defs>
         <linearGradient id={fillId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="var(--spirit-agent-fill-strong)" />
-          <stop offset="40%" stopColor="var(--spirit-agent-fill-mid)" />
-          <stop offset="100%" stopColor="var(--spirit-agent-fill-tail)" />
+          <stop offset="0%" stopColor="var(--spirit-fill-strong)" />
+          <stop offset="40%" stopColor="var(--spirit-fill-mid)" />
+          <stop offset="100%" stopColor="var(--spirit-fill-tail)" />
         </linearGradient>
 
         <linearGradient id={innerId} x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="var(--spirit-agent-inner-strong)" />
+          <stop offset="0%" stopColor="var(--spirit-inner-strong)" />
           <stop offset="45%" stopColor="rgba(255,255,255,0)" />
-          <stop offset="100%" stopColor="var(--spirit-agent-inner-tail)" />
+          <stop offset="100%" stopColor="var(--spirit-inner-tail)" />
         </linearGradient>
 
         <linearGradient id={fresnelId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="var(--spirit-agent-fresnel-a)" />
-          <stop offset="25%" stopColor="var(--spirit-agent-fresnel-b)" />
-          <stop offset="55%" stopColor="var(--spirit-agent-fresnel-c)" />
-          <stop offset="100%" stopColor="var(--spirit-agent-fresnel-d)" />
+          <stop offset="0%" stopColor="var(--spirit-fresnel-a)" />
+          <stop offset="25%" stopColor="var(--spirit-fresnel-b)" />
+          <stop offset="55%" stopColor="var(--spirit-fresnel-c)" />
+          <stop offset="100%" stopColor="var(--spirit-fresnel-d)" />
         </linearGradient>
 
         <filter id={blurSmId} x="-20%" y="-20%" width="140%" height="140%">
@@ -87,7 +87,7 @@ export function SpiritGlassLogo({ width = 72, className, ...props }) {
       <path
         d={SPIRIT_GLASS_LOGO_PATH}
         fill="none"
-        stroke="var(--spirit-agent-stroke-main)"
+        stroke="var(--spirit-stroke-main)"
         strokeWidth="0.5"
         strokeLinejoin="round"
       />
@@ -95,7 +95,7 @@ export function SpiritGlassLogo({ width = 72, className, ...props }) {
       <path
         d={SPIRIT_GLASS_LOGO_PATH}
         fill="none"
-        stroke="var(--spirit-agent-stroke-soft)"
+        stroke="var(--spirit-stroke-soft)"
         strokeWidth="1.5"
         filter={`url(#${blurSmId})`}
         opacity="0.5"

@@ -1,10 +1,10 @@
 # El mismo agente, en todo tu trabajo.
 
-Descarga Spirit Agent para escritorio, instala la CLI o espera por ACP.
+Descarga Spirit para escritorio, instala la CLI o espera por ACP.
 
 ## Escritorio
 
-[Descargar](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Descargar](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 
@@ -18,4 +18,4 @@ curl -fsSL https://spirit.fast/install | bash
 
 Próximamente™
 
-[Spirit Agent](/es) · [Descargar](/es/download)
+[Spirit](/es) · [Descargar](/es/download)

@@ -42,7 +42,7 @@ test("llmMessageToOpenAiMessage serializes video parts as video_url with local p
 });
 
 test("resolveMoonshotVideoUrlsInOpenAiMessages uploads local video_url references", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-moonshot-resolve-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-moonshot-resolve-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   try {
     await writeFile(videoPath, MINIMAL_MP4_HEADER);
@@ -84,7 +84,7 @@ test("resolveMoonshotVideoUrlsInOpenAiMessages uploads local video_url reference
 });
 
 test("resolveXiaomiVideoUrlsInOpenAiMessages embeds local video as data URL base64", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-xiaomi-resolve-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-xiaomi-resolve-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   try {
     await writeFile(videoPath, MINIMAL_MP4_HEADER);

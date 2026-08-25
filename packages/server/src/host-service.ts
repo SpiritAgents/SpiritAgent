@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { JsonValue } from "@spiritagent/agent-core";
-import type { SpiritAgentMode } from "@spiritagent/agent-core";
+import type { AgentMode } from "@spiritagent/agent-core";
 import {
   createHostExtensionManager,
   createHostExtensionMarketplace,
@@ -80,7 +80,7 @@ export class HostService {
         const context = this.context(params);
         const agentMode = (
           typeof params["agentMode"] === "string" ? params["agentMode"] : "agent"
-        ) as SpiritAgentMode;
+        ) as AgentMode;
         const activePlanPath =
           typeof params["activePlanPath"] === "string" ? params["activePlanPath"] : undefined;
         return {
@@ -101,7 +101,7 @@ export class HostService {
         const context = this.context(params);
         const agentMode = (
           typeof params["agentMode"] === "string" ? params["agentMode"] : "agent"
-        ) as SpiritAgentMode;
+        ) as AgentMode;
         const activePlanPath =
           typeof params["activePlanPath"] === "string" ? params["activePlanPath"] : undefined;
         return planMetadataSnapshot(

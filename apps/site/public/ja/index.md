@@ -2,7 +2,7 @@
 
 ワークスペースに基づき、実際のツールを備え、あなたと一緒に計画、実行、出荷する準備ができています。
 
-[ダウンロード](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[ダウンロード](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Spirit はホスト型スタックに縛り付けません。任意のプロバ�
 
 ## Spirit を試す。
 
-[ダウンロード](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[ダウンロード](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Spirit はホスト型スタックに縛り付けません。任意のプロバ�
 ### リソース
 
 - [ドキュメント](/ja/docs)
-- [チェンジログ](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [チェンジログ](https://github.com/SpiritAgents/spirit/releases)
 - [オープンソースライセンス](/notice.md)
 
-© 2026 Spirit Agent. オープンソース AI エージェント。
+© 2026 Spirit. オープンソース AI エージェント。
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

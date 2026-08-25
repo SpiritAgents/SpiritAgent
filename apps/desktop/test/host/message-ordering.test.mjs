@@ -100,11 +100,11 @@ test("toolCallSummaryCopyForRequest: web_search reads query from argumentsJson",
   assert.deepEqual(
     toolCallSummaryCopyForRequest("web_search", {
       name: "web_search",
-      argumentsJson: '{"query":"What is the Spirit Agent project"}',
+      argumentsJson: '{"query":"What is the Spirit project"}',
     }),
     {
       headline: toolHeadline("tool.webSearch"),
-      headlineDetail: "What is the Spirit Agent project",
+      headlineDetail: "What is the Spirit project",
     },
   );
 });
@@ -113,11 +113,11 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
   assert.deepEqual(
     toolCallSummaryCopyForResponsesBuiltInTool("web_search", "preview", {
       headline: toolHeadline("tool.webSearch"),
-      headlineDetail: "What is the Spirit Agent project",
+      headlineDetail: "What is the Spirit project",
     }),
     {
       headline: toolHeadline("tool.webSearch", "preview"),
-      headlineDetail: "What is the Spirit Agent project",
+      headlineDetail: "What is the Spirit project",
     },
   );
   assert.deepEqual(
@@ -126,13 +126,13 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
       "succeeded",
       { headline: toolHeadline("tool.webSearch") },
       {
-        headlineDetail: "What is the Spirit Agent project",
-        inputExcerpt: "What is the Spirit Agent project",
+        headlineDetail: "What is the Spirit project",
+        inputExcerpt: "What is the Spirit project",
       },
     ),
     {
       headline: toolHeadline("tool.webSearch", "succeeded"),
-      headlineDetail: "What is the Spirit Agent project",
+      headlineDetail: "What is the Spirit project",
     },
   );
 });
@@ -430,7 +430,7 @@ test("toolCallSummaryForPhase: read_file splits headline and path detail", () =>
 test("toolCallSummaryForPhase: read_file tool-output-archives uses tool output detail", () => {
   assert.deepEqual(
     toolCallSummaryForPhase("succeeded", "read_file", {
-      path: "C:/Users/pc/AppData/Roaming/SpiritAgent/tool-output-archives/sess/call_1.txt",
+      path: "C:/Users/pc/AppData/Roaming/Spirit/tool-output-archives/sess/call_1.txt",
       offset: 1,
       limit: 5,
     }),
@@ -792,7 +792,7 @@ test("assistantTurnHasPlainPrefixMessage treats trailing whitespace as the same 
     {
       id: 4,
       role: "assistant",
-      content: "Spirit Agent is an open-source AI coding agent monorepo.",
+      content: "Spirit is an open-source AI coding agent monorepo.",
       pending: false,
     },
   ];
@@ -801,7 +801,7 @@ test("assistantTurnHasPlainPrefixMessage treats trailing whitespace as the same 
   assert.equal(
     assistantTurnHasPlainPrefixMessage(
       messages,
-      "Spirit Agent is an open-source AI coding agent monorepo.",
+      "Spirit is an open-source AI coding agent monorepo.",
     ),
     true,
   );

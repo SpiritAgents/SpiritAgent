@@ -15,19 +15,19 @@ const CLI_MONO_STYLE = {
   fontVariantLigatures: "none",
 } as const;
 
-/** Exact SPIRITAGENT block logo from SpiritAgent apps/cli `SPIRIT_LOGO_LINES`. */
+/** Exact SPIRIT block logo from apps/cli `SPIRIT_LOGO_LINES`. */
 const SPIRIT_LOGO_LINES = [
-  " ███████╗██████╗ ██╗██████╗ ██╗████████╗ █████╗  ██████╗ ███████╗███╗   ██╗████████╗",
-  " ██╔════╝██╔══██╗██║██╔══██╗██║╚══██╔══╝██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝",
-  " ███████╗██████╔╝██║██████╔╝██║   ██║   ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   ",
-  " ╚════██║██╔═══╝ ██║██╔══██╗██║   ██║   ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   ",
-  " ███████║██║     ██║██║  ██║██║   ██║   ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   ",
-  " ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ",
+  " ███████╗██████╗ ██╗██████╗ ██╗████████╗",
+  " ██╔════╝██╔══██╗██║██╔══██╗██║╚══██╔══╝",
+  " ███████╗██████╔╝██║██████╔╝██║   ██║   ",
+  " ╚════██║██╔═══╝ ██║██╔══██╗██║   ██║   ",
+  " ███████║██║     ██║██║  ██║██║   ██║   ",
+  " ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝   ╚═╝   ",
 ] as const;
 
 const LOGO_INNER_WIDTH = Math.max(
   ...SPIRIT_LOGO_LINES.map((line) => line.length),
-  " Spirit Agent ".length,
+  " Spirit ".length,
 );
 
 function buildCliTitledBox(title: string, bodyLines: string[], innerWidth: number): string {
@@ -151,8 +151,8 @@ function ScaledCliColumn({ scale, children, className }: ScaledCliColumnProps) {
 
 /**
  * One CLI column at natural glyph size, then uniformly scaled to the preview shell.
- * Shell is w-[128%] of the trio cell → outer overflow provides the right-edge crop
- * ("SPIRITAGE" framing). Flex pins the Agent input to the bottom of the shell.
+ * Shell is w-[128%] of the trio cell → outer overflow provides the right-edge crop.
+ * Flex pins the Agent input to the bottom of the shell.
  * Like a real CLI, the input box always spans the shell's full width: when the shell
  * is wider than the fixed logo column, the input reflows to fill it (logo never does).
  */

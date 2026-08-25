@@ -63,7 +63,7 @@ async function main(): Promise<void> {
                   id: "",
                   type: "function",
                   function: {
-                    arguments: ':"Spirit Agent streaming"}',
+                    arguments: ':"Spirit streaming"}',
                   },
                 },
               ],

@@ -811,7 +811,7 @@ mod tests {
 
     #[test]
     fn generate_image_result_block_shows_generated_path() {
-        let output = "[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png\nmime_type: image/png\nmodel: image-model";
+        let output = "[generated image]\npath: C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png\nmime_type: image/png\nmodel: image-model";
         let block = build_tool_result_block(
             &ToolUiRequest::new("generate_image", json!({ "prompt": "draw a picture" })),
             "generate_image",
@@ -826,13 +826,13 @@ mod tests {
         assert_eq!(
             block.detail_lines,
             vec![
-                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png")
+                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png")
                     .into_owned()
             ]
         );
         assert_eq!(
             block.image_paths,
-            vec!["C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"]
+            vec!["C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png"]
         );
         assert!(
             block

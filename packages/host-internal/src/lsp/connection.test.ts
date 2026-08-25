@@ -8,7 +8,7 @@ test.skipIf(process.platform !== "win32")(
   () => {
     const options = buildLanguageServerSpawnOptions(
       "D:\\Cache\\.npm-global\\pyright-langserver.cmd",
-      "D:\\SpiritAgent",
+      "D:\\Spirit",
     );
     assert.equal(options.shell, true);
   },

@@ -351,7 +351,7 @@ test("finish_task notice clears duplicate completion text instead of adding a se
   const timeline = createTimeline();
   timeline.beginUserTurn("Hello there");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("Hello! I am Spirit Agent, how can I help you?");
+  timeline.appendAssistantTextChunk("Hello! I am Spirit, how can I help you?");
   timeline.completeActiveAssistantSegment();
 
   timeline.beginAssistantSegment("continuation");
@@ -364,7 +364,7 @@ test("finish_task notice clears duplicate completion text instead of adding a se
 
   assert.deepEqual(timeline.toMessages().map(rowToken), [
     "user:Hello there",
-    "assistant:Hello! I am Spirit Agent, how can I help you?",
+    "assistant:Hello! I am Spirit, how can I help you?",
     "finish:Task completed: greeted the user, no follow-up task.",
   ]);
 });
@@ -563,7 +563,7 @@ test("hydrating flat messages preserves a later thinking segment after a tool ro
       {
         id: 5,
         role: "assistant",
-        content: "README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
+        content: "README.md content (lines 1-11): Spirit is an open-source AI Agent.",
         pending: false,
       },
     ],
@@ -582,7 +582,7 @@ test("hydrating flat messages preserves a later thinking segment after a tool ro
     "thinking:Need to inspect README.md first.",
     "tool:call-1:succeeded",
     "thinking:I have read README.md and can summarize it.",
-    "assistant:README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
+    "assistant:README.md content (lines 1-11): Spirit is an open-source AI Agent.",
   ]);
 });
 
@@ -678,7 +678,7 @@ test("timeline snapshot round-trip preserves segment boundaries across restore",
   timeline.beginAssistantSegment("continuation");
   timeline.finalizeThinkingSegment("I have read README.md and can summarize it.");
   timeline.materializeCompletedAssistantText(
-    "README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
+    "README.md content (lines 1-11): Spirit is an open-source AI Agent.",
   );
 
   const snapshot = timeline.snapshot();
@@ -697,7 +697,7 @@ test("timeline snapshot round-trip preserves segment boundaries across restore",
     "thinking:Need to inspect README.md first.",
     "tool:call-1:succeeded",
     "thinking:I have read README.md and can summarize it.",
-    "assistant:README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
+    "assistant:README.md content (lines 1-11): Spirit is an open-source AI Agent.",
   ]);
 });
 

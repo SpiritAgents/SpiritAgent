@@ -2,7 +2,7 @@
 applyTo: "apps/cli/**/*.rs"
 ---
 
-# Spirit Agent — Rust CLI (`apps/cli`)
+# Spirit — Rust CLI (`apps/cli`)
 
 ## Code Style
 
@@ -19,7 +19,7 @@ applyTo: "apps/cli/**/*.rs"
 
 ## Build and Test
 
-- Run Rust commands from the repo root by default: `cargo check -p spirit-agent`, `cargo test -p spirit-agent` (or `cd apps/cli` first and use the local `cargo check`).
+- Run Rust commands from the repo root by default: `cargo check -p spirit`, `cargo test -p spirit` (or `cd apps/cli` first and use the local `cargo check`).
 - This repo enables the `tui` feature by default; when touching UI code, make sure your changes do not break the default build path.
 - After modifying the CLI, runtime, or toolchain, prefer running `cargo test` once, with `cargo check` for verification when needed.
 

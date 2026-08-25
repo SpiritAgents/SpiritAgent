@@ -1,10 +1,10 @@
 # 同一个智能体，贯穿你的所有工作。
 
-下载 Spirit Agent 桌面版、安装 CLI，或关注 ACP。
+下载 Spirit 桌面版、安装 CLI，或关注 ACP。
 
 ## Desktop
 
-[下载](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[下载](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 
@@ -18,4 +18,4 @@ curl -fsSL https://spirit.fast/install | bash
 
 即将推出
 
-[Spirit Agent](/zh-CN) · [下载](/zh-CN/download)
+[Spirit](/zh-CN) · [下载](/zh-CN/download)

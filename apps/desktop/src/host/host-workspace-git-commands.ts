@@ -70,7 +70,7 @@ import {
   removeRecentWorkspaceRoot,
   normalizeWebHostConfig,
   saveConfig,
-  spiritAgentDataDir,
+  spiritDataDir,
   type DesktopConfigFile,
 } from "./storage.js";
 import type { EphemeralSessionRecord } from "./sessions.js";
@@ -312,7 +312,7 @@ export async function listDreamsOverviewCommand(
     }
 
     const dreamStore = createHostDreamStore({
-      spiritDataDir: spiritAgentDataDir(),
+      spiritDataDir: spiritDataDir(),
       scope: {
         workspaceRoot: state.workspaceRoot,
         gitBranch,

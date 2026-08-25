@@ -19,7 +19,7 @@ test("sideChatPaneSessionPath normalizes pane id", () => {
 });
 
 test("isProvisionalSessionPath detects provisional chat paths only", () => {
-  const provisionalPath = provisionalNewSessionPath("D:/SpiritAgent/repo");
+  const provisionalPath = provisionalNewSessionPath("D:/Spirit/repo");
   assert.equal(isProvisionalSessionPath(provisionalPath), true);
   assert.equal(
     isProvisionalSessionPath(path.join(path.dirname(provisionalPath), "..", "chat-1.json")),

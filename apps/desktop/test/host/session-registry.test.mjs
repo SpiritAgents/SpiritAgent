@@ -13,11 +13,11 @@ import {
 test("SessionRegistry tracks active bundle after upsertFromRestored", () => {
   const registry = new SessionRegistry();
   const restored = restoreStoredSessionState({
-    filePath: "D:/SpiritAgent/chats/test-session.json",
+    filePath: "D:/Spirit/chats/test-session.json",
     loaded: buildV2StoredSession({ userContent: "hello" }),
   });
 
-  const bundle = registry.upsertFromRestored("D:/SpiritAgent/repo", restored, (messages) => ({
+  const bundle = registry.upsertFromRestored("D:/Spirit/repo", restored, (messages) => ({
     toMessages: () => messages,
     snapshot: () => [],
   }));
@@ -29,8 +29,8 @@ test("SessionRegistry tracks active bundle after upsertFromRestored", () => {
 
 test("SessionRegistry resetActive clears conversation state", () => {
   const registry = new SessionRegistry();
-  registry.ensureDraft("D:/SpiritAgent/repo");
-  registry.resetActive("D:/SpiritAgent/repo");
+  registry.ensureDraft("D:/Spirit/repo");
+  registry.resetActive("D:/Spirit/repo");
   const bundle = registry.requireActive();
   assert.equal(bundle.messages.length, 0);
   assert.equal(bundle.activeSession, undefined);
@@ -38,7 +38,7 @@ test("SessionRegistry resetActive clears conversation state", () => {
 
 test("SessionRegistry beginNewActive assigns a stable workspace provisional path", () => {
   const registry = new SessionRegistry();
-  const workspaceRoot = "D:/SpiritAgent/repo";
+  const workspaceRoot = "D:/Spirit/repo";
   const bundle = registry.beginNewActive(workspaceRoot);
 
   assert.equal(bundle.activeSession?.displayName, "New conversation");
@@ -51,10 +51,10 @@ test("SessionRegistry beginNewActive assigns a stable workspace provisional path
 
 test("SessionRegistry activateExisting sets active session id", () => {
   const registry = new SessionRegistry();
-  const workspaceRoot = "D:/SpiritAgent/repo";
+  const workspaceRoot = "D:/Spirit/repo";
   const first = registry.beginNewActive(workspaceRoot);
   first.messages.push({ id: 1, role: "user", content: "hello", pending: false });
-  const sessionPath = path.resolve("D:/SpiritAgent/chats/chat-active.json");
+  const sessionPath = path.resolve("D:/Spirit/chats/chat-active.json");
   first.activeSession = {
     filePath: sessionPath,
     displayName: "chat-active",
@@ -72,7 +72,7 @@ test("SessionRegistry activateExisting sets active session id", () => {
 
 test("SessionRegistry beginNewActive reuses the same provisional slot per workspace", () => {
   const registry = new SessionRegistry();
-  const workspaceRoot = "D:/SpiritAgent/repo";
+  const workspaceRoot = "D:/Spirit/repo";
   const first = registry.beginNewActive(workspaceRoot);
   const second = registry.beginNewActive(workspaceRoot);
 
@@ -82,9 +82,9 @@ test("SessionRegistry beginNewActive reuses the same provisional slot per worksp
 
 test("SessionRegistry rekeyBundle moves draft map entry to session file path", () => {
   const registry = new SessionRegistry();
-  const bundle = registry.beginNewActive("D:/SpiritAgent/repo");
+  const bundle = registry.beginNewActive("D:/Spirit/repo");
   const draftKey = bundle.id;
-  const sessionPath = path.resolve("D:/SpiritAgent/chats/chat-rekey.json");
+  const sessionPath = path.resolve("D:/Spirit/chats/chat-rekey.json");
   bundle.activeSession = {
     filePath: sessionPath,
     displayName: "live",
@@ -102,8 +102,8 @@ test("SessionRegistry rekeyBundle moves draft map entry to session file path", (
 
 test("SessionRegistry upsertFromRestored finds bundle after rekey and keeps runtime", () => {
   const registry = new SessionRegistry();
-  const sessionPath = path.resolve("D:/SpiritAgent/chats/chat-runtime-keep.json");
-  const bundle = registry.beginNewActive("D:/SpiritAgent/repo");
+  const sessionPath = path.resolve("D:/Spirit/chats/chat-runtime-keep.json");
+  const bundle = registry.beginNewActive("D:/Spirit/repo");
   bundle.activeSession = { filePath: sessionPath, displayName: "keep", kind: "stored" };
   bundle.messages.push({ id: 1, role: "user", content: "live", pending: false });
   bundle.runtime = { isBusy: () => true };
@@ -113,7 +113,7 @@ test("SessionRegistry upsertFromRestored finds bundle after rekey and keeps runt
     filePath: sessionPath,
     loaded: buildV2StoredSession({ userContent: "stale" }),
   });
-  registry.upsertFromRestored("D:/SpiritAgent/repo", stale, (messages) => ({
+  registry.upsertFromRestored("D:/Spirit/repo", stale, (messages) => ({
     toMessages: () => messages,
     snapshot: () => [],
   }));
@@ -125,12 +125,12 @@ test("SessionRegistry upsertFromRestored finds bundle after rekey and keeps runt
 
 test("SessionRegistry upsertFromRestored does not clobber bundle with attached runtime", () => {
   const registry = new SessionRegistry();
-  const filePath = "D:/SpiritAgent/chats/session-live.json";
+  const filePath = "D:/Spirit/chats/session-live.json";
   const live = restoreStoredSessionState({
     filePath,
     loaded: buildV2StoredSession({ userContent: "live turn" }),
   });
-  const bundle = registry.upsertFromRestored("D:/SpiritAgent/repo", live, (messages) => ({
+  const bundle = registry.upsertFromRestored("D:/Spirit/repo", live, (messages) => ({
     toMessages: () => messages,
     snapshot: () => [],
   }));
@@ -146,7 +146,7 @@ test("SessionRegistry upsertFromRestored does not clobber bundle with attached r
     filePath,
     loaded: buildV2StoredSession({ userContent: "stale from disk" }),
   });
-  registry.upsertFromRestored("D:/SpiritAgent/repo", staleDisk, (messages) => ({
+  registry.upsertFromRestored("D:/Spirit/repo", staleDisk, (messages) => ({
     toMessages: () => messages,
     snapshot: () => [{ turn: 1, segments: [] }],
   }));
@@ -161,18 +161,18 @@ test("SessionRegistry upsertFromRestored does not clobber bundle with attached r
 
 test("SessionRegistry beginNewActive keeps prior bundle in memory", () => {
   const registry = new SessionRegistry();
-  const filePath = "D:/SpiritAgent/chats/session-a.json";
+  const filePath = "D:/Spirit/chats/session-a.json";
   const restored = restoreStoredSessionState({
     filePath,
     loaded: buildV2StoredSession({ userContent: "keep me" }),
   });
-  registry.upsertFromRestored("D:/SpiritAgent/repo", restored, (messages) => ({
+  registry.upsertFromRestored("D:/Spirit/repo", restored, (messages) => ({
     toMessages: () => messages,
     snapshot: () => [],
   }));
 
   const first = registry.requireActive();
-  const second = registry.beginNewActive("D:/SpiritAgent/repo");
+  const second = registry.beginNewActive("D:/Spirit/repo");
   assert.notEqual(second.id, first.id);
   assert.equal(registry.get(first.id)?.messages[0]?.content, "keep me");
   assert.equal(registry.activeSessionId(), second.id);

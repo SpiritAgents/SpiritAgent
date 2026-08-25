@@ -61,7 +61,7 @@
         "planPath": "plans/renovacao-hero-pagina-inicial.md",
         "generatingImage": "Gerando imagem…"
       },
-      "manualAssistantResponse": "Baixe o Spirit Agent.",
+      "manualAssistantResponse": "Baixe o Spirit.",
       "demoUserPrompt": "Revise a página inicial atual e me diga o que melhorar em seguida.",
       "demoThinkingText": "Verificando a estrutura atual do Hero.\nProcurando as lacunas mais visíveis na superfície de conversação.\nPreparando um breve resumo de implementação.",
       "demoAssistantResponse": "Aqui está o próximo passo que eu tomaria.\n\n- Substitua a área de conversação vazia por uma demonstração real de streaming.\n- Mantenha a janela Hero interrompível para que os visitantes possam assumir o controle imediatamente.\n- Reutilize os estilos de mensagem do Desktop para Pensamento e chamadas de ferramenta, em vez de aproximá-los.",
@@ -195,7 +195,7 @@
       "exited": "[saiu, código {{exitCode}}]"
     },
     "previews": {
-      "siteReadmeDescription": "Pré-visualização do site de marketing para o produto de desktop do Spirit Agent.",
+      "siteReadmeDescription": "Pré-visualização do site de marketing para o produto de desktop do Spirit.",
       "desktopReadmeDescription": "Shell Electron e renderizador web para o produto de desktop.",
       "generatedWorkspaceDescription": "Espaço de trabalho simulado gerado para a pré-visualização da página de destino {{label}}.",
       "generatedWorkspaceOverview": "Raiz do espaço de trabalho: {{root}}\\n\\nEste espaço de trabalho simulado mantém a aba de arquivos interativa sem montar o runtime completo do desktop.",
@@ -207,17 +207,17 @@
     }
   },
   "meta": {
-    "title": "Spirit Agent",
-    "description": "Spirit Agent é um agente de IA open source que você executa com seus modelos, suas chaves e seu fluxo de trabalho."
+    "title": "Spirit",
+    "description": "Spirit é um agente de IA open source que você executa com seus modelos, suas chaves e seu fluxo de trabalho."
   },
   "common": {
-    "brand": "Spirit Agent",
+    "brand": "Spirit",
     "download": "Baixar",
     "downloadForPlatform": "Baixar para {{platform}}"
   },
   "hero": {
-    "sectionAria": "Spirit Agent",
-    "homeAria": "Página inicial do Spirit Agent",
+    "sectionAria": "Spirit",
+    "homeAria": "Página inicial do Spirit",
     "primaryNavAria": "Principal",
     "nav": {
       "features": "Recursos",
@@ -238,8 +238,8 @@
     "headline": "Um agente de IA open source\nfeito para multiplicar sua produtividade."
   },
   "download": {
-    "metaTitle": "Baixar Spirit Agent",
-    "metaDescription": "Baixe o Spirit Agent para Desktop, instale o CLI ou fique atento para ACP.",
+    "metaTitle": "Baixar Spirit",
+    "metaDescription": "Baixe o Spirit para Desktop, instale o CLI ou fique atento para ACP.",
     "title": "O mesmo agente, em todo o seu trabalho.",
     "sectionAria": "O mesmo agente, em todo o seu trabalho.",
     "desktop": "Desktop",
@@ -249,7 +249,7 @@
     "copied": "Copiado",
     "comingSoonJoke": "Em breve™",
     "listingInProgress": "Listando…",
-    "cliLogoTitle": "Spirit Agent",
+    "cliLogoTitle": "Spirit",
     "cliUserMessage": "Revise auth.ts e corrija o bug de renovação de sessão.",
     "cliAssistantMessage": "Vou inspecionar auth.ts e corrigir a verificação de sessão que falha.",
     "cliUserFollowUp": "Adicione também um teste de regressão.",
@@ -257,11 +257,11 @@
     "cliFooter": "Agente  |  Aprovação Padrão  |  Loop Desligado          gpt-5"
   },
   "landing": {
-    "sectionAria": "Conteúdo do Spirit Agent",
+    "sectionAria": "Conteúdo do Spirit",
     "featureHeading": ["Seus modelos.", "Suas chaves.", "Seu controle."],
     "featureBody": "O Spirit não te prende a uma stack hospedada. Traga uma chave de qualquer provedor, adicione uma vez e use o mesmo fluxo de agente em todos eles.",
     "agent": {
-      "sectionAria": "Produtividade do Spirit Agent",
+      "sectionAria": "Produtividade do Spirit",
       "featureHeading": [
         "Planeje com contexto.",
         "Execute com ferramentas.",
@@ -269,7 +269,7 @@
       ],
       "featureBody": "O Spirit planeja antes de agir: gere mockups, escreva planos estruturados e execute contra seu repositório sem sair do shell desktop."
     },
-    "ctaSectionAria": "Baixar Spirit Agent",
+    "ctaSectionAria": "Baixar Spirit",
     "ctaTitle": "Experimente o Spirit.",
     "trio": {
       "sectionAria": "Prévias de recursos",
@@ -308,12 +308,12 @@
     "linkHome": "Início",
     "changelog": "Changelog",
     "openSourceLicenses": "Licenças de código aberto",
-    "copyrightLine": "© {{year}} Spirit Agent. Agente de IA de código aberto."
+    "copyrightLine": "© {{year}} Spirit. Agente de IA de código aberto."
   },
   "docs": {
     "title": "Documentação",
-    "metaTitle": "Documentação do Spirit Agent",
-    "metaDescription": "Instale o Spirit Agent, conecte um provedor com sua própria chave e execute o mesmo agente no Desktop e na CLI.",
+    "metaTitle": "Documentação do Spirit",
+    "metaDescription": "Instale o Spirit, conecte um provedor com sua própria chave e execute o mesmo agente no Desktop e na CLI.",
     "comingSoon": "Em breve.",
     "sectionAria": "Documentação",
     "search": "Buscar",

@@ -1,6 +1,6 @@
 ---
 title: CLI 설치
-description: 설치 스크립트, SPIRIT_HOME 및 SPIRIT_VERSION으로 Spirit Agent CLI를 설치합니다.
+description: 설치 스크립트, SPIRIT_HOME 및 SPIRIT_VERSION으로 Spirit CLI를 설치합니다.
 ---
 
 CLI는 TUI와 비대화형 `-p` 모드를 갖춘 터미널 호스트입니다. [Desktop](./desktop.mdx)과 동일한 로컬 데몬과 통신합니다.
@@ -29,14 +29,14 @@ spirit --version
 
 ## 설치 위치
 
-설치 루트는 Spirit Agent 데이터 디렉터리가 **아닙니다**.
+설치 루트는 Spirit 데이터 디렉터리가 **아닙니다**.
 
-|                         | 기본값                                                                                                                      | 재정의                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI 바이너리            | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| 세션, 구성, 키링 포인터 | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+|                         | 기본값                                                                                                       | 재정의            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI 바이너리            | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
+| 세션, 구성, 키링 포인터 | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
-Unix에서 스크립트는 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 링크를 만들고 `~/.profile`, `~/.bashrc`, `~/.zshrc`에 `export PATH="$SPIRIT_HOME/bin:$PATH"`를 추가합니다 (마커 `# spirit-agent cli`).
+Unix에서 스크립트는 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 링크를 만들고 `~/.profile`, `~/.bashrc`, `~/.zshrc`에 `export PATH="$SPIRIT_HOME/bin:$PATH"`를 추가합니다 (마커 `# spirit cli`).
 
 ## 버전 또는 미러 고정
 
@@ -50,7 +50,7 @@ Unix에서 스크립트는 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/curre
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
 ```
 
-[다운로드 페이지](/en-US/download)나 [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest)에서 CLI 아카이브를 직접 다운로드하여 압축을 풀 수도 있습니다.
+[다운로드 페이지](/en-US/download)나 [GitHub Releases](https://github.com/SpiritAgents/spirit/releases/latest)에서 CLI 아카이브를 직접 다운로드하여 압축을 풀 수도 있습니다.
 
 ## 첫 실행
 

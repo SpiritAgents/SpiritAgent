@@ -63,7 +63,7 @@ test("copy and brand a fixture app without mutating the stock bundle", async () 
       adHocSign: false,
     });
 
-    assert.equal(path.basename(destApp), "Spirit Agent.app");
+    assert.equal(path.basename(destApp), "Spirit.app");
     const plistPath = path.join(destApp, "Contents", "Info.plist");
     assert.equal(readPlistString(plistPath, "CFBundleName"), DEV_PRODUCT_NAME);
     assert.equal(readPlistString(plistPath, "CFBundleDisplayName"), DEV_PRODUCT_NAME);

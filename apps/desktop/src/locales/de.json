@@ -94,7 +94,7 @@
     "custom": "Benutzerdefiniert"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Weiter",
     "back": "Zurück",
     "done": "Fertig",
@@ -244,7 +244,7 @@
     "envVars": "Umgebungsvariablen",
     "command": "Befehl",
     "mcpUrlExample": "z.B. https://example.com/mcp",
-    "mcpCommandExample": "z.B. npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent",
+    "mcpCommandExample": "z.B. npx -y @modelcontextprotocol/server-filesystem D:/Spirit",
     "mcpCountsSummary": "{{tools}} Tools · {{resources}} Ressourcen · {{prompts}} Prompts gefunden",
     "active": "Aktiv",
     "failed": "Fehlgeschlagen",
@@ -535,10 +535,10 @@
     "recent": "Zuletzt verwendet",
     "more": "Mehr",
     "newSession": "Neue Sitzung",
-    "openApp": "Spirit Agent öffnen",
+    "openApp": "Spirit öffnen",
     "settings": "Einstellungen",
-    "quitApp": "Spirit Agent beenden",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Spirit beenden",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "Datei",
@@ -567,7 +567,7 @@
     "close": "Schließen",
     "zoom": "Zoom",
     "bringAllToFront": "Alle in den Vordergrund",
-    "about": "Über Spirit Agent",
+    "about": "Über Spirit",
     "settings": "Einstellungen",
     "services": "Dienste",
     "hideApp": "{{appName}} ausblenden",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Automatische Worktree-Namensgenerierung fehlgeschlagen: Modell hat kein JSON-Objekt zurückgegeben."
   },
   "crashPage": {
-    "title": "Spirit Agent ist abgestürzt",
+    "title": "Spirit ist abgestürzt",
     "description": "Der Renderer-Prozess wurde unerwartet beendet. Das folgende Protokoll kann bei der Diagnose der Ursache helfen.",
     "reportOnGitHub": "Auf GitHub melden"
   },

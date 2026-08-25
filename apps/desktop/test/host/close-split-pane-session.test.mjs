@@ -13,7 +13,7 @@ function createCloseSplitPaneContext(registry, visiblePaths) {
   return {
     runSerialized: async (work) => work(),
     ensureInitialized: async () => {},
-    requireState: () => ({ workspaceRoot: "D:/SpiritAgent/repo" }),
+    requireState: () => ({ workspaceRoot: "D:/Spirit/repo" }),
     sessionRegistry: () => registry,
     buildSnapshot: () => {
       registry.requireActive();
@@ -30,9 +30,9 @@ function createCloseSplitPaneContext(registry, visiblePaths) {
 
 test("closeSplitPaneSessionCommand repoints active to remaining pane when closing empty split active session", async () => {
   const registry = new SessionRegistry();
-  const workspaceRoot = "D:/SpiritAgent/repo";
+  const workspaceRoot = "D:/Spirit/repo";
   const splitPath = path.resolve(splitPaneSessionPath("pane-a"));
-  const chatPath = path.resolve("D:/SpiritAgent/chats/chat-1.json");
+  const chatPath = path.resolve("D:/Spirit/chats/chat-1.json");
 
   const splitBundle = registry.beginSplitPaneSession(workspaceRoot, "pane-a");
   registry.activateExisting(splitBundle);

@@ -1,4 +1,4 @@
-export const UI_LAYOUT_SCALE_STORAGE_KEY = "spirit-agent-desktop-ui-layout-scale" as const;
+export const UI_LAYOUT_SCALE_STORAGE_KEY = "spirit-desktop-ui-layout-scale" as const;
 export const SPIRIT_UI_LAYOUT_SCALE_VAR = "--spirit-ui-layout-scale" as const;
 export const UI_LAYOUT_SCALE_ROOT_ID = "spirit-ui-scale-root" as const;
 export const UI_LAYOUT_SCALED_BODY_CLASS = "spirit-ui-layout-scaled" as const;

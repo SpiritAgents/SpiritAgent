@@ -6,7 +6,7 @@ import {
   DEFAULT_VIDEO_GENERATION_DURATION,
   type JsonObject,
   type JsonValue,
-  type SpiritAgentMode,
+  type AgentMode,
 } from "./ports.js";
 import { throwUnknownToolError, toolNamesFromDefinitions } from "./unknown-tool-error.js";
 
@@ -56,11 +56,11 @@ export const ASK_MODE_EXCLUDED_HOST_TOOL_NAMES = new Set<string>([
   "create_plan",
 ]);
 
-export function isAskAgentMode(agentMode: SpiritAgentMode): boolean {
+export function isAskAgentMode(agentMode: AgentMode): boolean {
   return agentMode === "ask";
 }
 
-export function isPlanAgentMode(agentMode: SpiritAgentMode): boolean {
+export function isPlanAgentMode(agentMode: AgentMode): boolean {
   return agentMode === "plan";
 }
 
@@ -167,7 +167,7 @@ function applyHostToolDescriptionHint(
 
 export function filterHostToolDefinitionsForAgentMode(
   definitions: JsonValue,
-  agentMode: SpiritAgentMode,
+  agentMode: AgentMode,
 ): JsonValue {
   if (!isAskAgentMode(agentMode) || !Array.isArray(definitions)) {
     return definitions;
@@ -181,7 +181,7 @@ export function filterHostToolDefinitionsForAgentMode(
 /** Reject edit-class host tools in Ask mode (model may still call them from prior turns). */
 export function assertAgentModeAllowsHostTool(
   toolName: string,
-  agentMode: SpiritAgentMode,
+  agentMode: AgentMode,
   availableToolDefinitions: JsonValue,
 ): void {
   const trimmed = toolName.trim();
@@ -528,7 +528,7 @@ export function buildBuiltinHostToolDefinitions(
 
 export function filterContributedToolDefinitionsForAgentMode(
   definitions: readonly ContributedHostToolDefinition[],
-  agentMode: SpiritAgentMode,
+  agentMode: AgentMode,
 ): ContributedHostToolDefinition[] {
   return definitions.filter((definition) => {
     if (
@@ -548,7 +548,7 @@ export function filterContributedToolDefinitionsForAgentMode(
 /** Reject contributed host tools hidden for the current agent mode (e.g. prior-turn calls in Ask). */
 export function assertContributedHostToolAllowed(
   toolName: string,
-  agentMode: SpiritAgentMode,
+  agentMode: AgentMode,
   contributedDefinitions: readonly ContributedHostToolDefinition[],
   availableToolDefinitions: JsonValue,
 ): void {
@@ -819,7 +819,7 @@ export function buildDreamCollectorSystemMessage(): string {
   return wrapLlmContextBlock(
     LLM_CONTEXT_TAGS.dream_collector,
     [
-      "You are the dream collector for Spirit Agent.",
+      "You are the dream collector for Spirit.",
       "Dreams are short-lived summaries of recent work movement, not permanent memory.",
       "The host has already scoped this collection run to one workspace and one Git branch.",
       "First call dream_list to inspect existing dreams in this scope.",

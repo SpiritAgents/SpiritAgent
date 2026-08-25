@@ -7,7 +7,7 @@ import {
   streamdownSanitizeSchema,
 } from "../../src/lib/markdown-streamdown-plugins.ts";
 
-test("streamdown sanitize schema keeps spirit-agent img src", () => {
+test("streamdown sanitize schema keeps spirit img src", () => {
   const ref = "spirit://generated/image/1780701216913-a51ab479-f44c-4efc-86f8-a0a2fe4f85e7.png";
   const tree = {
     type: "root",
@@ -30,7 +30,7 @@ test("streamdown sanitize schema keeps spirit-agent img src", () => {
   assert.equal(img.properties.src, ref);
 });
 
-test("streamdown sanitize schema keeps spirit-agent video src", () => {
+test("streamdown sanitize schema keeps spirit video src", () => {
   const ref = "spirit://generated/video/example.mp4";
   const tree = {
     type: "root",
@@ -89,7 +89,7 @@ test("streamdown sanitize schema keeps relative image src", () => {
   assert.equal(safe.children[0].properties.src, ref);
 });
 
-test("default github schema strips spirit-agent src", () => {
+test("default github schema strips spirit src", () => {
   const ref = "spirit://generated/image/test.png";
   const tree = {
     type: "root",

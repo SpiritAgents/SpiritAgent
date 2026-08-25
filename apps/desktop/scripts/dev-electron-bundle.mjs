@@ -12,9 +12,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 /** User-facing product name; must match electron-builder `productName`. */
-export const DEV_PRODUCT_NAME = "Spirit Agent";
-/** Distinct from the packaged app id `ai.spiritagent.desktop`. */
-export const DEV_BUNDLE_ID = "ai.spiritagent.desktop.dev";
+export const DEV_PRODUCT_NAME = "Spirit";
+/** Distinct from the packaged app id `fast.spirit.desktop`. */
+export const DEV_BUNDLE_ID = "fast.spirit.desktop.dev";
 export const DEV_APP_DIR_NAME = `${DEV_PRODUCT_NAME}.app`;
 export const DEV_ELECTRON_DIR_NAME = ".dev-electron";
 export const STOCK_ICON_FILE = "electron.icns";

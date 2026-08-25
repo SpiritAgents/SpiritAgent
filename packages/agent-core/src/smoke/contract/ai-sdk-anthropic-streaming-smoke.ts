@@ -19,7 +19,7 @@ const ANTHROPIC_REASONING_SIGNATURE = "sig_anthropic_stream_1";
 const ANTHROPIC_TOOL_USE_ID = "toolu_anthropic_stream_1";
 const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = "[HOST_CONTEXT_FROM_SYSTEM]";
 const ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE =
-  "[WORKSPACE_FILE]\npath: D:\\SpiritAgent\\README.md\nchars: 11";
+  "[WORKSPACE_FILE]\npath: D:\\Spirit\\README.md\nchars: 11";
 
 async function main(): Promise<void> {
   let requestCount = 0;
@@ -117,7 +117,7 @@ async function main(): Promise<void> {
               index: 1,
               delta: {
                 type: "input_json_delta",
-                partial_json: '{"query":"Spirit Agent anthropic"}',
+                partial_json: '{"query":"Spirit anthropic"}',
               },
             },
             {
@@ -275,7 +275,7 @@ async function main(): Promise<void> {
   const resumedState = appendToolResultMessage(
     firstCompletion.result.state,
     ANTHROPIC_TOOL_USE_ID,
-    '{"query":"Spirit Agent anthropic","result":"anthropic bridge ok"}',
+    '{"query":"Spirit anthropic","result":"anthropic bridge ok"}',
   );
 
   const secondStarted = await transport.startToolAgentRoundStreaming(
@@ -420,7 +420,7 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
         },
         {
           role: "assistant",
-          content: "Hello! I am Spirit Agent.",
+          content: "Hello! I am Spirit.",
         },
         {
           role: "system",

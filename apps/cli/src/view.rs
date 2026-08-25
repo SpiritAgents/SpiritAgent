@@ -34,7 +34,7 @@ pub enum MainInputMode {
 }
 
 impl MainInputMode {
-    pub fn spirit_agent_mode(self) -> &'static str {
+    pub fn agent_mode(self) -> &'static str {
         match self {
             Self::Agent => "agent",
             Self::Plan => "plan",

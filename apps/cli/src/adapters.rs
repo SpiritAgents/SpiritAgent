@@ -101,7 +101,7 @@ impl SecretStore for KeyringSecretStore {
 
     fn load_model_api_key(&self, model_name: &str) -> Result<Option<String>> {
         let account = format!("model::{}", model_name);
-        let entry = keyring::Entry::new("SpiritAgent", &account)
+        let entry = keyring::Entry::new("Spirit", &account)
             .with_context(|| format!("Failed to initialize keyring entry: {}", account))?;
         match entry.get_password() {
             Ok(value) if !value.trim().is_empty() => Ok(Some(value)),

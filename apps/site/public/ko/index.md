@@ -2,7 +2,7 @@
 
 작업 공간에 기반하며 실제 도구를 갖추고, 여러분과 함께 계획·실행·출시할 준비가 되어 있습니다.
 
-[다운로드](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[다운로드](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Spirit은 호스팅 스택에 당신을 가두지 않습니다. 어떤 제공업
 
 ## Spirit을 사용해 보세요.
 
-[다운로드](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[다운로드](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Spirit은 호스팅 스택에 당신을 가두지 않습니다. 어떤 제공업
 ### 리소스
 
 - [문서](/ko/docs)
-- [변경 로그](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [변경 로그](https://github.com/SpiritAgents/spirit/releases)
 - [오픈소스 라이선스](/notice.md)
 
-© 2026 Spirit Agent. 오픈소스 AI 에이전트.
+© 2026 Spirit. 오픈소스 AI 에이전트.
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

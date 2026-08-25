@@ -54,11 +54,8 @@ test("buildJumpListLaunchArgs uses protocol only when packaged", () => {
 
 test("buildJumpListLaunchArgs quotes dev main script and protocol url", () => {
   assert.equal(
-    buildJumpListLaunchArgs(
-      "spirit://new-session",
-      "D:\\SpiritAgent\\apps\\desktop\\electron\\main.ts",
-    ),
-    '"D:\\SpiritAgent\\apps\\desktop\\electron\\main.ts" "spirit://new-session"',
+    buildJumpListLaunchArgs("spirit://new-session", "D:\\Spirit\\apps\\desktop\\electron\\main.ts"),
+    '"D:\\Spirit\\apps\\desktop\\electron\\main.ts" "spirit://new-session"',
   );
 });
 

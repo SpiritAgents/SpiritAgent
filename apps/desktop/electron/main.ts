@@ -97,9 +97,9 @@ const gotSpiritSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSpiritSingleInstanceLock) {
   app.quit();
 } else {
-  const spiritDataDir = resolveConfiguredSpiritAgentDataDir();
+  const spiritDataDir = resolveConfiguredSpiritDataDir();
   app.setPath("userData", spiritDataDir);
-  setSpiritAgentDataDirOverride(spiritDataDir);
+  setSpiritDataDirOverride(spiritDataDir);
 
   app.on("second-instance", (_event, argv) => {
     const hadProtocol = handleSpiritNotificationProtocolArgv(argv);
@@ -159,9 +159,9 @@ import {
 import {
   configFilePath,
   loadConfig,
-  resolveConfiguredSpiritAgentDataDir,
-  setSpiritAgentDataDirOverride,
-  spiritAgentDataDir,
+  resolveConfiguredSpiritDataDir,
+  setSpiritDataDirOverride,
+  spiritDataDir,
   type DesktopWebHostConfigFile,
 } from "../src/host/storage.js";
 import { setDesktopWebHostRuntimeStatus } from "../src/host/web-host-state.js";
@@ -186,7 +186,10 @@ import { resolveRendererDistPath } from "./renderer-dist.js";
 import { registerGitHubDeviceLoginRunners } from "../src/host/github-oauth-bridge.js";
 import { listSystemFonts } from "./system-fonts.js";
 import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
-import { configureElectronProductDisplayName } from "./product-display-name.js";
+import {
+  configureElectronProductDisplayName,
+  PRODUCT_DISPLAY_NAME,
+} from "./product-display-name.js";
 import i18nHost from "../src/lib/i18n-host.js";
 import { resolveUiLocalePreference } from "../src/lib/ui-locale.js";
 
@@ -683,7 +686,7 @@ function nativeTranslucencyActive(translucencyEnabled: boolean): boolean {
 }
 
 /** Keep in sync with `THEME_STORAGE_KEY` in `src/lib/theme.ts` */
-const RENDERER_THEME_STORAGE_KEY = "spirit-agent-desktop-theme";
+const RENDERER_THEME_STORAGE_KEY = "spirit-desktop-theme";
 
 type RendererThemePrefs = {
   dark: boolean;
@@ -1207,7 +1210,7 @@ if (gotSpiritSingleInstanceLock) {
       async (_event: IpcMainInvokeEvent, payload: { base64: string }) => {
         const base64 = typeof payload?.base64 === "string" ? payload.base64 : "";
         if (!base64) return null;
-        const dir = path.join(spiritAgentDataDir(), "clipboard-paste");
+        const dir = path.join(spiritDataDir(), "clipboard-paste");
         await mkdir(dir, { recursive: true });
         const filePath = path.join(dir, `element-${Date.now()}.png`);
         await writeFile(filePath, Buffer.from(base64, "base64"));
@@ -1221,7 +1224,7 @@ if (gotSpiritSingleInstanceLock) {
         return null;
       }
 
-      const dir = path.join(spiritAgentDataDir(), "clipboard-paste");
+      const dir = path.join(spiritDataDir(), "clipboard-paste");
       await mkdir(dir, { recursive: true });
       const filePath = path.join(dir, `paste-${Date.now()}.png`);
       await writeFile(filePath, image.toPNG());
@@ -1379,8 +1382,8 @@ if (gotSpiritSingleInstanceLock) {
         case "showAbout":
           void dialog.showMessageBox(win ?? BrowserWindow.getFocusedWindow()!, {
             type: "info",
-            title: "Spirit Agent",
-            message: "Spirit Agent",
+            title: PRODUCT_DISPLAY_NAME,
+            message: PRODUCT_DISPLAY_NAME,
             detail: i18nHost.t("titleBar.versionDetail", { version: app.getVersion() }),
           });
           break;
@@ -1803,7 +1806,7 @@ async function readLocalVideoPreviewUrlFromPath(filePath: string): Promise<strin
   }
 
   try {
-    const managedRoot = path.join(spiritAgentDataDir(), MANAGED_GENERATED_VIDEOS_DIR);
+    const managedRoot = path.join(spiritDataDir(), MANAGED_GENERATED_VIDEOS_DIR);
     const [rootStats, candidateStats] = await Promise.all([lstat(managedRoot), lstat(filePath)]);
     if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
       return null;
@@ -1894,7 +1897,7 @@ async function resolveManagedGeneratedAssetPath(reference: string): Promise<stri
   }
 
   const managedDir = kind === "image" ? MANAGED_GENERATED_IMAGES_DIR : MANAGED_GENERATED_VIDEOS_DIR;
-  const managedRoot = path.join(spiritAgentDataDir(), managedDir);
+  const managedRoot = path.join(spiritDataDir(), managedDir);
   const candidatePath = path.join(managedRoot, assetId);
 
   try {

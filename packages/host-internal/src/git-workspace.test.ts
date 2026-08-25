@@ -225,10 +225,10 @@ test.skipIf(process.platform !== "win32")(
   "resolveWorkspaceGroupingRoot maps linked worktrees to primary repo",
   () => {
     assert.equal(
-      resolveWorkspaceGroupingRoot("D:\\SpiritAgent.worktrees\\spirit-hello-test"),
-      "D:\\SpiritAgent",
+      resolveWorkspaceGroupingRoot("D:\\Spirit.worktrees\\spirit-hello-test"),
+      "D:\\Spirit",
     );
-    assert.equal(resolveWorkspaceGroupingRoot("D:\\SpiritAgent"), "D:\\SpiritAgent");
+    assert.equal(resolveWorkspaceGroupingRoot("D:\\Spirit"), "D:\\Spirit");
   },
 );
 

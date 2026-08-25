@@ -1,6 +1,6 @@
 ---
 title: CLIをインストール
-description: インストールスクリプト、SPIRIT_HOME、SPIRIT_VERSIONを使用してSpirit Agent CLIをインストールします。
+description: インストールスクリプト、SPIRIT_HOME、SPIRIT_VERSIONを使用してSpirit CLIをインストールします。
 ---
 
 CLIは、TUIと非対話型の `-p` モードを備えたターミナルホストです。 [Desktop](./desktop.mdx) と同じローカルデーモンと通信します。
@@ -29,14 +29,14 @@ spirit --version
 
 ## インストール先
 
-インストールルートは、Spirit Agentデータディレクトリ**ではありません**。
+インストールルートは、Spiritデータディレクトリ**ではありません**。
 
-|                                      | デフォルト                                                                                                                  | 上書き                  |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLIバイナリ                          | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| セッション、設定、キーリングポインタ | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+|                                      | デフォルト                                                                                                   | 上書き            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLIバイナリ                          | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
+| セッション、設定、キーリングポインタ | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
-Unixでは、スクリプトは `$SPIRIT_HOME/bin/spirit` から `$SPIRIT_HOME/cli/current/bin/spirit` へのシンボリックリンクを作成し、`~/.profile`、`~/.bashrc`、`~/.zshrc` に `export PATH="$SPIRIT_HOME/bin:$PATH"` を追加します（マーカー `# spirit-agent cli`）。
+Unixでは、スクリプトは `$SPIRIT_HOME/bin/spirit` から `$SPIRIT_HOME/cli/current/bin/spirit` へのシンボリックリンクを作成し、`~/.profile`、`~/.bashrc`、`~/.zshrc` に `export PATH="$SPIRIT_HOME/bin:$PATH"` を追加します（マーカー `# spirit cli`）。
 
 ## バージョンまたはミラーの固定
 
@@ -50,7 +50,7 @@ Unixでは、スクリプトは `$SPIRIT_HOME/bin/spirit` から `$SPIRIT_HOME/c
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
 ```
 
-[ダウンロードページ](/en-US/download) または [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) からCLIアーカイブを直接ダウンロードして、自分で解凍することもできます。
+[ダウンロードページ](/en-US/download) または [GitHub Releases](https://github.com/SpiritAgents/spirit/releases/latest) からCLIアーカイブを直接ダウンロードして、自分で解凍することもできます。
 
 ## 初回実行
 

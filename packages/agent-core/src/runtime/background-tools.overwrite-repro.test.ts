@@ -168,8 +168,26 @@ test("background slot handoff during commit gap defers late schedules without lo
   const call = (command: string): ShellToolRequest => ({ name: "shell", command });
 
   // call_1 takes the slot; call_2 defers.
-  scheduleBackgroundToolExecutionAsync(runtime, "run", state, call("first"), "call_1", "shell", "{}", turn);
-  scheduleBackgroundToolExecutionAsync(runtime, "run", state, call("second"), "call_2", "shell", "{}", turn);
+  scheduleBackgroundToolExecutionAsync(
+    runtime,
+    "run",
+    state,
+    call("first"),
+    "call_1",
+    "shell",
+    "{}",
+    turn,
+  );
+  scheduleBackgroundToolExecutionAsync(
+    runtime,
+    "run",
+    state,
+    call("second"),
+    "call_2",
+    "shell",
+    "{}",
+    turn,
+  );
   assert.equal(runtime.deferredBackgroundToolExecutions.length, 1);
 
   // Complete call_1; its settle stores output on the pending record.
@@ -183,7 +201,16 @@ test("background slot handoff during commit gap defers late schedules without lo
 
   // The finished call_1 still occupies the slot during the commit gap, so the early
   // execution for call_3 defers instead of starting (and being overwritten later).
-  scheduleBackgroundToolExecutionAsync(runtime, "run", state, call("third"), "call_3", "shell", "{}", turn);
+  scheduleBackgroundToolExecutionAsync(
+    runtime,
+    "run",
+    state,
+    call("third"),
+    "call_3",
+    "shell",
+    "{}",
+    turn,
+  );
   assert.equal(
     runtime.pendingBackgroundToolExecution?.kind === "tool-call"
       ? runtime.pendingBackgroundToolExecution.toolCallId

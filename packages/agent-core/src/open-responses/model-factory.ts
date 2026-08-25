@@ -188,7 +188,7 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
   }
 
   const openResponses = createOpenResponses({
-    name: config.llmVendor ?? "spirit-agent",
+    name: config.llmVendor ?? "spirit",
     url: openResponsesPostUrl(config.baseUrl),
     apiKey: config.apiKey,
     fetch: responsesFetchForConfig(config),

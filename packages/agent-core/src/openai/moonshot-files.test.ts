@@ -14,7 +14,7 @@ const MINIMAL_MP4_HEADER = Buffer.from([
 ]);
 
 test("uploadMoonshotVideoFile posts multipart with purpose=video, User-Agent, and returns ms:// url", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-moonshot-upload-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-moonshot-upload-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   let capturedBody: FormData | undefined;
   let capturedUserAgent: string | null = null;
@@ -39,7 +39,7 @@ test("uploadMoonshotVideoFile posts multipart with purpose=video, User-Agent, an
     assert.ok(capturedBody instanceof UndiciFormData);
     assert.equal(capturedBody.get("purpose"), "video");
     assert.ok(capturedBody.get("file"));
-    assert.equal(capturedUserAgent, "SpiritAgent/1.2.3");
+    assert.equal(capturedUserAgent, "Spirit/1.2.3");
 
     const cached = await uploadMoonshotVideoFile(
       { apiKey: "test-key", baseUrl: "https://api.moonshot.cn/v1" },

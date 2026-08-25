@@ -1,6 +1,6 @@
 <div align="center">
 
-# Spirit Agent
+# Spirit
 
 一款开源 AI 智能体，旨在成倍提升你的生产力。
 
@@ -10,13 +10,13 @@
 
 [English](../README.md)
 
-<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+<img width="1552" height="1032" alt="Spirit Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
 </div>
 
 ## 概览
 
-Spirit Agent 是一款**工具型编程智能体**，以真实项目根目录为运行上下文。同一套运行时同时驱动原生桌面工作区与终端界面。共享逻辑位于 TypeScript 包中；各宿主在此基础上叠加平台相关的执行、发现与 UI。
+Spirit 是一款**工具型编程智能体**，以真实项目根目录为运行上下文。同一套运行时同时驱动原生桌面工作区与终端界面。共享逻辑位于 TypeScript 包中；各宿主在此基础上叠加平台相关的执行、发现与 UI。
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -116,12 +116,12 @@ pnpm run dev:site
 
 ## CLI
 
-<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+<img width="1014" height="744" alt="Spirit CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-[Rust CLI](../apps/cli)（`spirit-agent`）提供终端优先的宿主，可选 Ratatui 界面。通过 WebSocket 连接共享 Spirit Server daemon，适合脚本化、SSH 会话与极简环境。
+[Rust CLI](../apps/cli)（`spirit`）提供终端优先的宿主，可选 Ratatui 界面。通过 WebSocket 连接共享 Spirit Server daemon，适合脚本化、SSH 会话与极简环境。
 
 ```bash
-pnpm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit
 ```
 
 ## Server
@@ -133,13 +133,13 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 - **Bearer 鉴权**——home 级 token 位于 `{spiritDataDir}/server.token`（0600 权限），支持 `Authorization` 头或 `?token=` 查询参数；`spirit-server rotate-token` 轮换后对新连接生效。
 - **零新增依赖**——WebSocket 层（RFC 6455）在包内实现。
 
-**CLI 与 Desktop 的智能体执行均为 daemon-only**（见 [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)）。Desktop Web Host 客户端由 Desktop 宿主推送已鉴权的快照，智能体执行仍在 daemon 内。远程访问（`--hostname 0.0.0.0`）预留给后续阶段，默认关闭。
+**CLI 与 Desktop 的智能体执行均为 daemon-only**（见 [Epic #274](https://github.com/SpiritAgents/spirit/issues/274)）。Desktop Web Host 客户端由 Desktop 宿主推送已鉴权的快照，智能体执行仍在 daemon 内。远程访问（`--hostname 0.0.0.0`）预留给后续阶段，默认关闭。
 
 ## ACP Server
 
-[`packages/acp-server`](../packages/acp-server) 是一个薄适配层，通过 stdio / ndJSON 将 Spirit Agent 以 [Agent Client Protocol](https://agentclientprotocol.com)（ACP）服务器的形式对外暴露。任何兼容 ACP 的编辑器 — 如 **Zed** 或 **JetBrains Junie** — 都可以直接接入 Spirit Agent 作为其 AI 编码引擎，无需定制集成。
+[`packages/acp-server`](../packages/acp-server) 是一个薄适配层，通过 stdio / ndJSON 将 Spirit 以 [Agent Client Protocol](https://agentclientprotocol.com)（ACP）服务器的形式对外暴露。任何兼容 ACP 的编辑器 — 如 **Zed** 或 **JetBrains Junie** — 都可以直接接入 Spirit 作为其 AI 编码引擎，无需定制集成。
 
-- **Terminal Auth** — `initialize` 声明 `type: "terminal"` 认证方式；客户端可 spawn `spirit-agent-acp --setup` 进行交互式 provider 配置，随后 `authenticate`，再 `session/new`。
+- **Terminal Auth** — `initialize` 声明 `type: "terminal"` 认证方式；客户端可 spawn `spirit-acp --setup` 进行交互式 provider 配置，随后 `authenticate`，再 `session/new`。
 - **协议表面** — `initialize`、`authenticate`、`logout`、`session/new`、`session/prompt`、`session/cancel`、`session/close`、`session/set_mode`。
 - **流式与思考** — 实时 `agent_message_chunk` 流式输出，以及 `agent_thought_chunk` 用于模型推理过程展示。
 - **权限桥接** — 通过 ACP `request_permission` 进行工具审批，支持 allow-once / always-allow / reject 选项。
@@ -153,7 +153,7 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -172,7 +172,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | 环境变量               | 必填 | 说明                                                                  |
 | ---------------------- | ---- | --------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | 否   | 工作区根路径（默认：客户端 `cwd`）                                    |
-| `SPIRIT_ACP_DATA_DIR`  | 否   | Spirit 数据目录（默认：`%APPDATA%/SpiritAgent` 或 `~/.spirit-agent`） |
+| `SPIRIT_ACP_DATA_DIR`  | 否   | Spirit 数据目录（默认：`%APPDATA%/Spirit` 或 `~/.spirit-data`） |
 
 ## 开发
 

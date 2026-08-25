@@ -3,9 +3,9 @@ title: ACP
 description: Implementado para clientes ACP. A página de download ainda não lista um canal.
 ---
 
-O ACP (Agent Client Protocol) é implementado como `spirit-agent-acp` (`@spiritagent/acp-server`). Ele fala stdio ndJSON, compartilha o mesmo diretório de dados e chaveiro do Desktop e da CLI, e pode executar `--setup` para conectar um provedor.
+O ACP (Agent Client Protocol) é implementado como `spirit-acp` (`@spiritagent/acp-server`). Ele fala stdio ndJSON, compartilha o mesmo diretório de dados e chaveiro do Desktop e da CLI, e pode executar `--setup` para conectar um provedor.
 
-**A página pública de download ainda não lista o ACP.** O Spirit Agent ainda está se preparando para listá-lo no registro ACP.
+**A página pública de download ainda não lista o ACP.** O Spirit ainda está se preparando para listá-lo no registro ACP.
 
 ## Configuração temporária antes da listagem
 
@@ -19,7 +19,7 @@ Ou aponte um cliente ACP (por exemplo, Zed) para a entrada stdio:
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -28,7 +28,7 @@ Ou aponte um cliente ACP (por exemplo, Zed) para a entrada stdio:
 
 Autentique-se com **Run in terminal**, conclua `--setup`, depois `authenticate` e `session/new`.
 
-| Variável               | Função                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| `SPIRIT_ACP_WORKSPACE` | Raiz do espaço de trabalho (padrão é o cwd do cliente)                                      |
-| `SPIRIT_ACP_DATA_DIR`  | Diretório de dados; caso contrário, `SPIRIT_AGENT_DATA_DIR` e depois o padrão da plataforma |
+| Variável               | Função                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | Raiz do espaço de trabalho (padrão é o cwd do cliente)                                |
+| `SPIRIT_ACP_DATA_DIR`  | Diretório de dados; caso contrário, `SPIRIT_DATA_DIR` e depois o padrão da plataforma |

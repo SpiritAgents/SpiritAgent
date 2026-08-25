@@ -166,8 +166,8 @@ impl TuiShell {
         self.set_input_mode(next);
     }
 
-    pub fn spirit_agent_mode(&self) -> &'static str {
-        self.input.mode.spirit_agent_mode()
+    pub fn agent_mode(&self) -> &'static str {
+        self.input.mode.agent_mode()
     }
 
     pub fn can_enter_shell_mode(&self) -> bool {

@@ -7,14 +7,14 @@ Spirit guarda los binarios y los datos en lugares diferentes. Mezclarlos es la r
 
 ## Directorio de datos
 
-Se puede sobrescribir con `SPIRIT_AGENT_DATA_DIR`. El servidor también puede usar `SPIRIT_SERVER_DATA_DIR` (que tiene prioridad sobre el anterior).
+Se puede sobrescribir con `SPIRIT_DATA_DIR`. El servidor también puede usar `SPIRIT_SERVER_DATA_DIR` (que tiene prioridad sobre el anterior).
 
-| SO       | Default                                                     |
-| -------- | ----------------------------------------------------------- |
-| macOS    | `~/Library/Application Support/SpiritAgent`                 |
-| Windows  | `%APPDATA%\SpiritAgent`                                     |
-| Linux    | `$XDG_DATA_HOME/SpiritAgent` o `~/.local/share/SpiritAgent` |
-| Fallback | `~/.spirit-agent`                                           |
+| SO       | Default                                           |
+| -------- | ------------------------------------------------- |
+| macOS    | `~/Library/Application Support/Spirit`            |
+| Windows  | `%APPDATA%\Spirit`                                |
+| Linux    | `$XDG_DATA_HOME/Spirit` o `~/.local/share/Spirit` |
+| Fallback | `~/.spirit-data`                                  |
 
 Archivos típicos:
 
@@ -63,7 +63,7 @@ También se usan: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{work
 
 | Variable                                                          | Rol                                     |
 | ----------------------------------------------------------------- | --------------------------------------- |
-| `SPIRIT_AGENT_DATA_DIR`                                           | Directorio de datos                     |
+| `SPIRIT_DATA_DIR`                                                 | Directorio de datos                     |
 | `SPIRIT_SERVER_DATA_DIR`                                          | Directorio de datos del servidor (gana) |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                        |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | Instalador de CLI                       |

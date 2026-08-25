@@ -20,7 +20,7 @@ import {
 
 import type { DesktopModelProvider } from "../types.js";
 
-/** Keyring account for a provider-group-scoped API key (`SpiritAgent` / `group::{id}`). */
+/** Keyring account for a provider-group-scoped API key (`Spirit` / `group::{id}`). */
 export function groupKeyAccount(groupId: string): string {
   return `group::${groupId}`;
 }

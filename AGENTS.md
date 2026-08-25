@@ -1,4 +1,4 @@
-# Spirit Agent — Project Guidelines
+# Spirit — Project Guidelines
 
 ## Layering and Specialized Guides
 

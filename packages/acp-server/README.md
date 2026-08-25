@@ -1,6 +1,6 @@
 # @spiritagent/acp-server
 
-ACP ([Agent Client Protocol](https://agentclientprotocol.com)) server adapter for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent). Exposes the same agent runtime as Desktop and CLI over **stdio / ndJSON**, so ACP-compatible editors (for example **Zed** or **JetBrains Junie**) can use Spirit Agent without bespoke integration.
+ACP ([Agent Client Protocol](https://agentclientprotocol.com)) server adapter for [Spirit](https://github.com/SpiritAgents/spirit). Exposes the same agent runtime as Desktop and CLI over **stdio / ndJSON**, so ACP-compatible editors (for example **Zed** or **JetBrains Junie**) can use Spirit without bespoke integration.
 
 ## What it provides
 
@@ -19,10 +19,10 @@ npx @spiritagent/acp-server --setup
 
 Setup writes to the shared Spirit data directory (`config.json` + OS keyring — same store as Desktop/CLI). After setup, your ACP client calls `authenticate`, then `session/new`.
 
-| Environment variable   | Required | Description                                                                   |
-| ---------------------- | -------- | ----------------------------------------------------------------------------- |
-| `SPIRIT_ACP_WORKSPACE` | No       | Workspace root (default: client `cwd`)                                        |
-| `SPIRIT_ACP_DATA_DIR`  | No       | Spirit data directory (default: `%APPDATA%/SpiritAgent` or `~/.spirit-agent`) |
+| Environment variable   | Required | Description                                                             |
+| ---------------------- | -------- | ----------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | No       | Workspace root (default: client `cwd`)                                  |
+| `SPIRIT_ACP_DATA_DIR`  | No       | Spirit data directory (default: `%APPDATA%/Spirit` or `~/.spirit-data`) |
 
 ## Requirements
 
@@ -35,4 +35,4 @@ Setup writes to the shared Spirit data directory (`config.json` + OS keyring —
 
 ## License
 
-MIT — see the [Spirit Agent repository](https://github.com/SpiritAgents/SpiritAgent).
+MIT — see the [Spirit repository](https://github.com/SpiritAgents/spirit).

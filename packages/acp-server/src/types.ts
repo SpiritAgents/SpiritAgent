@@ -3,7 +3,7 @@ import type {
   LlmActiveSkill,
   LlmEnabledSkillCatalogEntry,
   LlmTransportConfig,
-  SpiritAgentMode,
+  AgentMode,
 } from "@spiritagent/agent-core";
 import type { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
 import type { JsonValue } from "@spiritagent/agent-core";
@@ -14,7 +14,7 @@ import type { JsonValue } from "@spiritagent/agent-core";
 export interface AcpServerConfig {
   /** Workspace root path (default: process.cwd()) */
   workspaceRoot: string;
-  /** Spirit data directory (default: APPDATA/SpiritAgent or ~/.spirit-agent) */
+  /** Spirit data directory (default: APPDATA/Spirit or ~/.spirit-data) */
   spiritDataDir: string;
 }
 
@@ -26,7 +26,7 @@ export interface AcpSessionState {
   readonly runtime: AgentRuntime<LlmTransportConfig, unknown, JsonValue>;
   readonly toolExecutor: HostToolExecutorProxy;
   readonly workspaceRoot: string;
-  currentMode: SpiritAgentMode;
+  currentMode: AgentMode;
   /** AbortController for the currently running prompt turn (null if idle) */
   pendingPrompt: AbortController | null;
   /** Mutable active skills array — shared with runtime factory closures */
@@ -34,11 +34,11 @@ export interface AcpSessionState {
   /** Skill catalog entries discovered at session creation */
   readonly enabledSkillCatalog: LlmEnabledSkillCatalogEntry[];
   /** Switch agent mode: updates tool exposure + system prompt planMetadata */
-  readonly setAgentMode: (mode: SpiritAgentMode) => Promise<void>;
+  readonly setAgentMode: (mode: AgentMode) => Promise<void>;
 }
 
 /**
- * Available ACP session modes advertised by Spirit Agent.
+ * Available ACP session modes advertised by Spirit.
  */
 export const AVAILABLE_MODES = [
   { id: "agent" as const, name: "Agent", description: "Full tool access, autonomous coding" },
@@ -48,9 +48,9 @@ export const AVAILABLE_MODES = [
 ] as const;
 
 /**
- * Maps an ACP mode ID string to a SpiritAgentMode, with fallback to 'agent'.
+ * Maps an ACP mode ID string to an AgentMode, with fallback to 'agent'.
  */
-export function normalizeModeId(modeId: string): SpiritAgentMode {
+export function normalizeModeId(modeId: string): AgentMode {
   switch (modeId) {
     case "agent":
     case "plan":

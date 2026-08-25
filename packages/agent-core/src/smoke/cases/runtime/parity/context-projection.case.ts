@@ -22,7 +22,7 @@ import {
 } from "./harness.js";
 
 export async function runContextProjectionCase(): Promise<RuntimeParityCaseResult> {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-runtime-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-runtime-"));
   let workspaceFileSmoke: JsonValue;
   try {
     await mkdir(join(workspaceRoot, "src"), { recursive: true });

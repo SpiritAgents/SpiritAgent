@@ -47,7 +47,7 @@ export function buildOpenResponsesToolCallBody(model: string): JsonObject {
         id: "fc_1",
         call_id: "call_open_responses_1",
         name: "demo_lookup",
-        arguments: '{"query":"Spirit Agent migration"}',
+        arguments: '{"query":"Spirit migration"}',
         status: "completed",
       },
     ],

@@ -45,7 +45,7 @@ test("createRuleFile writes template and rejects duplicates", async () => {
 test("deleteRuleFile removes managed rule file", async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-rules-delete-"));
   const appDataRoot = join(workspaceRoot, "appdata");
-  const spiritDataDir = join(appDataRoot, "SpiritAgent");
+  const spiritDataDir = join(appDataRoot, "Spirit");
   const previousAppData = process.env.APPDATA;
   process.env.APPDATA = appDataRoot;
   try {

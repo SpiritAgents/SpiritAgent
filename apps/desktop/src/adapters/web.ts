@@ -61,7 +61,7 @@ import type {
 } from "../types";
 
 const DEFAULT_HOST_URL = import.meta.env.VITE_SPIRIT_HOST_URL?.toString().trim() || "";
-const WEB_HOST_TOKEN_STORAGE_KEY = "spirit-agent-web-host-token";
+const WEB_HOST_TOKEN_STORAGE_KEY = "spirit-web-host-token";
 
 type WebHostPairingResponse = {
   token: string;

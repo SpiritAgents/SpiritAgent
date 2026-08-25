@@ -9,7 +9,7 @@ import {
   createRemoteDesktopRuntime,
   replyRemoteWorkspaceCapabilityTrust,
 } from "./remote-runtime.js";
-import { spiritAgentDataDir, type DesktopConfigFile } from "./storage.js";
+import { spiritDataDir, type DesktopConfigFile } from "./storage.js";
 
 export interface CreateAutomationRuntimeInput {
   definition: HostAutomationDefinition;
@@ -48,7 +48,7 @@ export function buildAutomationRemoteRuntimeCreateInput(input: CreateAutomationR
 } {
   const conversationKey = path.resolve(input.sessionPath);
   return {
-    dataDir: spiritAgentDataDir(),
+    dataDir: spiritDataDir(),
     workspaceRoot: input.definition.workspaceRoot,
     modelRef: input.definition.modelRef,
     agentMode: "agent",

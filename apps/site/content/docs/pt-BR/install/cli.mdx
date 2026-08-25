@@ -1,6 +1,6 @@
 ---
 title: Instalar o CLI
-description: Instale o CLI do Spirit Agent com o script de instalação, SPIRIT_HOME e SPIRIT_VERSION.
+description: Instale o CLI do Spirit com o script de instalação, SPIRIT_HOME e SPIRIT_VERSION.
 ---
 
 O CLI é um host de terminal com um TUI e um modo não interativo `-p`. Ele fala com o mesmo daemon local que o [Desktop](./desktop.mdx).
@@ -29,14 +29,14 @@ spirit --version
 
 ## Onde ele fica
 
-O diretório de instalação **não** é o mesmo do diretório de dados do Spirit Agent.
+O diretório de instalação **não** é o mesmo do diretório de dados do Spirit.
 
-|                                                | Padrão                                                                                                                      | Substituição            |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Binários do CLI                                | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| Sessões, configuração, apontadores de chaveiro | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+|                                                | Padrão                                                                                                       | Substituição      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| Binários do CLI                                | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
+| Sessões, configuração, apontadores de chaveiro | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
-No Unix, o script cria um link `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` e adiciona `export PATH="$SPIRIT_HOME/bin:$PATH"` ao final de `~/.profile`, `~/.bashrc` e `~/.zshrc` (marcador `# spirit-agent cli`).
+No Unix, o script cria um link `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` e adiciona `export PATH="$SPIRIT_HOME/bin:$PATH"` ao final de `~/.profile`, `~/.bashrc` e `~/.zshrc` (marcador `# spirit cli`).
 
 ## Fixar uma versão ou espelho
 
@@ -50,7 +50,7 @@ No Unix, o script cria um link `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/c
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
 ```
 
-Você também pode baixar um arquivo do CLI da [página de download](/en-US/download) ou do [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) e descompactar você mesmo.
+Você também pode baixar um arquivo do CLI da [página de download](/en-US/download) ou do [GitHub Releases](https://github.com/SpiritAgents/spirit/releases/latest) e descompactar você mesmo.
 
 ## Primeira execução
 

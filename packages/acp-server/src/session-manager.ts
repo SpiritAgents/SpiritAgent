@@ -1,4 +1,4 @@
-import type { JsonValue, RuntimeEvent, SpiritAgentMode } from "@spiritagent/agent-core";
+import type { JsonValue, RuntimeEvent, AgentMode } from "@spiritagent/agent-core";
 import { deleteTranscriptSessionDir } from "@spiritagent/host-internal";
 import type { AcpServerConfig, AcpSessionState } from "./types.js";
 import { AVAILABLE_MODES, normalizeModeId } from "./types.js";
@@ -21,7 +21,7 @@ export class SessionManager {
   async createSession(
     workspaceRoot: string,
     onEvent: (sessionId: string, event: RuntimeEvent<JsonValue>) => void,
-    initialMode: SpiritAgentMode = "agent",
+    initialMode: AgentMode = "agent",
   ): Promise<{
     sessionId: string;
     modes: typeof AVAILABLE_MODES;
@@ -103,7 +103,7 @@ export class SessionManager {
   /**
    * Switches the mode for a session, updating both tool exposure and system prompt.
    */
-  async setSessionMode(sessionId: string, modeId: string): Promise<SpiritAgentMode> {
+  async setSessionMode(sessionId: string, modeId: string): Promise<AgentMode> {
     const session = this.requireSession(sessionId);
     const mode = normalizeModeId(modeId);
     await session.setAgentMode(mode);

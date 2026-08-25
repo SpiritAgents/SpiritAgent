@@ -11,7 +11,7 @@ import {
 import {
   ConfigSchemaError,
   loadConfig,
-  setSpiritAgentDataDirOverride,
+  setSpiritDataDirOverride,
 } from "../../dist-electron/src/host/storage.js";
 
 test("assertSpiritConfigSchemaVersion rejects legacy schemaVersion 1", () => {
@@ -26,7 +26,7 @@ test("assertSpiritConfigSchemaVersion accepts schemaVersion 2", () => {
 
 async function withConfigFile(rawConfig, run) {
   const dir = await mkdtemp(path.join(tmpdir(), "spirit-config-schema-"));
-  setSpiritAgentDataDirOverride(dir);
+  setSpiritDataDirOverride(dir);
   try {
     await writeFile(
       path.join(dir, "config.json"),
@@ -35,7 +35,7 @@ async function withConfigFile(rawConfig, run) {
     );
     await run(await loadConfig());
   } finally {
-    setSpiritAgentDataDirOverride(undefined);
+    setSpiritDataDirOverride(undefined);
     await rm(dir, { recursive: true, force: true });
   }
 }

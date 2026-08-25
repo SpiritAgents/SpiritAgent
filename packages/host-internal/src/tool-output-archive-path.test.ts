@@ -3,10 +3,10 @@ import { test } from "vitest";
 
 import { isToolOutputArchivePath } from "./tool-output-archive-path.js";
 
-test("isToolOutputArchivePath matches SpiritAgent tool-output-archives paths", () => {
+test("isToolOutputArchivePath matches Spirit tool-output-archives paths", () => {
   assert.equal(
     isToolOutputArchivePath(
-      "C:\\Users\\pc\\AppData\\Roaming\\SpiritAgent\\tool-output-archives\\sess\\call_1.txt",
+      "C:\\Users\\pc\\AppData\\Roaming\\Spirit\\tool-output-archives\\sess\\call_1.txt",
     ),
     true,
   );

@@ -94,7 +94,7 @@
     "custom": "Custom"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Continue",
     "back": "Back",
     "done": "Done",
@@ -244,7 +244,7 @@
     "envVars": "Environment Variables",
     "command": "Command",
     "mcpUrlExample": "e.g. https://example.com/mcp",
-    "mcpCommandExample": "e.g. npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent",
+    "mcpCommandExample": "e.g. npx -y @modelcontextprotocol/server-filesystem D:/Spirit",
     "mcpCountsSummary": "Found {{tools}} tools · {{resources}} resources · {{prompts}} prompts",
     "active": "Active",
     "failed": "Failed",
@@ -535,10 +535,10 @@
     "recent": "Recent",
     "more": "More",
     "newSession": "New Session",
-    "openApp": "Open Spirit Agent",
+    "openApp": "Open Spirit",
     "settings": "Settings",
-    "quitApp": "Quit Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Quit Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "File",
@@ -567,7 +567,7 @@
     "close": "Close",
     "zoom": "Zoom",
     "bringAllToFront": "Bring All to Front",
-    "about": "About Spirit Agent",
+    "about": "About Spirit",
     "settings": "Settings",
     "services": "Services",
     "hideApp": "Hide {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Auto-generating Worktree name failed: model returned JSON that is not an object."
   },
   "crashPage": {
-    "title": "Spirit Agent has Crashed",
+    "title": "Spirit has Crashed",
     "description": "The renderer process terminated unexpectedly. The log below may help diagnose the cause.",
     "reportOnGitHub": "Report on GitHub"
   },

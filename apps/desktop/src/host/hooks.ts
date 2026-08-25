@@ -16,10 +16,10 @@ import type {
   DesktopHookScope,
   SaveHookEntryRequest,
 } from "../types.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 export function desktopUserHooksConfigPath(): string {
-  return hooksUserConfigPath(spiritAgentDataDir());
+  return hooksUserConfigPath(spiritDataDir());
 }
 
 export function desktopWorkspaceHooksConfigPath(workspaceRoot: string): string {
@@ -27,12 +27,12 @@ export function desktopWorkspaceHooksConfigPath(workspaceRoot: string): string {
 }
 
 export function hooksConfigPathForScope(scope: DesktopHookScope, workspaceRoot: string): string {
-  return resolveHooksConfigPathForScope(spiritAgentDataDir(), workspaceRoot, scope);
+  return resolveHooksConfigPathForScope(spiritDataDir(), workspaceRoot, scope);
 }
 
 function hookCrudContext(workspaceRoot: string, workspaceBinding: "project" | "none") {
   return {
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     workspaceRoot,
     workspaceBinding,
   };

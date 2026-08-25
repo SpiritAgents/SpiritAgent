@@ -26,7 +26,7 @@ import { AVAILABLE_MODES } from "./types.js";
 import type { AcpServerConfig } from "./types.js";
 
 /**
- * Spirit Agent implementation of the ACP Agent interface.
+ * Spirit implementation of the ACP Agent interface.
  *
  * Bridges ACP JSON-RPC messages to AgentRuntime calls.
  */
@@ -65,8 +65,8 @@ export class SpiritAcpAgent implements acp.Agent {
         },
       },
       agentInfo: {
-        name: "spirit-agent",
-        title: "Spirit Agent",
+        name: "spirit",
+        title: "Spirit",
         version: "1.0.0-alpha.0",
       },
       authMethods,

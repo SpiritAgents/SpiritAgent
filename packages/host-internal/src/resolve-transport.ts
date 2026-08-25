@@ -111,7 +111,7 @@ function buildTransportFromProfile(
       model,
       baseUrl: mantleBaseUrl,
       workspaceRoot,
-      spiritAgentMode: "agent",
+      agentMode: "agent",
       responsesProvider: "openai",
       llmVendor: "openai",
       ...(profile.capabilities
@@ -164,7 +164,7 @@ function buildTransportFromProfile(
       model,
       baseUrl,
       workspaceRoot,
-      spiritAgentMode: "agent",
+      agentMode: "agent",
       ...(responsesProvider ? { responsesProvider } : {}),
       ...(llmVendor ? { llmVendor } : {}),
       ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),

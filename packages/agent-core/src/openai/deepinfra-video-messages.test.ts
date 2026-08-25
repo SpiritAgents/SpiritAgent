@@ -23,7 +23,7 @@ function deepInfraConfig(capabilities?: { videoInput?: true }) {
 }
 
 test("resolveDeepInfraVideoUrlsInOpenAiMessages embeds local video as data URL base64", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-deepinfra-video-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-deepinfra-video-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   try {
     await writeFile(videoPath, MINIMAL_MP4_HEADER);
@@ -55,7 +55,7 @@ test("resolveDeepInfraVideoUrlsInOpenAiMessages embeds local video as data URL b
 });
 
 test("resolveDeepInfraVideoUrlsInOpenAiMessages guesses mime from extension", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-deepinfra-video-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-deepinfra-video-"));
   try {
     for (const [fileName, mime] of [
       ["clip.mov", "video/quicktime"],
@@ -131,7 +131,7 @@ test("resolveDeepInfraVideoUrlsInOpenAiMessages skips other vendors", () => {
 });
 
 test("resolveDeepInfraVideoUrlsInOpenAiMessages skips when video input capability is off", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-deepinfra-video-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-deepinfra-video-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   try {
     await writeFile(videoPath, MINIMAL_MP4_HEADER);

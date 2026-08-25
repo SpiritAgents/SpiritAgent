@@ -19,9 +19,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use spirit_agent::tui::InlineRecreate;
-use spirit_agent::view::MarketplaceFlowStep;
-use spirit_agent::{
+use spirit::tui::InlineRecreate;
+use spirit::view::MarketplaceFlowStep;
+use spirit::{
     ConfigCommand, ExtensionCommand, GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand,
     McpCommand, ModelAddCommand, ModelCommand, PermissionCommand, TuiShell, bootstrap_config,
     handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli,
@@ -42,7 +42,7 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LSHIF
 #[command(name = "spirit")]
 #[command(version)]
 #[command(disable_version_flag = true)]
-#[command(about = "Spirit Agent — AI productivity agent", long_about = None)]
+#[command(about = "Spirit — AI productivity agent", long_about = None)]
 struct Cli {
     /// Print version
     #[arg(short = 'v', long = "version", action = ArgAction::SetTrue)]
@@ -314,7 +314,7 @@ enum MarketplaceAction {
 }
 
 fn main() -> Result<()> {
-    spirit_agent::logging::init_logging();
+    spirit::logging::init_logging();
     let cli = Cli::parse();
     if cli.version {
         print!("{}", Cli::command().render_version());
@@ -494,7 +494,7 @@ fn into_permission_command(action: PermissionAction) -> PermissionCommand {
 }
 
 fn is_inline_tui(mode: &str) -> bool {
-    mode == spirit_agent::ports::TUI_MODE_INLINE
+    mode == spirit::ports::TUI_MODE_INLINE
 }
 
 fn create_tui_terminal(inline: bool) -> Result<Terminal<tui::InlineBackend>> {
@@ -576,7 +576,7 @@ fn apply_session_tui_switch(
 
 fn run_interactive(
     options: &GlobalCliOptions,
-    config: &spirit_agent::model_registry::AppConfig,
+    config: &spirit::model_registry::AppConfig,
 ) -> Result<()> {
     let mut inline = is_inline_tui(&resolve_session_tui_mode(options, config));
     enable_raw_mode()?;
@@ -1185,7 +1185,7 @@ fn process_key_event(
             }
             KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Err(err) = shell.refresh_marketplace_catalog() {
-                    shell.push_agent_message(spirit_agent::locale::marketplace_refresh_failed_message(&err));
+                    shell.push_agent_message(spirit::locale::marketplace_refresh_failed_message(&err));
                 }
             }
             KeyCode::Char('l')
@@ -1611,7 +1611,7 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
     };
 
     let temp_dir = std::env::temp_dir()
-        .join("spirit-agent")
+        .join("spirit")
         .join("clipboard-images");
     if let Err(e) = fs::create_dir_all(&temp_dir) {
         logging::log_event(&format!("[clipboard] cannot create temp directory: {}", e));

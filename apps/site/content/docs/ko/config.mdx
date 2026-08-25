@@ -7,14 +7,14 @@ Spirit은 바이너리와 데이터를 서로 다른 위치에 저장합니다. 
 
 ## 데이터 디렉터리
 
-`SPIRIT_AGENT_DATA_DIR`로 재정의할 수 있습니다. 서버는 `SPIRIT_SERVER_DATA_DIR`도 사용할 수 있습니다(전자보다 우선).
+`SPIRIT_DATA_DIR`로 재정의할 수 있습니다. 서버는 `SPIRIT_SERVER_DATA_DIR`도 사용할 수 있습니다(전자보다 우선).
 
-| OS      | 기본값                                                         |
-| ------- | -------------------------------------------------------------- |
-| macOS   | `~/Library/Application Support/SpiritAgent`                    |
-| Windows | `%APPDATA%\SpiritAgent`                                        |
-| Linux   | `$XDG_DATA_HOME/SpiritAgent` 또는 `~/.local/share/SpiritAgent` |
-| 폴백    | `~/.spirit-agent`                                              |
+| OS      | 기본값                                               |
+| ------- | ---------------------------------------------------- |
+| macOS   | `~/Library/Application Support/Spirit`               |
+| Windows | `%APPDATA%\Spirit`                                   |
+| Linux   | `$XDG_DATA_HOME/Spirit` 또는 `~/.local/share/Spirit` |
+| 폴백    | `~/.spirit-data`                                     |
 
 일반적인 파일:
 
@@ -63,7 +63,7 @@ CLI 바이너리는 `SPIRIT_HOME` (`~/.spirit` 또는 `%LOCALAPPDATA%\Spirit`)�
 
 | 변수                                                              | 역할                             |
 | ----------------------------------------------------------------- | -------------------------------- |
-| `SPIRIT_AGENT_DATA_DIR`                                           | 데이터 디렉터리                  |
+| `SPIRIT_DATA_DIR`                                                 | 데이터 디렉터리                  |
 | `SPIRIT_SERVER_DATA_DIR`                                          | 서버 데이터 디렉터리(우선)       |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                 |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI 설치 프로그램                |

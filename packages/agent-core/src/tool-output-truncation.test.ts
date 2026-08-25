@@ -42,7 +42,7 @@ test("prepareToolOutputTruncationForHistory persists full output and injects arc
     sessionId: "sess-1",
     persistArchive: async ({ content }) => {
       persistedContent = content;
-      return "/SpiritAgent/tool-output-archives/sess-1/call_abc.txt";
+      return "/Spirit/tool-output-archives/sess-1/call_abc.txt";
     },
   });
 
@@ -53,7 +53,7 @@ test("prepareToolOutputTruncationForHistory persists full output and injects arc
   const toolText = llmMessageTextContent(toolMessage.content);
   assert.match(
     toolText,
-    /Full output archived at: \/SpiritAgent\/tool-output-archives\/sess-1\/call_abc\.txt/u,
+    /Full output archived at: \/Spirit\/tool-output-archives\/sess-1\/call_abc\.txt/u,
   );
   assert.ok(toolText.length < longToolOutput.length);
 });

@@ -196,7 +196,7 @@ export async function connectOrSpawnServer(
     env: {
       ...process.env,
       ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: "1" } : {}),
-      SPIRIT_AGENT_DATA_DIR: options.dataDir,
+      SPIRIT_DATA_DIR: options.dataDir,
     },
   });
   if (forwardStderr && child.stderr) {

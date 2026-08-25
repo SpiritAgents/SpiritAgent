@@ -24,7 +24,7 @@ function resolveMinimaxApiKey(): string | undefined {
 
   try {
     const value = execSync(
-      'security find-generic-password -s SpiritAgent -a "group::minimax" -w 2>/dev/null',
+      'security find-generic-password -s Spirit -a "group::minimax" -w 2>/dev/null',
       { encoding: "utf8" },
     ).trim();
     return value.length > 0 ? value : undefined;
@@ -61,7 +61,7 @@ async function main(): Promise<void> {
   const apiKey = resolveMinimaxApiKey();
   if (!apiKey) {
     console.log(
-      "MINIMAX_API_KEY or SpiritAgent Keychain credentials not found, skipping minimax web_search live smoke.",
+      "MINIMAX_API_KEY or Spirit Keychain credentials not found, skipping minimax web_search live smoke.",
     );
     return;
   }

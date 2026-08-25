@@ -94,7 +94,7 @@
     "custom": "自訂"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "繼續",
     "back": "返回",
     "done": "完成",
@@ -244,7 +244,7 @@
     "envVars": "環境變數",
     "command": "指令",
     "mcpUrlExample": "例如 https://example.com/mcp",
-    "mcpCommandExample": "例如 npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent",
+    "mcpCommandExample": "例如 npx -y @modelcontextprotocol/server-filesystem D:/Spirit",
     "mcpCountsSummary": "找到 {{tools}} 項工具 · {{resources}} 項資源 · {{prompts}} 項提示",
     "active": "啟用",
     "failed": "失敗",
@@ -535,10 +535,10 @@
     "recent": "最近",
     "more": "更多",
     "newSession": "新增工作階段",
-    "openApp": "開啟 Spirit Agent",
+    "openApp": "開啟 Spirit",
     "settings": "設定",
-    "quitApp": "結束 Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "結束 Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "檔案",
@@ -567,7 +567,7 @@
     "close": "關閉",
     "zoom": "縮放",
     "bringAllToFront": "全部移至最前",
-    "about": "關於 Spirit Agent",
+    "about": "關於 Spirit",
     "settings": "設定",
     "services": "服務",
     "hideApp": "隱藏 {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "自動產生 Worktree 名稱失敗：模型回傳的 JSON 不是物件。"
   },
   "crashPage": {
-    "title": "Spirit Agent 已當機",
+    "title": "Spirit 已當機",
     "description": "轉譯程序意外終止。以下記錄可能有助於找出原因。",
     "reportOnGitHub": "在 GitHub 上回報"
   },

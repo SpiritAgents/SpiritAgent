@@ -14,11 +14,7 @@ import type { SessionBundle } from "./session-bundle.js";
 import { sameSessionPath } from "./session-path.js";
 import type { SessionSplitHostContext } from "./session-split.js";
 import { isEphemeralDebugSessionPath } from "./sessions.js";
-import {
-  deleteStoredSession,
-  isSplitProvisionalSessionPath,
-  spiritAgentDataDir,
-} from "./storage.js";
+import { deleteStoredSession, isSplitProvisionalSessionPath, spiritDataDir } from "./storage.js";
 
 export interface SessionDeleteContext
   extends
@@ -140,7 +136,7 @@ export async function deleteSessionCommand(
       await deleteStoredSession(resolvedPath);
     }
     if (rewindSessionId) {
-      await deleteSessionRewindData(spiritAgentDataDir(), rewindSessionId);
+      await deleteSessionRewindData(spiritDataDir(), rewindSessionId);
     }
     await deleteDesktopTranscriptSessionDirForChatPath(resolvedPath);
     ctx.clearSessionTitleGeneration(resolvedPath);

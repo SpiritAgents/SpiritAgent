@@ -1,6 +1,6 @@
 <div align="center">
 
-# Spirit Agent
+# Spirit
 
 Открытый AI-агент, созданный умножать вашу продуктивность.
 
@@ -10,13 +10,13 @@
 
 [English](../README.md)
 
-<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+<img width="1552" height="1032" alt="Spirit Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
 </div>
 
 ## Обзор
 
-Spirit Agent — **агент для кодирования с инструментами**, работающий от корня реального проекта. Один и тот же runtime питает нативный Desktop workspace и терминальный UI. Общая логика живёт в TypeScript-пакетах; хосты добавляют платформенное выполнение, discovery и UI.
+Spirit — **агент для кодирования с инструментами**, работающий от корня реального проекта. Один и тот же runtime питает нативный Desktop workspace и терминальный UI. Общая логика живёт в TypeScript-пакетах; хосты добавляют платформенное выполнение, discovery и UI.
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -116,12 +116,12 @@ pnpm run dev:site
 
 ## CLI
 
-<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+<img width="1014" height="744" alt="Spirit CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-[Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Подключается к общему daemon Spirit Server по WebSocket; подходит для скриптов, SSH-сессий и минимальных окружений.
+[Rust CLI](../apps/cli) (`spirit`) — terminal-first хост с опциональным Ratatui UI. Подключается к общему daemon Spirit Server по WebSocket; подходит для скриптов, SSH-сессий и минимальных окружений.
 
 ```bash
-pnpm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit
 ```
 
 ## Server
@@ -133,13 +133,13 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 - **Bearer-аутентификация** — токен уровня home в `{spiritDataDir}/server.token` (права 0600), принимается через заголовок `Authorization` или query `?token=`; `spirit-server rotate-token` ротирует его для новых подключений.
 - **Без новых зависимостей** — слой WebSocket (RFC 6455) реализован внутри пакета.
 
-**CLI и Desktop работают только через daemon для выполнения агента** (см. [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)). Клиенты Desktop Web Host получают аутентифицированные snapshot-push от Desktop-хоста, а выполнение агента остаётся в daemon. Удалённый доступ (`--hostname 0.0.0.0`) зарезервирован для будущей фазы и по умолчанию выключен.
+**CLI и Desktop работают только через daemon для выполнения агента** (см. [Epic #274](https://github.com/SpiritAgents/spirit/issues/274)). Клиенты Desktop Web Host получают аутентифицированные snapshot-push от Desktop-хоста, а выполнение агента остаётся в daemon. Удалённый доступ (`--hostname 0.0.0.0`) зарезервирован для будущей фазы и по умолчанию выключен.
 
 ## ACP Server
 
-[`packages/acp-server`](../packages/acp-server) — тонкий адаптер, предоставляющий Spirit Agent как [Agent Client Protocol](https://agentclientprotocol.com) (ACP) server через stdio / ndJSON. Любой ACP-совместимый редактор — например **Zed** или **JetBrains Junie** — может подключить Spirit Agent как AI coding engine без кастомной интеграции.
+[`packages/acp-server`](../packages/acp-server) — тонкий адаптер, предоставляющий Spirit как [Agent Client Protocol](https://agentclientprotocol.com) (ACP) server через stdio / ndJSON. Любой ACP-совместимый редактор — например **Zed** или **JetBrains Junie** — может подключить Spirit как AI coding engine без кастомной интеграции.
 
-- **Terminal Auth** — `initialize` объявляет auth `type: "terminal"`; клиенты запускают `spirit-agent-acp --setup` для интерактивной настройки provider, затем `authenticate` перед `session/new`.
+- **Terminal Auth** — `initialize` объявляет auth `type: "terminal"`; клиенты запускают `spirit-acp --setup` для интерактивной настройки provider, затем `authenticate` перед `session/new`.
 - **Поверхность протокола** — `initialize`, `authenticate`, `logout`, `session/new`, `session/prompt`, `session/cancel`, `session/close`, `session/set_mode`.
 - **Streaming & thinking** — realtime `agent_message_chunk` и `agent_thought_chunk` для reasoning модели.
 - **Permission bridge** — одобрение инструментов через ACP `request_permission` (allow-once / always-allow / reject).
@@ -153,7 +153,7 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -172,7 +172,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | Переменная окружения   | Обязательна | Описание                                                                            |
 | ---------------------- | ----------- | ----------------------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | Нет         | Корень workspace (по умолчанию: `cwd` клиента)                                      |
-| `SPIRIT_ACP_DATA_DIR`  | Нет         | Каталог данных Spirit (по умолчанию: `%APPDATA%/SpiritAgent` или `~/.spirit-agent`) |
+| `SPIRIT_ACP_DATA_DIR`  | Нет         | Каталог данных Spirit (по умолчанию: `%APPDATA%/Spirit` или `~/.spirit-data`) |
 
 ## Разработка
 

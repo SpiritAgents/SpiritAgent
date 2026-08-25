@@ -1,11 +1,11 @@
 {
   "name": "@spiritagent/agent-core",
   "version": "1.0.0-alpha.0",
-  "description": "TypeScript core runtime for Spirit Agent",
+  "description": "TypeScript core runtime for Spirit",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
+    "url": "git+https://github.com/SpiritAgents/spirit.git",
     "directory": "packages/agent-core"
   },
   "files": [

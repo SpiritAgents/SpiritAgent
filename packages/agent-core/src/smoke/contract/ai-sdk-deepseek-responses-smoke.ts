@@ -101,7 +101,7 @@ async function main(): Promise<void> {
   const resumedState = appendOpenAiToolResultMessage(
     firstRound.result.state,
     firstCall.id,
-    '{"query":"Spirit Agent migration","result":"deepseek responses ok"}',
+    '{"query":"Spirit migration","result":"deepseek responses ok"}',
   );
 
   const secondRound = await transport.startToolAgentRound(config, resumedState, tools);

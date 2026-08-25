@@ -7,14 +7,14 @@ O Spirit mantém binários e dados em lugares diferentes. Misturá-los é o moti
 
 ## Diretório de dados
 
-Substitua com `SPIRIT_AGENT_DATA_DIR`. O servidor também pode usar `SPIRIT_SERVER_DATA_DIR` (tem precedência sobre o primeiro).
+Substitua com `SPIRIT_DATA_DIR`. O servidor também pode usar `SPIRIT_SERVER_DATA_DIR` (tem precedência sobre o primeiro).
 
-| SO       | Padrão                                                       |
-| -------- | ------------------------------------------------------------ |
-| macOS    | `~/Library/Application Support/SpiritAgent`                  |
-| Windows  | `%APPDATA%\SpiritAgent`                                      |
-| Linux    | `$XDG_DATA_HOME/SpiritAgent` ou `~/.local/share/SpiritAgent` |
-| Fallback | `~/.spirit-agent`                                            |
+| SO       | Padrão                                             |
+| -------- | -------------------------------------------------- |
+| macOS    | `~/Library/Application Support/Spirit`             |
+| Windows  | `%APPDATA%\Spirit`                                 |
+| Linux    | `$XDG_DATA_HOME/Spirit` ou `~/.local/share/Spirit` |
+| Fallback | `~/.spirit-data`                                   |
 
 Arquivos típicos:
 
@@ -63,7 +63,7 @@ Também usado: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspa
 
 | Variável                                                          | Função                                           |
 | ----------------------------------------------------------------- | ------------------------------------------------ |
-| `SPIRIT_AGENT_DATA_DIR`                                           | Diretório de dados                               |
+| `SPIRIT_DATA_DIR`                                                 | Diretório de dados                               |
 | `SPIRIT_SERVER_DATA_DIR`                                          | Diretório de dados do servidor (tem precedência) |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                                 |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | Instalador do CLI                                |

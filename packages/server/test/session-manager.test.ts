@@ -40,7 +40,7 @@ function withMockKeyring(run: () => Promise<void>): Promise<void> {
     },
   });
   // The canonical Desktop/CLI account scheme: group::{groupId}.
-  store.set(`SpiritAgent/${groupKeyAccount("openai")}`, "test-key");
+  store.set(`Spirit/${groupKeyAccount("openai")}`, "test-key");
   return run().finally(() => setKeyringStoreForTests(undefined));
 }
 

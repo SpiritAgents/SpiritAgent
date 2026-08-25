@@ -1,6 +1,6 @@
 ---
 title: Install CLI
-description: Install the Spirit Agent CLI with the install script, SPIRIT_HOME, and SPIRIT_VERSION.
+description: Install the Spirit CLI with the install script, SPIRIT_HOME, and SPIRIT_VERSION.
 ---
 
 The CLI is a terminal host with a TUI and a non-interactive `-p` mode. It talks to the same local daemon as [Desktop](./desktop.mdx).
@@ -29,14 +29,14 @@ spirit --version
 
 ## Where it lands
 
-The install root is **not** the Spirit Agent data directory.
+The install root is **not** the Spirit data directory.
 
-|                                    | Default                                                                                                                     | Override                |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI binaries                       | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| Sessions, config, keyring pointers | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+|                                    | Default                                                                                                      | Override          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI binaries                       | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
+| Sessions, config, keyring pointers | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
-On Unix the script links `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` and appends `export PATH="$SPIRIT_HOME/bin:$PATH"` to `~/.profile`, `~/.bashrc`, and `~/.zshrc` (marker `# spirit-agent cli`).
+On Unix the script links `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` and appends `export PATH="$SPIRIT_HOME/bin:$PATH"` to `~/.profile`, `~/.bashrc`, and `~/.zshrc` (marker `# spirit cli`).
 
 ## Pin a version or mirror
 
@@ -50,7 +50,7 @@ On Unix the script links `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
 ```
 
-You can also download a CLI archive from the [download page](/en-US/download) or [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) and unpack it yourself.
+You can also download a CLI archive from the [download page](/en-US/download) or [GitHub Releases](https://github.com/SpiritAgents/spirit/releases/latest) and unpack it yourself.
 
 ## First run
 
