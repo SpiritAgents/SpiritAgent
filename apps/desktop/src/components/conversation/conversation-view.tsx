@@ -418,7 +418,7 @@ export function ConversationView({
       data-spirit-surface="conversation-layout"
       className={cn(
         "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0",
-        desktopTranslucencyTintInnerClass(useTranslucency),
+        desktopTranslucencyTintClass(useTranslucency),
       )}
     >
       <div
@@ -524,10 +524,7 @@ export function ConversationView({
         >
           <div
             data-spirit-surface="conversation-stage"
-            className={cn(
-              "relative flex min-h-0 min-w-0 flex-1 flex-col text-sm",
-              desktopTranslucencyTintClass(useTranslucency),
-            )}
+            className="relative flex min-h-0 min-w-0 flex-1 flex-col text-sm"
           >
             {compactionDemoActive || longConversationListDemoActive ? (
               <div

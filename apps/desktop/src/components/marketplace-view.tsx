@@ -30,10 +30,7 @@ import {
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
-import {
-  desktopTranslucencyTintClass,
-  desktopTranslucencyTintInnerClass,
-} from "@/lib/desktop-translucency-surface";
+import { desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
@@ -446,10 +443,7 @@ export function MarketplaceView({
   return (
     <div
       data-spirit-surface="marketplace-shell"
-      className={cn(
-        "flex min-h-0 min-w-0 flex-1 flex-col text-sm",
-        desktopTranslucencyTintClass(useTranslucency),
-      )}
+      className="flex min-h-0 min-w-0 flex-1 flex-col text-sm"
     >
       {detailExtensionId === null ? (
         <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>

@@ -486,7 +486,7 @@ export default function App() {
                         data-spirit-surface="settings-shell"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopTranslucencyTintInnerClass(useTranslucency),
+                          desktopTranslucencyTintClass(useTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -569,19 +569,14 @@ export default function App() {
                         data-spirit-surface="automations-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopTranslucencyTintInnerClass(useTranslucency),
+                          desktopTranslucencyTintClass(useTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
                           useTranslucency={useTranslucency}
                           showWorkspaceToggle={false}
                         />
-                        <div
-                          className={cn(
-                            "flex min-h-0 min-w-0 flex-1 flex-col",
-                            desktopTranslucencyTintClass(useTranslucency),
-                          )}
-                        >
+                        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                           {surfaceNav.automationDetailMode && surfaceNav.selectedAutomationId ? (
                             <AutomationDetailView
                               automationId={surfaceNav.selectedAutomationId}
@@ -666,7 +661,7 @@ export default function App() {
                         data-spirit-surface="marketplace-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopTranslucencyTintInnerClass(useTranslucency),
+                          desktopTranslucencyTintClass(useTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar

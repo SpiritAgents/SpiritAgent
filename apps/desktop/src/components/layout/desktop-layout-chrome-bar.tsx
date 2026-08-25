@@ -47,7 +47,6 @@ import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
-import { desktopTranslucencyTintClass } from "@/lib/desktop-translucency-surface";
 import {
   isDarwinElectronShell,
   modBackslashShortcutLabel,
@@ -70,7 +69,7 @@ function isPaneDragBlockedTarget(target: EventTarget | null): boolean {
 }
 
 export function DesktopLayoutChromeBar({
-  useTranslucency,
+  useTranslucency: _useTranslucency,
   showSessionSidebarToggle = true,
   showWorkspaceToggle,
   showSplitMenu = false,
@@ -257,7 +256,6 @@ export function DesktopLayoutChromeBar({
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-2",
         showTrailingActions ? "justify-between" : "justify-start",
-        desktopTranslucencyTintClass(useTranslucency),
         paneDragEnabled && "cursor-grab active:cursor-grabbing",
       )}
       onDragOver={(event) => {

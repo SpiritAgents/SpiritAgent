@@ -22,7 +22,6 @@ import type { SettingsViewProps } from "@/components/settings/types";
 import { useTheme } from "@/hooks/useTheme";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { desktopTranslucencyTintClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
@@ -74,7 +73,7 @@ export function SettingsView({
   onGenerateHookNavigate,
   onStartCompactionUiDemo,
   onStartLongConversationListDemo,
-  useTranslucency = false,
+  useTranslucency: _useTranslucency = false,
   getGitHubAuthStatus,
   beginGitHubDeviceLogin,
   completeGitHubDeviceLogin,
@@ -108,7 +107,7 @@ export function SettingsView({
 
   return (
     <div
-      className={cn("flex min-h-0 flex-1 flex-col", desktopTranslucencyTintClass(useTranslucency))}
+      className="flex min-h-0 flex-1 flex-col"
     >
       <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
         <div className="flex min-h-full flex-col justify-center">
