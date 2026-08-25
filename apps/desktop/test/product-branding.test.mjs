@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = join(__dirname, "..");
 
 const FORBIDDEN_PATTERNS = [/Spirit Agent Desktop MVP/, /Spirit Agent Desktop/];
-const SCAN_SKIP_DIRS = new Set(["node_modules", "dist", "out", "dist-electron"]);
+const SCAN_SKIP_DIRS = new Set(["node_modules", "dist", "out", "dist-electron", ".dev-electron"]);
 const SCAN_SKIP_FILES = new Set(["README.md", "test/product-branding.test.mjs"]);
 
 async function collectFiles(dir) {
