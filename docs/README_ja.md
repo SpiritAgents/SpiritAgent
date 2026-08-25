@@ -133,7 +133,7 @@ pnpm run dev:cli    # cargo run -p spirit
 - **Bearer 認証** — ホームレベルのトークンは `{spiritDataDir}/server.token`（パーミッション 0600）に保存され、`Authorization` ヘッダーまたは `?token=` クエリで受け付けます。`spirit-server rotate-token` でローテーションすると新規接続に適用されます。
 - **新規依存ゼロ** — WebSocket 層（RFC 6455）はパッケージ内に実装されています。
 
-**CLI と Desktop のエージェント実行は daemon-only** です（[Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) を参照）。Desktop Web Host クライアントは Desktop ホストから認証済みスナップショットを受け取り、エージェント実行はデーモン内で行われます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
+**CLI と Desktop のエージェント実行は daemon-only** です（[Epic #274](https://github.com/SpiritAgents/spirit/issues/274) を参照）。Desktop Web Host クライアントは Desktop ホストから認証済みスナップショットを受け取り、エージェント実行はデーモン内で行われます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
 
 ## ACP Server
 

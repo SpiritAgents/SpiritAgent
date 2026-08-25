@@ -4,7 +4,7 @@
 
 ## Desktop
 
-[Скачать](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Скачать](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 

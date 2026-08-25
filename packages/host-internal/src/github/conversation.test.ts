@@ -40,7 +40,7 @@ test("mapTimelineEventToConversationItem maps committed event from issue timelin
   const item = mapTimelineEventToConversationItem({
     sha: "3fc54ae2102e42ec0adc877fac601e6a517b117f",
     html_url:
-      "https://github.com/SpiritAgents/SpiritAgent/commit/3fc54ae2102e42ec0adc877fac601e6a517b117f",
+      "https://github.com/SpiritAgents/spirit/commit/3fc54ae2102e42ec0adc877fac601e6a517b117f",
     author: {
       name: "XianYu",
       email: "121384036+N123999@users.noreply.github.com",
@@ -127,7 +127,7 @@ test("mapTimelineEventToConversationItem maps review event with submitted_at onl
       avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4",
     },
     body: "✅ Automated review found no new issues.",
-    html_url: "https://github.com/SpiritAgents/SpiritAgent/pull/100#pullrequestreview-4464571196",
+    html_url: "https://github.com/SpiritAgents/spirit/pull/100#pullrequestreview-4464571196",
   });
 
   assert.equal(item?.kind, "review");
@@ -194,7 +194,7 @@ test("enrichConversationCommitAuthors replaces timeline fallback with pull commi
   const timelineItem = mapTimelineEventToConversationItem({
     sha: "b40b5d065d1dafe791397c7ed4538a1eb7527a34",
     html_url:
-      "https://github.com/SpiritAgents/SpiritAgent/commit/b40b5d065d1dafe791397c7ed4538a1eb7527a34",
+      "https://github.com/SpiritAgents/spirit/commit/b40b5d065d1dafe791397c7ed4538a1eb7527a34",
     author: { name: "Commit Bot", email: "bot@example.com", date: "2026-06-13T10:17:52Z" },
     message: "fix(desktop): fix compact count display near 1M tokens",
     event: "committed",

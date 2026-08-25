@@ -4,7 +4,7 @@
 
 ## デスクトップ
 
-[ダウンロード](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[ダウンロード](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 

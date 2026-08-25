@@ -4,7 +4,7 @@
 
 ## Desktop
 
-[下載](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[下載](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 

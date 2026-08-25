@@ -2,7 +2,7 @@
 
 Grounded in your workspace, equipped with real tools, and ready to plan, execute, and ship alongside you.
 
-[Download](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Download](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Placeholder for now.
 
 ## Try Spirit.
 
-[Download](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Download](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Placeholder for now.
 ### Resources
 
 - [Docs](/en-US/docs)
-- [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [Changelog](https://github.com/SpiritAgents/spirit/releases)
 - [Open source licenses](/notice.md)
 
 © 2026 Spirit. Open source AI agent.
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

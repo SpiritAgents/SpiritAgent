@@ -133,7 +133,7 @@ pnpm run dev:cli    # cargo run -p spirit
 - **Bearer 驗證**——home 級 token 位於 `{spiritDataDir}/server.token`（0600 權限），支援 `Authorization` 標頭或 `?token=` 查詢參數；`spirit-server rotate-token` 輪換後對新連線生效。
 - **零新增依賴**——WebSocket 層（RFC 6455）在套件內實作。
 
-**CLI 與 Desktop 的智能體執行均為 daemon-only**（見 [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)）。Desktop Web Host 用戶端由 Desktop 宿主推送已鑑權的快照，智能體執行仍在 daemon 內。遠端存取（`--hostname 0.0.0.0`）預留給後續階段，預設關閉。
+**CLI 與 Desktop 的智能體執行均為 daemon-only**（見 [Epic #274](https://github.com/SpiritAgents/spirit/issues/274)）。Desktop Web Host 用戶端由 Desktop 宿主推送已鑑權的快照，智能體執行仍在 daemon 內。遠端存取（`--hostname 0.0.0.0`）預留給後續階段，預設關閉。
 
 ## ACP Server
 

@@ -8,7 +8,7 @@ const MODELS_DEV_PROBE_TIMEOUT_MS = 3_000;
 /**
  * Lightweight HEAD target on the same origin/path as provider logos.
  * models.dev is not reliably reachable in mainland China; on probe failure the UI falls back to the local Sparkles icon.
- * https://github.com/SpiritAgents/SpiritAgent/issues/252
+ * https://github.com/SpiritAgents/spirit/issues/252
  */
 const MODELS_DEV_PROBE_URL = `${MODELS_DEV_LOGO_ORIGIN}/logos/openai.svg`;
 

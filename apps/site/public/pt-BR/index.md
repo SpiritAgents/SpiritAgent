@@ -2,7 +2,7 @@
 
 Enraizado no seu espaço de trabalho, equipado com ferramentas reais e pronto para planejar, executar e entregar junto com você.
 
-[Baixar](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Baixar](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Placeholder por enquanto.
 
 ## Experimente o Spirit.
 
-[Baixar](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Baixar](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Placeholder por enquanto.
 ### Recursos
 
 - [Docs](/pt-BR/docs)
-- [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [Changelog](https://github.com/SpiritAgents/spirit/releases)
 - [Licenças de código aberto](/notice.md)
 
 © 2026 Spirit. Agente de IA de código aberto.
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

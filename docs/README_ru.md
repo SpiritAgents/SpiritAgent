@@ -133,7 +133,7 @@ pnpm run dev:cli    # cargo run -p spirit
 - **Bearer-аутентификация** — токен уровня home в `{spiritDataDir}/server.token` (права 0600), принимается через заголовок `Authorization` или query `?token=`; `spirit-server rotate-token` ротирует его для новых подключений.
 - **Без новых зависимостей** — слой WebSocket (RFC 6455) реализован внутри пакета.
 
-**CLI и Desktop работают только через daemon для выполнения агента** (см. [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)). Клиенты Desktop Web Host получают аутентифицированные snapshot-push от Desktop-хоста, а выполнение агента остаётся в daemon. Удалённый доступ (`--hostname 0.0.0.0`) зарезервирован для будущей фазы и по умолчанию выключен.
+**CLI и Desktop работают только через daemon для выполнения агента** (см. [Epic #274](https://github.com/SpiritAgents/spirit/issues/274)). Клиенты Desktop Web Host получают аутентифицированные snapshot-push от Desktop-хоста, а выполнение агента остаётся в daemon. Удалённый доступ (`--hostname 0.0.0.0`) зарезервирован для будущей фазы и по умолчанию выключен.
 
 ## ACP Server
 

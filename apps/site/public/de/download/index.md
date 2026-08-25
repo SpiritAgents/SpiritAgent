@@ -4,7 +4,7 @@ Laden Sie Spirit für Desktop herunter, installieren Sie die CLI oder warten Sie
 
 ## Desktop
 
-[Herunterladen](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Herunterladen](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 

@@ -5,10 +5,10 @@ import { parseGitHubPullRequestUrl } from "./pull-request-url.js";
 
 test("parseGitHubPullRequestUrl parses canonical pull request URLs", () => {
   assert.deepEqual(
-    parseGitHubPullRequestUrl("https://github.com/SpiritAgents/SpiritAgent/pull/100"),
+    parseGitHubPullRequestUrl("https://github.com/SpiritAgents/spirit/pull/100"),
     {
       owner: "SpiritAgents",
-      repo: "SpiritAgent",
+      repo: "spirit",
       number: 100,
     },
   );

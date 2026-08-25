@@ -4,7 +4,7 @@ Descarga Spirit para escritorio, instala la CLI o espera por ACP.
 
 ## Escritorio
 
-[Descargar](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Descargar](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 

@@ -3,7 +3,7 @@
   "version": "1.0.0-alpha.0",
   "private": true,
   "description": "Desktop application for Spirit",
-  "homepage": "https://github.com/SpiritAgents/SpiritAgent",
+  "homepage": "https://github.com/SpiritAgents/spirit",
   "license": "MIT",
   "author": {
     "name": "Spirit contributors",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
+    "url": "git+https://github.com/SpiritAgents/spirit.git",
     "directory": "apps/desktop"
   },
   "type": "module",

@@ -4,7 +4,7 @@ Téléchargez Spirit pour Desktop, installez le CLI, ou surveillez ACP.
 
 ## Desktop
 
-[Télécharger](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[Télécharger](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ## CLI
 

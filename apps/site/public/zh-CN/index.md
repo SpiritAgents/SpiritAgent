@@ -2,7 +2,7 @@
 
 扎根于你的工作区，配备真实工具，随时与你一起规划、执行并交付成果。
 
-[下载](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[下载](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -28,7 +28,7 @@ Spirit 不会把你锁进托管栈。你可以接入任意提供商的密钥，�
 
 ## 试试 Spirit。
 
-[下载](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+[下载](https://github.com/SpiritAgents/spirit/releases/latest)
 
 ---
 
@@ -40,9 +40,9 @@ Spirit 不会把你锁进托管栈。你可以接入任意提供商的密钥，�
 ### 资源
 
 - [文档](/zh-CN/docs)
-- [更新日志](https://github.com/SpiritAgents/SpiritAgent/releases)
+- [更新日志](https://github.com/SpiritAgents/spirit/releases)
 - [开源许可](/notice.md)
 
 © 2026 Spirit。开源 AI 智能体。
 
-[GitHub](https://github.com/SpiritAgents/SpiritAgent)
+[GitHub](https://github.com/SpiritAgents/spirit)

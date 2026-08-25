@@ -1,6 +1,6 @@
 # @spiritagent/server
 
-**Spirit Server** — the shared daemon backend for [Spirit](https://github.com/SpiritAgents/SpiritAgent). It owns the agent runtime, sessions, streaming, tool execution, and approvals; hosts (CLI, Desktop, Web) attach as thin WebSocket clients instead of embedding a runtime in-process.
+**Spirit Server** — the shared daemon backend for [Spirit](https://github.com/SpiritAgents/spirit). It owns the agent runtime, sessions, streaming, tool execution, and approvals; hosts (CLI, Desktop, Web) attach as thin WebSocket clients instead of embedding a runtime in-process.
 
 ## What it provides
 
@@ -112,4 +112,4 @@ Remote access is **off by default**: the daemon binds loopback and requires the 
 
 ## License
 
-MIT — see the [Spirit repository](https://github.com/SpiritAgents/SpiritAgent).
+MIT — see the [Spirit repository](https://github.com/SpiritAgents/spirit).

@@ -96,7 +96,7 @@ test("crash page has no external resources or scripts", () => {
 });
 
 test("crash page renders the feedback button only with both label and url", () => {
-  const url = "https://github.com/SpiritAgents/SpiritAgent/issues/new?template=bug_report.md";
+  const url = "https://github.com/SpiritAgents/spirit/issues/new?template=bug_report.md";
   const html = buildCrashPageHtml(
     { title: "t", description: "d", reportLabel: "Report on GitHub" },
     "log",
@@ -141,7 +141,7 @@ test("buildIssueFeedbackUrl prefills the bug report template with logs and envir
     logText: "Reason: crashed\nExit code: 11",
     env: TEST_FEEDBACK_ENV,
   });
-  assert.ok(url.startsWith("https://github.com/SpiritAgents/SpiritAgent/issues/new?"));
+  assert.ok(url.startsWith("https://github.com/SpiritAgents/spirit/issues/new?"));
   const parsed = new URL(url);
   assert.equal(parsed.searchParams.get("template"), "bug_report.md");
   assert.equal(parsed.searchParams.get("title"), "Renderer crash: crashed, exit code 11");

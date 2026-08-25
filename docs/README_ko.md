@@ -133,7 +133,7 @@ pnpm run dev:cli    # cargo run -p spirit
 - **Bearer 인증** — 홈 레벨 토큰은 `{spiritDataDir}/server.token`(권한 0600)에 저장되며 `Authorization` 헤더 또는 `?token=` 쿼리로 전달합니다. `spirit-server rotate-token`으로 교체하면 새 연결부터 적용됩니다.
 - **신규 의존성 없음** — WebSocket 계층(RFC 6455)을 패키지 내부에 구현했습니다.
 
-**CLI와 Desktop의 에이전트 실행은 daemon-only**입니다([Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) 참조). Desktop Web Host 클라이언트는 Desktop 호스트의 인증된 스냅샷 push를 받으며, 에이전트 실행은 데몬에 남습니다. 원격 접속(`--hostname 0.0.0.0`)은 향후 단계를 위해 예약되어 있으며 기본적으로 꺼져 있습니다.
+**CLI와 Desktop의 에이전트 실행은 daemon-only**입니다([Epic #274](https://github.com/SpiritAgents/spirit/issues/274) 참조). Desktop Web Host 클라이언트는 Desktop 호스트의 인증된 스냅샷 push를 받으며, 에이전트 실행은 데몬에 남습니다. 원격 접속(`--hostname 0.0.0.0`)은 향후 단계를 위해 예약되어 있으며 기본적으로 꺼져 있습니다.
 
 ## ACP Server
 

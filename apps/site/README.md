@@ -20,9 +20,9 @@ Equivalent: `pnpm --filter @spiritagent/site dev`.
 
 ## Vercel
 
-Build settings live in [`vercel.json`](./vercel.json). After this package lands on `SpiritAgents/SpiritAgent`, switch the existing Vercel project (keep `spirit.fast` / `next.spirit.fast` on the same project):
+Build settings live in [`vercel.json`](./vercel.json). After this package lands on `SpiritAgents/spirit`, switch the existing Vercel project (keep `spirit.fast` / `next.spirit.fast` on the same project):
 
-1. **Settings → Git**: disconnect `spirit.fast`, connect `SpiritAgents/SpiritAgent`.
+1. **Settings → Git**: disconnect `spirit.fast`, connect `SpiritAgents/spirit`.
 2. **Root Directory**: `apps/site`.
 3. Enable **Include source files outside of the Root Directory**.
 4. Leave Install / Build / Output empty so `vercel.json` applies.
