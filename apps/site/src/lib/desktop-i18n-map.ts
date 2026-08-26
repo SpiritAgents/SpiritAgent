@@ -69,7 +69,7 @@ const MESSAGE_PATHS: Record<string, string> = {
   "composer.openInsertPanel": "desktop.models.connectProvider",
   "composer.insert": "desktop.models.connectProvider",
   "workspace.files": "desktop.tools.filesTab",
-  "workspace.shell": "desktop.tools.shellTab",
+  "workspace.terminal": "desktop.tools.terminalTab",
   "workspace.gitTab": "desktop.tools.gitTab",
 };
 

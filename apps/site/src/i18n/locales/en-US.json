@@ -263,7 +263,7 @@
     },
     "tools": {
       "filesTab": "Files",
-      "shellTab": "Shell",
+      "terminalTab": "Terminal",
       "gitTab": "Git",
       "browserTab": "Browser",
       "browserBack": "Back",

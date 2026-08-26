@@ -260,7 +260,7 @@
     },
     "tools": {
       "filesTab": "文件",
-      "shellTab": "Shell",
+      "terminalTab": "终端",
       "gitTab": "Git",
       "browserTab": "浏览器",
       "browserBack": "后退",

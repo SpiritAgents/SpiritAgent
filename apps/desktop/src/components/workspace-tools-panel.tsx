@@ -48,7 +48,7 @@ import {
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspacePrTab } from "@/components/workspace-pr-tab";
-import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
+import { WorkspaceTerminalTab } from "@/components/workspace-terminal-tab";
 import {
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
   DESKTOP_OVERLAY_LIST_ITEM,
@@ -113,7 +113,7 @@ export type { WorkspaceToolTab, WorkspaceToolTabKind };
 
 const TAB_KIND_META: Record<WorkspaceToolTabKind, { labelKey: string; icon: typeof FileText }> = {
   files: { labelKey: "workspace.files", icon: FileText },
-  shell: { labelKey: "workspace.shell", icon: Terminal },
+  terminal: { labelKey: "workspace.terminal", icon: Terminal },
   git: { labelKey: "workspace.gitTab", icon: GitBranch },
   browser: { labelKey: "workspace.browser", icon: Globe },
   pr: { labelKey: "workspace.prTab", icon: GitPullRequest },
@@ -532,8 +532,8 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   const gitHubAuthConnected = useGitHubAuthConnected(getGitHubAuthStatus, prTabEnabled);
   const prMenuBlocked =
     prTabEnabled && (gitHubAuthConnected === null || gitHubAuthConnected === false);
-  /** Mount the terminal only after the user first switches to the Shell tab (so the default tab does not trigger node-pty); keep it mounted after switching away. */
-  const [mountedShellTabIds, setMountedShellTabIds] = useState<ReadonlySet<string>>(
+  /** Mount the terminal only after the user first switches to the Terminal tab (so the default tab does not trigger node-pty); keep it mounted after switching away. */
+  const [mountedTerminalTabIds, setMountedTerminalTabIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
   const [pendingCloseTabId, setPendingCloseTabId] = useState<string | null>(null);
@@ -567,10 +567,10 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId), [activeTabId, tabs]);
 
   useEffect(() => {
-    if (activeTab?.kind !== "shell") {
+    if (activeTab?.kind !== "terminal") {
       return;
     }
-    setMountedShellTabIds((prev) => {
+    setMountedTerminalTabIds((prev) => {
       if (prev.has(activeTabId)) {
         return prev;
       }
@@ -617,7 +617,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       });
       onTabsChange(next.tabs);
       onActiveTabIdChange(next.activeId);
-      setMountedShellTabIds((prev) => {
+      setMountedTerminalTabIds((prev) => {
         if (!prev.has(closeId)) {
           return prev;
         }
@@ -842,7 +842,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
               DESKTOP_OVERLAY_LIST_LIST_GAP,
             )}
           >
-            {(["files", "shell", "git", "browser", "pr"] as const).map((kind) => {
+            {(["files", "terminal", "git", "browser", "pr"] as const).map((kind) => {
               const meta = TAB_KIND_META[kind];
               const Icon = meta.icon;
               const browserDisabled = kind === "browser" && !browserTabEnabled;
@@ -910,7 +910,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       >
         {tabs.map((item) => {
           const selected = item.id === activeTabId;
-          const panelPadding = item.kind === "files" || item.kind === "shell" ? "p-0" : "p-0";
+          const panelPadding = item.kind === "files" || item.kind === "terminal" ? "p-0" : "p-0";
           const planRevealEnabled =
             item.kind === "files" && planRevealTabId != null && item.id === planRevealTabId;
           const fileRevealEnabled =
@@ -974,10 +974,10 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     codeCompletionEnabled={codeCompletionEnabled}
                   />
                 </div>
-              ) : item.kind === "shell" ? (
-                mountedShellTabIds.has(item.id) ? (
+              ) : item.kind === "terminal" ? (
+                mountedTerminalTabIds.has(item.id) ? (
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    <WorkspaceShellTab
+                    <WorkspaceTerminalTab
                       workspaceRoot={workspaceRoot}
                       useTranslucency={useTranslucency}
                       onTitleChange={(title) => handleTabTitleChange(item.id, title)}

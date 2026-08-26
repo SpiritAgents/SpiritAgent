@@ -31,7 +31,7 @@ export function shouldTriggerConversationAbortShortcut(
     return false;
   }
   const target = event.target as HTMLElement | null;
-  if (target?.closest(".workspace-shell-xterm, .shell-tool-xterm, .xterm, .monaco-editor")) {
+  if (target?.closest(".workspace-terminal-xterm, .shell-tool-xterm, .xterm, .monaco-editor")) {
     return false;
   }
   if (
@@ -148,7 +148,7 @@ export function resolveModBackslashSplitShortcutAction(
   if (isEditableShortcutTarget(target)) {
     return null;
   }
-  if (target?.closest(".workspace-shell-xterm, .shell-tool-xterm, .xterm, .monaco-editor")) {
+  if (target?.closest(".workspace-terminal-xterm, .shell-tool-xterm, .xterm, .monaco-editor")) {
     return null;
   }
   return event.shiftKey ? "split-down" : "split-right";

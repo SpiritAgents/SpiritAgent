@@ -9,7 +9,7 @@ import type { Messages } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-export type WorkspaceShellTabProps = {
+export type WorkspaceTerminalTabProps = {
   workspaceRoot: string;
 };
 
@@ -142,7 +142,7 @@ function mockCommandOutput(
   return [copy.unsupportedCommand(command.trim()), copy.typeHelp];
 }
 
-export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
+export function WorkspaceTerminalTab({ workspaceRoot }: WorkspaceTerminalTabProps) {
   const { messages } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -409,7 +409,7 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
       <div
         ref={containerRef}
         className={cn(
-          "workspace-shell-xterm min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border border-border/40 bg-background",
+          "workspace-terminal-xterm min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border border-border/40 bg-background",
           embedError ? "hidden" : "block",
         )}
       />

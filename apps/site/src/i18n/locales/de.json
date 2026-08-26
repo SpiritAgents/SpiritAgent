@@ -163,7 +163,7 @@
     },
     "tools": {
       "filesTab": "Dateien",
-      "shellTab": "Shell",
+      "terminalTab": "Terminal",
       "gitTab": "Git",
       "browserTab": "Browser",
       "browserBack": "Zurück",

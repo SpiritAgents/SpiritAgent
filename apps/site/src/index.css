@@ -499,25 +499,25 @@ body {
   }
 }
 
-.workspace-shell-xterm .xterm-viewport {
+.workspace-terminal-xterm .xterm-viewport {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--foreground) 16%, transparent) transparent;
 }
 
-.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar {
+.workspace-terminal-xterm .xterm-viewport::-webkit-scrollbar {
   width: 6px;
 }
 
-.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-track {
+.workspace-terminal-xterm .xterm-viewport::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-thumb {
+.workspace-terminal-xterm .xterm-viewport::-webkit-scrollbar-thumb {
   border-radius: 9999px;
   background: color-mix(in oklab, var(--foreground) 14%, transparent);
 }
 
-.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
+.workspace-terminal-xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklab, var(--foreground) 24%, transparent);
 }
 

@@ -63,7 +63,7 @@ const defaultMessages = {
     tools: {
       resizeAria: "Resize tools panel",
       filesTab: "Files",
-      shellTab: "Shell",
+      terminalTab: "Terminal",
       gitTab: "Git",
     },
     models: { heading: "Models", connectProvider: "Connect provider", deleteAction: "Delete" },

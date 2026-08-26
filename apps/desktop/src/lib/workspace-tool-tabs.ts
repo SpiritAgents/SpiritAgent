@@ -1,6 +1,6 @@
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 
-export type WorkspaceToolTabKind = "files" | "shell" | "git" | "browser" | "pr";
+export type WorkspaceToolTabKind = "files" | "terminal" | "git" | "browser" | "pr";
 
 export const BROWSER_NEW_TAB_SENTINEL = "__spirit_browser_new_tab__";
 
@@ -21,7 +21,7 @@ export type WorkspaceToolTab = {
 
 const KIND_BASE_LABEL_KEY: Record<WorkspaceToolTabKind, string> = {
   files: "workspace.files",
-  shell: "workspace.shell",
+  terminal: "workspace.terminal",
   git: "workspace.gitTab",
   browser: "workspace.browser",
   pr: "workspace.prTab",
@@ -47,15 +47,15 @@ export function createWorkspaceToolTab(kind: WorkspaceToolTabKind): WorkspaceToo
 }
 
 export type WorkspaceToolTabsDefaultsOptions = {
-  /** The Electron desktop app includes a browser tab by default; the Web host only has Files / Shell / Git. */
+  /** The Electron desktop app includes a browser tab by default; the Web host only has Files / Terminal / Git. */
   includeBrowser?: boolean;
 };
 
-/** Default workspace tabs: Files, Shell, Git; Electron may additionally include Browser. */
+/** Default workspace tabs: Files, Terminal, Git; Electron may additionally include Browser. */
 export function createDefaultWorkspaceToolTabs(
   options: WorkspaceToolTabsDefaultsOptions = {},
 ): WorkspaceToolTab[] {
-  const kinds: WorkspaceToolTabKind[] = ["files", "shell", "git"];
+  const kinds: WorkspaceToolTabKind[] = ["files", "terminal", "git"];
   if (options.includeBrowser) {
     kinds.push("browser");
   }
@@ -100,7 +100,7 @@ export function workspaceTerminalChipDisplayName(
     return titled;
   }
   const index = tabs
-    .filter((item) => item.kind === "shell")
+    .filter((item) => item.kind === "terminal")
     .findIndex((item) => item.id === tab.id);
   const base = translate("workspace.terminalChipDefaultName");
   if (index <= 0) {
@@ -202,7 +202,7 @@ function shouldEnsureTabKindAfterClose(
   if (kind === "pr") {
     return false;
   }
-  return kind === "files" || kind === "shell" || kind === "git";
+  return kind === "files" || kind === "terminal" || kind === "git";
 }
 
 export function closeWorkspaceToolTab(

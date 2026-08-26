@@ -160,7 +160,7 @@
     },
     "tools": {
       "filesTab": "檔案",
-      "shellTab": "Shell",
+      "terminalTab": "終端機",
       "gitTab": "Git",
       "browserTab": "瀏覽器",
       "browserBack": "上一頁",

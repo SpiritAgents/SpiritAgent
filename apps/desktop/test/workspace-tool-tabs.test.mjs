@@ -20,17 +20,17 @@ import {
 const t = (key) =>
   ({
     "workspace.files": "Files",
-    "workspace.shell": "Shell",
+    "workspace.terminal": "Terminal",
     "workspace.browser": "Browser",
     "workspace.prTab": "Pull Request",
     "workspace.terminalChipDefaultName": "Terminal",
   })[key] ?? key;
 
-test("createDefaultWorkspaceToolTabs has files, shell, and git", () => {
+test("createDefaultWorkspaceToolTabs has files, terminal, and git", () => {
   const tabs = createDefaultWorkspaceToolTabs();
   assert.equal(tabs.length, 3);
   const kinds = tabs.map((t) => t.kind);
-  assert.deepEqual(kinds, ["files", "shell", "git"]);
+  assert.deepEqual(kinds, ["files", "terminal", "git"]);
   assert.ok(tabs.every((t) => typeof t.id === "string" && t.id.length > 0));
 });
 
@@ -41,18 +41,18 @@ test("workspaceToolTabLabel numbers duplicate kinds", () => {
   assert.equal(workspaceToolTabLabel("files", tabs, a.id, t), "Files");
   assert.equal(workspaceToolTabLabel("files", tabs, b.id, t), "Files 2");
   assert.equal(
-    workspaceToolTabLabel("shell", tabs, createWorkspaceToolTab("shell").id, t),
-    "Shell",
+    workspaceToolTabLabel("terminal", tabs, createWorkspaceToolTab("terminal").id, t),
+    "Terminal",
   );
 });
 
 test("workspaceTerminalChipDisplayName prefers tab title then default label", () => {
-  const shellA = createWorkspaceToolTab("shell");
-  const shellB = createWorkspaceToolTab("shell");
-  shellA.tabTitle = "npm run dev";
-  const tabs = [shellA, shellB];
-  assert.equal(workspaceTerminalChipDisplayName(shellA, tabs, t), "npm run dev");
-  assert.equal(workspaceTerminalChipDisplayName(shellB, tabs, t), "Terminal 2");
+  const terminalA = createWorkspaceToolTab("terminal");
+  const terminalB = createWorkspaceToolTab("terminal");
+  terminalA.tabTitle = "npm run dev";
+  const tabs = [terminalA, terminalB];
+  assert.equal(workspaceTerminalChipDisplayName(terminalA, tabs, t), "npm run dev");
+  assert.equal(workspaceTerminalChipDisplayName(terminalB, tabs, t), "Terminal 2");
 });
 
 test("createWorkspaceToolTab browser defaults to new-tab sentinel", () => {
@@ -79,19 +79,19 @@ test("focusFirstTabOfKind returns first matching id", () => {
 
 test("addWorkspaceToolTab appends and focuses new tab", () => {
   const tabs = createDefaultWorkspaceToolTabs();
-  const { tabs: next, activeId } = addWorkspaceToolTab(tabs, "shell");
+  const { tabs: next, activeId } = addWorkspaceToolTab(tabs, "terminal");
   assert.equal(next.length, 4);
-  assert.equal(next.at(-1)?.kind, "shell");
+  assert.equal(next.at(-1)?.kind, "terminal");
   assert.equal(activeId, next.at(-1)?.id);
 });
 
-test("closeWorkspaceToolTab recreates shell when last shell tab closes", () => {
-  const tabs = [createWorkspaceToolTab("shell")];
-  const originalShellId = tabs[0].id;
-  const closed = closeWorkspaceToolTab(tabs, originalShellId, originalShellId);
+test("closeWorkspaceToolTab recreates terminal when last terminal tab closes", () => {
+  const tabs = [createWorkspaceToolTab("terminal")];
+  const originalTerminalId = tabs[0].id;
+  const closed = closeWorkspaceToolTab(tabs, originalTerminalId, originalTerminalId);
   assert.equal(closed.tabs.length, 1);
-  assert.equal(closed.tabs[0]?.kind, "shell");
-  assert.notEqual(closed.tabs[0]?.id, originalShellId);
+  assert.equal(closed.tabs[0]?.kind, "terminal");
+  assert.notEqual(closed.tabs[0]?.id, originalTerminalId);
   assert.equal(closed.activeId, closed.tabs[0]?.id);
 });
 
@@ -104,24 +104,24 @@ test("closeWorkspaceToolTab does not recreate optional pr tab", () => {
 
 test("closeWorkspaceToolTab recreates kind without resetting other tabs", () => {
   const tabs = createDefaultWorkspaceToolTabs({ includeBrowser: true });
-  const shellId = tabs[1].id;
-  const closed = closeWorkspaceToolTab(tabs, shellId, shellId, { includeBrowser: true });
+  const terminalId = tabs[1].id;
+  const closed = closeWorkspaceToolTab(tabs, terminalId, terminalId, { includeBrowser: true });
   assert.equal(closed.tabs.length, 4);
-  assert.equal(closed.tabs.filter((tab) => tab.kind === "shell").length, 1);
+  assert.equal(closed.tabs.filter((tab) => tab.kind === "terminal").length, 1);
   assert.equal(closed.tabs.filter((tab) => tab.kind === "files").length, 1);
   assert.equal(closed.tabs.filter((tab) => tab.kind === "browser").length, 1);
-  assert.equal(closed.activeId, closed.tabs.find((tab) => tab.kind === "shell")?.id);
+  assert.equal(closed.activeId, closed.tabs.find((tab) => tab.kind === "terminal")?.id);
 });
 
 test("closeWorkspaceToolTab prefers left neighbor when kind still has tabs", () => {
   const files = createWorkspaceToolTab("files");
-  const shell1 = createWorkspaceToolTab("shell");
-  const shell2 = createWorkspaceToolTab("shell");
+  const terminal1 = createWorkspaceToolTab("terminal");
+  const terminal2 = createWorkspaceToolTab("terminal");
   const git = createWorkspaceToolTab("git");
-  const tabs = [files, shell1, shell2, git];
-  const closed = closeWorkspaceToolTab(tabs, shell2.id, shell2.id);
-  assert.equal(closed.activeId, shell1.id);
-  assert.equal(closed.tabs.filter((tab) => tab.kind === "shell").length, 1);
+  const tabs = [files, terminal1, terminal2, git];
+  const closed = closeWorkspaceToolTab(tabs, terminal2.id, terminal2.id);
+  assert.equal(closed.activeId, terminal1.id);
+  assert.equal(closed.tabs.filter((tab) => tab.kind === "terminal").length, 1);
 });
 
 test("defaultActiveWorkspaceToolTabId prefers files", () => {
@@ -134,7 +134,7 @@ test("createDefaultWorkspaceToolTabs can include browser on Electron", () => {
   assert.equal(tabs.length, 4);
   assert.deepEqual(
     tabs.map((t) => t.kind),
-    ["files", "shell", "git", "browser"],
+    ["files", "terminal", "git", "browser"],
   );
 });
 

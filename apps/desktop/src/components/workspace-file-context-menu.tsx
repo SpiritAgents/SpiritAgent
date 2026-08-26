@@ -76,7 +76,7 @@ export function WorkspaceFileContextMenuContent({
       item: (
         <ContextMenuItem
           disabled={!shellActionsEnabled}
-          title={!isElectron ? t("workspace.shellElectronOnly") : undefined}
+          title={!isElectron ? t("workspace.electronDesktopOnly") : undefined}
           onSelect={() => {
             const entry = targetRef.current ?? target;
             if (entry) {
@@ -172,7 +172,7 @@ export function WorkspaceFileContextMenuContent({
         <ContextMenuItem
           variant="destructive"
           disabled={!deleteEnabled}
-          title={!isElectron ? t("workspace.shellElectronOnly") : undefined}
+          title={!isElectron ? t("workspace.electronDesktopOnly") : undefined}
           onSelect={() => {
             const entry = targetRef.current ?? target;
             if (entry) {

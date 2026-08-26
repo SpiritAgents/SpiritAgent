@@ -10,7 +10,7 @@ import { desktopTranslucencyTerminalTintClass } from "@/lib/desktop-translucency
 import { cn } from "@/lib/utils";
 import type { Terminal } from "@xterm/xterm";
 
-export type WorkspaceShellTabProps = {
+export type WorkspaceTerminalTabProps = {
   workspaceRoot: string;
   /** Notifies the parent when the terminal title changes (from OSC 0/2 sequences); undefined when there is no title */
   onTitleChange?: (title: string | undefined) => void;
@@ -25,14 +25,14 @@ export type WorkspaceShellTabProps = {
   useTranslucency?: boolean;
 };
 
-export function WorkspaceShellTab({
+export function WorkspaceTerminalTab({
   workspaceRoot,
   onTitleChange,
   terminalDisplayName = "Terminal",
   onTerminalAddToSession,
   suspendTerminalResize = false,
   useTranslucency = false,
-}: WorkspaceShellTabProps) {
+}: WorkspaceTerminalTabProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [terminal, setTerminal] = useState<Terminal | null>(null);
@@ -74,7 +74,7 @@ export function WorkspaceShellTab({
       bridge: b,
       onTitleChange: (title) => onTitleChangeRef.current?.(title),
       onEmbedError: setEmbedError,
-      shellExitedMessage: (exitCode) => tRef.current("workspace.shellExited", { exitCode }),
+      shellExitedMessage: (exitCode) => tRef.current("workspace.terminalExited", { exitCode }),
       isResizeSuspended: () => suspendResizeRef.current,
     });
     setTerminal(session.terminal);
@@ -105,7 +105,7 @@ export function WorkspaceShellTab({
   }
 
   if (!canEmbed || !bridge?.openSystemTerminal) {
-    return <p className="text-muted-foreground">{t("workspace.shellElectronOnly")}</p>;
+    return <p className="text-muted-foreground">{t("workspace.terminalElectronOnly")}</p>;
   }
 
   return (
@@ -134,7 +134,7 @@ export function WorkspaceShellTab({
       <div
         ref={containerRef}
         className={cn(
-          "workspace-shell-xterm min-h-0 min-w-0 flex-1 overflow-hidden",
+          "workspace-terminal-xterm min-h-0 min-w-0 flex-1 overflow-hidden",
           desktopTranslucencyTerminalTintClass(useTranslucency),
           embedError ? "hidden" : "block",
         )}
