@@ -15,15 +15,15 @@ use crate::{
         is_valid_cloudflare_gateway_id, model_add_alibaba_site_api_base,
         model_add_alibaba_site_id_from_choice, model_add_alibaba_site_ids,
         model_add_alibaba_site_requires_workspace_id, model_add_alibaba_token_plan_api_base,
-        model_add_kimi_code_api_base, model_add_minimax_site_api_base,
-        model_add_minimax_site_id_from_choice, model_add_moonshot_site_api_base,
-        model_add_moonshot_site_id_from_choice, model_add_picker_order_ids,
-        model_add_preset_api_base_by_choice_index, model_add_provider_at_choice_index,
-        model_add_provider_id_at_choice_index, model_add_requires_manual_single_provider,
-        model_add_siliconflow_site_api_base, model_add_siliconflow_site_id_from_choice,
-        model_add_stepfun_api_base, model_add_tencent_tokenhub_site_api_base,
-        model_add_tencent_tokenhub_site_id_from_choice, model_add_z_ai_api_base,
-        model_add_zhipu_ai_api_base,
+        model_add_kimi_code_site_api_base, model_add_kimi_code_site_id_from_choice,
+        model_add_minimax_site_api_base, model_add_minimax_site_id_from_choice,
+        model_add_moonshot_site_api_base, model_add_moonshot_site_id_from_choice,
+        model_add_picker_order_ids, model_add_preset_api_base_by_choice_index,
+        model_add_provider_at_choice_index, model_add_provider_id_at_choice_index,
+        model_add_requires_manual_single_provider, model_add_siliconflow_site_api_base,
+        model_add_siliconflow_site_id_from_choice, model_add_stepfun_api_base,
+        model_add_tencent_tokenhub_site_api_base, model_add_tencent_tokenhub_site_id_from_choice,
+        model_add_z_ai_api_base, model_add_zhipu_ai_api_base,
     },
     model_registry::{ModelProvider, ModelTransportKind},
     rules::{RuleEntry, RuleScope},
@@ -456,6 +456,20 @@ fn model_add_moonshot_site_field(selected: usize) -> BottomFormFieldView {
             options: vec![
                 t!("form.model.provider.moonshot-ai.site.cn").into_owned(),
                 t!("form.model.provider.moonshot-ai.site.intl").into_owned(),
+            ],
+            selected: selected.min(1),
+        },
+    }
+}
+
+fn model_add_kimi_code_site_field(selected: usize) -> BottomFormFieldView {
+    BottomFormFieldView {
+        label: t!("form.model.field.site.label").into_owned(),
+        help: String::new(),
+        editor: BottomFormFieldEditorView::Choice {
+            options: vec![
+                t!("form.model.provider.kimi-code.site.cn").into_owned(),
+                t!("form.model.provider.kimi-code.site.intl").into_owned(),
             ],
             selected: selected.min(1),
         },
@@ -943,6 +957,12 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
         _ => 1,
     };
+    let kimi_code_site_selected = match form.fields.get(2).map(|f| &f.editor) {
+        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+            (*selected).min(1)
+        }
+        _ => 1,
+    };
     let tencent_tokenhub_site_selected = match form.fields.get(2).map(|f| &f.editor) {
         Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
             (*selected).min(1)
@@ -1122,6 +1142,7 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             vec![
                 model_add_provider_field(provider_idx),
                 model_add_mode_field_preset(),
+                model_add_kimi_code_site_field(kimi_code_site_selected),
                 model_add_api_key_field(api_key_raw),
             ]
         } else if provider_idx == model_add_minimax_provider_index() {
@@ -2054,7 +2075,15 @@ pub(crate) fn parse_model_add_connection(
         model_add_tencent_tokenhub_site_api_base(site)
             .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
     } else if provider == ModelProvider::KimiCode {
-        model_add_kimi_code_api_base(transport_kind)
+        let site_selected = match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                (*selected).min(1)
+            }
+            _ => 1,
+        };
+        let site = model_add_kimi_code_site_id_from_choice(site_selected);
+        provider_site = Some(site.to_string());
+        model_add_kimi_code_site_api_base(site, transport_kind)
             .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
     } else if provider == ModelProvider::Minimax {
         let site_selected = match form.fields.get(2).map(|f| &f.editor) {
@@ -3343,8 +3372,8 @@ mod tests {
             *selected = super::model_add_kimi_code_provider_index();
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 3);
-        form.selected_field = 2;
+        assert_eq!(form.fields.len(), 4);
+        form.selected_field = 3;
         insert_text(&mut form, "sk-kimi-code");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
@@ -3352,7 +3381,33 @@ mod tests {
         assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
+        assert_eq!(parsed.api_base, "https://api.kimi.ai/coding/v1");
+        assert_eq!(parsed.provider_site.as_deref(), Some("intl"));
+        assert_eq!(parsed.api_key, "sk-kimi-code");
+    }
+
+    #[test]
+    fn model_add_form_parses_kimi_code_china_site_connection() {
+        let mut form = new_model_add_form();
+        if let Some(f) = form.fields.get_mut(0)
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_kimi_code_provider_index();
+        }
+        sync_model_add_form_fields(&mut form);
+        if let Some(f) = form.fields.get_mut(2)
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 0;
+        }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 3;
+        insert_text(&mut form, "sk-kimi-code");
+
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::KimiCode);
         assert_eq!(parsed.api_base, "https://api.kimi.com/coding/v1");
+        assert_eq!(parsed.provider_site.as_deref(), Some("cn"));
         assert_eq!(parsed.api_key, "sk-kimi-code");
     }
 

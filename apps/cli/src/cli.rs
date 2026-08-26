@@ -14,10 +14,10 @@ use crate::{
     model_provider_presets::{
         azure_api_base_from_resource_name, model_add_alibaba_site_api_base,
         model_add_alibaba_site_requires_workspace_id, model_add_default_custom_api_base,
-        model_add_kimi_code_api_base, model_add_minimax_site_api_base,
-        model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider,
-        model_add_siliconflow_site_api_base, model_add_tencent_tokenhub_site_api_base,
-        validate_azure_resource_name,
+        model_add_kimi_code_api_base, model_add_kimi_code_site_api_base,
+        model_add_minimax_site_api_base, model_add_moonshot_site_api_base,
+        model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base,
+        model_add_tencent_tokenhub_site_api_base, validate_azure_resource_name,
     },
     model_registry::{
         AppConfig, DEFAULT_API_BASE, ModelEntry, ModelProfile, ModelProvider, ModelRef,
@@ -281,10 +281,19 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     {
                         return base;
                     }
-                    if provider == Some(ModelProvider::KimiCode)
-                        && let Some(base) = model_add_kimi_code_api_base(transport_kind)
-                    {
-                        return base;
+                    if provider == Some(ModelProvider::KimiCode) {
+                        if let Some(site) = provider_site
+                            .as_deref()
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            && let Some(base) =
+                                model_add_kimi_code_site_api_base(site, transport_kind)
+                        {
+                            return base;
+                        }
+                        if let Some(base) = model_add_kimi_code_api_base(transport_kind) {
+                            return base;
+                        }
                     }
                     if provider == Some(ModelProvider::Minimax)
                         && let Some(site) = provider_site

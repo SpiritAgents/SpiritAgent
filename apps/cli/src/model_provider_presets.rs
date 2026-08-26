@@ -47,11 +47,40 @@ pub(crate) fn model_add_preset_api_base_by_provider(
         .cloned()
 }
 
-/// Aligned with `presetApiBaseByTransport.kimi-code` in `model-provider-presets.json`.
-pub(crate) fn model_add_kimi_code_api_base(transport_kind: ModelTransportKind) -> Option<String> {
+/// Aligned with `presetApiBaseByTransport.kimi-code` / `providerSiteSelection.kimi-code`.
+pub(crate) fn model_add_kimi_code_site_api_base(
+    site: &str,
+    transport_kind: ModelTransportKind,
+) -> Option<String> {
+    let origin = match site.trim().to_ascii_lowercase().as_str() {
+        "cn" => "https://api.kimi.com",
+        "intl" => "https://api.kimi.ai",
+        _ => return None,
+    };
     match transport_kind {
-        ModelTransportKind::OpenAiCompatible => Some("https://api.kimi.com/coding/v1".to_string()),
-        ModelTransportKind::Anthropic => Some("https://api.kimi.com/coding".to_string()),
+        ModelTransportKind::Anthropic => Some(format!("{origin}/coding")),
+        ModelTransportKind::OpenAiCompatible => Some(format!("{origin}/coding/v1")),
+        _ => None,
+    }
+}
+
+pub(crate) fn model_add_kimi_code_api_base(transport_kind: ModelTransportKind) -> Option<String> {
+    model_add_kimi_code_site_api_base("intl", transport_kind)
+}
+
+pub(crate) fn model_add_kimi_code_site_id_from_choice(selected: usize) -> &'static str {
+    if selected == 0 { "cn" } else { "intl" }
+}
+
+pub(crate) fn model_add_kimi_code_site_id_from_api_base(api_base: &str) -> Option<&'static str> {
+    let after_scheme = api_base
+        .trim()
+        .strip_prefix("https://")
+        .or_else(|| api_base.trim().strip_prefix("http://"))?;
+    let host = after_scheme.split('/').next()?.split(':').next()?;
+    match host {
+        "api.kimi.com" => Some("cn"),
+        "api.kimi.ai" => Some("intl"),
         _ => None,
     }
 }
@@ -481,10 +510,13 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
     if let Some(provider) = profile.provider
         && provider != ModelProvider::Custom
     {
+        let inferred_kimi_site = (provider == ModelProvider::KimiCode)
+            .then(|| model_add_kimi_code_site_id_from_api_base(&profile.api_base))
+            .flatten();
         return default_api_base_for_transport(
             provider,
             profile.transport_kind(),
-            profile.provider_site().as_deref(),
+            profile.provider_site().as_deref().or(inferred_kimi_site),
             profile.alibaba_workspace_id().as_deref().unwrap_or(""),
         );
     }
@@ -507,13 +539,13 @@ fn default_api_base_for_transport(
     site: Option<&str>,
     workspace_id: &str,
 ) -> String {
-    if provider == crate::model_registry::ModelProvider::KimiCode
-        && let Some(base) = model_add_kimi_code_api_base(transport_kind)
+    if let Some(site) = site
+        && let Some(base) = resolve_site_api_base(provider, transport_kind, site, workspace_id)
     {
         return base;
     }
-    if let Some(site) = site
-        && let Some(base) = resolve_site_api_base(provider, transport_kind, site, workspace_id)
+    if provider == crate::model_registry::ModelProvider::KimiCode
+        && let Some(base) = model_add_kimi_code_api_base(transport_kind)
     {
         return base;
     }
@@ -540,6 +572,9 @@ fn resolve_site_api_base(
         }
         crate::model_registry::ModelProvider::TencentTokenhub => {
             model_add_tencent_tokenhub_site_api_base(site)
+        }
+        crate::model_registry::ModelProvider::KimiCode => {
+            model_add_kimi_code_site_api_base(site, transport_kind)
         }
         _ => None,
     }
@@ -688,13 +723,84 @@ mod tests {
     fn kimi_code_api_base_resolves_openai_and_anthropic_transports() {
         assert_eq!(
             super::model_add_kimi_code_api_base(ModelTransportKind::OpenAiCompatible).as_deref(),
-            Some("https://api.kimi.com/coding/v1")
+            Some("https://api.kimi.ai/coding/v1")
         );
         assert_eq!(
             super::model_add_kimi_code_api_base(ModelTransportKind::Anthropic).as_deref(),
-            Some("https://api.kimi.com/coding")
+            Some("https://api.kimi.ai/coding")
         );
         assert!(super::model_add_kimi_code_api_base(ModelTransportKind::OpenResponses).is_none());
+    }
+
+    #[test]
+    fn kimi_code_site_api_base_resolves_cn_and_intl_with_transport() {
+        assert_eq!(
+            super::model_add_kimi_code_site_api_base("cn", ModelTransportKind::OpenAiCompatible)
+                .as_deref(),
+            Some("https://api.kimi.com/coding/v1")
+        );
+        assert_eq!(
+            super::model_add_kimi_code_site_api_base("cn", ModelTransportKind::Anthropic)
+                .as_deref(),
+            Some("https://api.kimi.com/coding")
+        );
+        assert_eq!(
+            super::model_add_kimi_code_site_api_base("intl", ModelTransportKind::OpenAiCompatible)
+                .as_deref(),
+            Some("https://api.kimi.ai/coding/v1")
+        );
+        assert_eq!(
+            super::model_add_kimi_code_site_api_base("intl", ModelTransportKind::Anthropic)
+                .as_deref(),
+            Some("https://api.kimi.ai/coding")
+        );
+    }
+
+    #[test]
+    fn kimi_code_site_id_from_api_base_matches_host() {
+        assert_eq!(
+            super::model_add_kimi_code_site_id_from_api_base("https://api.kimi.com/coding/v1"),
+            Some("cn")
+        );
+        assert_eq!(
+            super::model_add_kimi_code_site_id_from_api_base("https://api.kimi.ai/coding"),
+            Some("intl")
+        );
+        assert_eq!(
+            super::model_add_kimi_code_site_id_from_api_base("https://api.example.com/v1"),
+            None
+        );
+    }
+
+    #[test]
+    fn resolve_profile_api_base_prefers_kimi_code_cn_site_over_stored_api_base() {
+        let profile: crate::model_registry::ModelProfile =
+            serde_json::from_value(serde_json::json!({
+                "name": "kimi-for-coding",
+                "apiBase": "https://api.kimi.ai/coding/v1",
+                "provider": "kimi-code",
+                "providerSite": "cn"
+            }))
+            .expect("parse model profile");
+        assert_eq!(
+            resolve_profile_api_base(&profile),
+            "https://api.kimi.com/coding/v1"
+        );
+    }
+
+    #[test]
+    fn resolve_profile_api_base_infers_kimi_code_cn_site_from_stored_api_base() {
+        let profile: crate::model_registry::ModelProfile =
+            serde_json::from_value(serde_json::json!({
+                "name": "kimi-for-coding",
+                "apiBase": "https://api.kimi.com/coding/v1",
+                "provider": "kimi-code"
+            }))
+            .expect("parse model profile");
+        assert_eq!(
+            resolve_profile_api_base(&profile),
+            "https://api.kimi.com/coding/v1"
+        );
     }
 
     #[test]
