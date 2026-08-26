@@ -613,7 +613,7 @@ mod tests {
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(15).as_deref(),
-            Some("https://api.kimi.com/coding/v1")
+            Some("https://api.kimi.ai/coding/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(16).as_deref(),

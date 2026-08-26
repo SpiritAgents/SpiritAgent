@@ -60,6 +60,10 @@
     "baseten": "Baseten",
     "moonshotAi": "Moonshot AI",
     "kimiCode": "Kimi Code",
+    "kimiCodeSite": {
+      "cn": "中國站",
+      "intl": "國際站"
+    },
     "moonshotAiSite": {
       "cn": "中國站",
       "intl": "國際站"
