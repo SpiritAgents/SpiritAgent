@@ -156,8 +156,11 @@ pub(in crate::ui) fn draw_subagent_viewer(
                         .or(cli_ui_accent_color(approval_panel_slot)),
                 ))
                 .title(Line::from(Span::styled(
-                    t!("tui.subagents.view.approval_input_title", tool = approval.tool_name)
-                        .into_owned(),
+                    t!(
+                        "tui.subagents.view.approval_input_title",
+                        tool = approval.tool_name
+                    )
+                    .into_owned(),
                     panel_title_style,
                 ))),
         );

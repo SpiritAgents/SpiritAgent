@@ -40,7 +40,9 @@ impl TuiShell {
             .create(true)
             .append(true)
             .open(&path)
-            .with_context(|| t!("tui.log.file_access_failed", path = path.display()).into_owned())?;
+            .with_context(|| {
+                t!("tui.log.file_access_failed", path = path.display()).into_owned()
+            })?;
         Ok(path)
     }
 
@@ -91,16 +93,17 @@ fn open_path_in_os(path: &Path) -> Result<()> {
         Command::new("explorer.exe")
             .arg(path.as_os_str())
             .spawn()
-            .with_context(|| t!("tui.log.system_open_failed", path = path.display()).into_owned())?;
+            .with_context(|| {
+                t!("tui.log.system_open_failed", path = path.display()).into_owned()
+            })?;
         return Ok(());
     }
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("open")
-            .arg(path)
-            .spawn()
-            .with_context(|| t!("tui.log.system_open_failed", path = path.display()).into_owned())?;
+        Command::new("open").arg(path).spawn().with_context(|| {
+            t!("tui.log.system_open_failed", path = path.display()).into_owned()
+        })?;
         return Ok(());
     }
 
@@ -109,7 +112,9 @@ fn open_path_in_os(path: &Path) -> Result<()> {
         Command::new("xdg-open")
             .arg(path)
             .spawn()
-            .with_context(|| t!("tui.log.system_open_failed", path = path.display()).into_owned())?;
+            .with_context(|| {
+                t!("tui.log.system_open_failed", path = path.display()).into_owned()
+            })?;
         return Ok(());
     }
 

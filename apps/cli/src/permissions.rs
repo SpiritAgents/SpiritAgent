@@ -2,9 +2,7 @@ use anyhow::{Context, Result};
 use rust_i18n::t;
 
 use crate::{
-    adapters::DefaultAppPaths,
-    daemon::DaemonRuntime,
-    permissions_types::PermissionCheckResult,
+    adapters::DefaultAppPaths, daemon::DaemonRuntime, permissions_types::PermissionCheckResult,
     ports::AppPaths,
 };
 
@@ -29,7 +27,11 @@ pub fn handle_permissions_cli(action: PermissionCommand) -> Result<()> {
             let mut runtime = DaemonRuntime::new_host_only(workspace_root.clone())
                 .with_context(|| t!("cli.permissions.check.daemon_unreachable").into_owned())?;
             let result = runtime
-                .check_permission(domain, &value, Some(workspace_root.to_string_lossy().as_ref()))
+                .check_permission(
+                    domain,
+                    &value,
+                    Some(workspace_root.to_string_lossy().as_ref()),
+                )
                 .with_context(|| t!("cli.permissions.check.daemon_unreachable").into_owned())?;
             print_permission_check(domain, &result);
         }
@@ -40,7 +42,10 @@ pub fn handle_permissions_cli(action: PermissionCommand) -> Result<()> {
 fn print_permission_check(domain: &str, result: &PermissionCheckResult) {
     println!(
         "{}",
-        t!("cli.permissions.check.verdict", verdict = result.verdict.as_str())
+        t!(
+            "cli.permissions.check.verdict",
+            verdict = result.verdict.as_str()
+        )
     );
     if let Some(matched) = &result.matched {
         let mut line = t!(

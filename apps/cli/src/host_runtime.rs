@@ -239,27 +239,29 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             let mut lines = vec![path];
             if let Some(old) = string_arg(request, "old_text") {
                 lines.push(
-                    t!("tui.tool.preview.old_text_chars", count = old.chars().count())
-                        .into_owned(),
+                    t!(
+                        "tui.tool.preview.old_text_chars",
+                        count = old.chars().count()
+                    )
+                    .into_owned(),
                 );
             } else if let Some(chars) = u64_arg(request, "old_text_chars")
                 && chars > 0
             {
-                lines.push(
-                    t!("tui.tool.preview.old_text_streaming", count = chars).into_owned(),
-                );
+                lines.push(t!("tui.tool.preview.old_text_streaming", count = chars).into_owned());
             }
             if let Some(new) = string_arg(request, "new_text") {
                 lines.push(
-                    t!("tui.tool.preview.new_text_chars", count = new.chars().count())
-                        .into_owned(),
+                    t!(
+                        "tui.tool.preview.new_text_chars",
+                        count = new.chars().count()
+                    )
+                    .into_owned(),
                 );
             } else if let Some(chars) = u64_arg(request, "new_text_chars")
                 && chars > 0
             {
-                lines.push(
-                    t!("tui.tool.preview.new_text_streaming", count = chars).into_owned(),
-                );
+                lines.push(t!("tui.tool.preview.new_text_streaming", count = chars).into_owned());
             }
             (t!("tui.tool.preview.edit").into_owned(), lines)
         }
@@ -270,15 +272,16 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             let mut lines = vec![path];
             if let Some(content) = string_arg(request, "content") {
                 lines.push(
-                    t!("tui.tool.preview.content_chars", count = content.chars().count())
-                        .into_owned(),
+                    t!(
+                        "tui.tool.preview.content_chars",
+                        count = content.chars().count()
+                    )
+                    .into_owned(),
                 );
             } else if let Some(chars) = u64_arg(request, "content_chars")
                 && chars > 0
             {
-                lines.push(
-                    t!("tui.tool.preview.content_streaming", count = chars).into_owned(),
-                );
+                lines.push(t!("tui.tool.preview.content_streaming", count = chars).into_owned());
             }
             (t!("tui.tool.preview.create").into_owned(), lines)
         }
@@ -425,8 +428,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.ls_done").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.path",
+                    path = string_arg(request, "path").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -440,8 +446,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.glob_done").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.pattern", pattern = string_arg(request, "pattern").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.pattern",
+                    pattern = string_arg(request, "pattern").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -457,8 +466,11 @@ pub(crate) fn build_tool_result_block(
                 phase: ToolUiPhase::Succeeded,
                 headline: t!("tui.tool.result.read_done").into_owned(),
                 detail_lines: vec![
-                    t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
-                        .into_owned(),
+                    t!(
+                        "tui.tool.detail.path",
+                        path = string_arg(request, "path").unwrap_or("<unknown>")
+                    )
+                    .into_owned(),
                     t!("tui.tool.detail.line_range", start = offset, end = end).into_owned(),
                 ],
                 image_paths: Vec::new(),
@@ -474,8 +486,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.grep_done").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.query", query = string_arg(request, "query").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.query",
+                    query = string_arg(request, "query").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -489,8 +504,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.subagent_done").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.task", task = string_arg(request, "task").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.task",
+                    task = string_arg(request, "task").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -504,7 +522,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.ask_done").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.question_count", count = question_count(request)).into_owned(),
+                t!(
+                    "tui.tool.detail.question_count",
+                    count = question_count(request)
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -554,8 +576,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.file_created").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.path",
+                    path = string_arg(request, "path").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -569,8 +594,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.file_edited").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.path",
+                    path = string_arg(request, "path").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -584,8 +612,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.file_deleted").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.path",
+                    path = string_arg(request, "path").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -620,8 +651,11 @@ pub(crate) fn build_tool_result_block(
             phase: ToolUiPhase::Succeeded,
             headline: t!("tui.tool.result.shell_done").into_owned(),
             detail_lines: vec![
-                t!("tui.tool.detail.command", command = string_arg(request, "command").unwrap_or("<unknown>"))
-                    .into_owned(),
+                t!(
+                    "tui.tool.detail.command",
+                    command = string_arg(request, "command").unwrap_or("<unknown>")
+                )
+                .into_owned(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -802,7 +836,10 @@ mod tests {
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_00_demo"));
         assert_eq!(block.tool_name, "shell");
-        assert_eq!(block.headline, t!("tui.tool.result.shell_done").into_owned());
+        assert_eq!(
+            block.headline,
+            t!("tui.tool.result.shell_done").into_owned()
+        );
         assert_eq!(
             block.args_excerpt.as_deref(),
             Some("{\n  \"command\": \"echo hello\",\n  \"reason\": \"smoke test\"\n}")
@@ -826,8 +863,11 @@ mod tests {
         assert_eq!(
             block.detail_lines,
             vec![
-                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png")
-                    .into_owned()
+                t!(
+                    "tui.tool.detail.path",
+                    path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png"
+                )
+                .into_owned()
             ]
         );
         assert_eq!(
@@ -859,8 +899,11 @@ mod tests {
         assert_eq!(
             block.detail_lines,
             vec![
-                t!("tui.tool.detail.path", path = "spirit://generated/video/example.mp4")
-                    .into_owned()
+                t!(
+                    "tui.tool.detail.path",
+                    path = "spirit://generated/video/example.mp4"
+                )
+                .into_owned()
             ]
         );
         assert_eq!(
@@ -883,14 +926,14 @@ mod tests {
             block.detail_lines.last(),
             Some(&t!("tui.tool.approval.shortcuts").into_owned())
         );
-        assert!(
-            block
-                .detail_lines
-                .iter()
-                .any(|line| line.as_str()
-                    == t!("tui.tool.approval.block_reason", reason = "destructive command")
-                        .as_ref())
-        );
+        assert!(block.detail_lines.iter().any(|line| {
+            line.as_str()
+                == t!(
+                    "tui.tool.approval.block_reason",
+                    reason = "destructive command"
+                )
+                .as_ref()
+        }));
     }
 
     #[test]
@@ -981,10 +1024,7 @@ mod tests {
         );
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_01_read"));
-        assert_eq!(
-            block.headline,
-            t!("tui.tool.result.read_done").into_owned()
-        );
+        assert_eq!(block.headline, t!("tui.tool.result.read_done").into_owned());
         assert_eq!(
             block.detail_lines,
             vec![
@@ -1006,10 +1046,7 @@ mod tests {
         );
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_02_glob"));
-        assert_eq!(
-            block.headline,
-            t!("tui.tool.result.glob_done").into_owned()
-        );
+        assert_eq!(block.headline, t!("tui.tool.result.glob_done").into_owned());
         assert_eq!(
             block.detail_lines,
             vec![t!("tui.tool.detail.pattern", pattern = "src/**/*.ts").into_owned()]

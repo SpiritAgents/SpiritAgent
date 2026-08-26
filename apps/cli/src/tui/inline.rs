@@ -459,7 +459,13 @@ mod tests {
         assert_eq!(inline_leave_action(0, 59), InlineLeaveAction::None);
         assert_eq!(inline_leave_action(13, 59), InlineLeaveAction::MoveTo(13));
         assert_eq!(inline_leave_action(55, 59), InlineLeaveAction::MoveTo(55));
-        assert_eq!(inline_leave_action(59, 59), InlineLeaveAction::ScrollLastRow);
-        assert_eq!(inline_leave_action(60, 59), InlineLeaveAction::ScrollLastRow);
+        assert_eq!(
+            inline_leave_action(59, 59),
+            InlineLeaveAction::ScrollLastRow
+        );
+        assert_eq!(
+            inline_leave_action(60, 59),
+            InlineLeaveAction::ScrollLastRow
+        );
     }
 }

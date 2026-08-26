@@ -1424,7 +1424,8 @@ pub fn save_config(cfg: &AppConfig) -> Result<()> {
     }
 
     let content = serialize_config(cfg)?;
-    fs::write(&path, content).with_context(|| format!("Failed to write config: {}", path.display()))?;
+    fs::write(&path, content)
+        .with_context(|| format!("Failed to write config: {}", path.display()))?;
     Ok(())
 }
 
@@ -1790,9 +1791,9 @@ pub fn load_group_access_key_id_from_keyring(group_id: &str) -> Result<String> {
 
 pub fn load_group_secret_access_key_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_secret_access_key_account(group_id))?;
-    entry
-        .get_password()
-        .with_context(|| format!("Failed to read IAM Secret Access Key for provider group {group_id}"))
+    entry.get_password().with_context(|| {
+        format!("Failed to read IAM Secret Access Key for provider group {group_id}")
+    })
 }
 
 pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool> {
@@ -1814,9 +1815,9 @@ pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool
 
 pub fn load_group_vertex_client_email_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
-    entry
-        .get_password()
-        .with_context(|| format!("Failed to read Vertex client email for provider group {group_id}"))
+    entry.get_password().with_context(|| {
+        format!("Failed to read Vertex client email for provider group {group_id}")
+    })
 }
 
 pub fn load_group_vertex_private_key_from_keyring(group_id: &str) -> Result<String> {
@@ -1880,9 +1881,9 @@ pub fn save_group_vertex_credentials(
     let client_email = client_email.trim();
     let private_key = private_key.trim();
     let email_entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
-    email_entry
-        .set_password(client_email)
-        .with_context(|| format!("Failed to save Vertex client email for provider group {group_id}"))?;
+    email_entry.set_password(client_email).with_context(|| {
+        format!("Failed to save Vertex client email for provider group {group_id}")
+    })?;
     let key_entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
     key_entry
         .set_password(private_key)
@@ -2103,7 +2104,10 @@ mod tests {
         let serialized = serialize_config(&parsed).expect("serialize config");
         let json: Value = serde_json::from_str(&serialized).expect("json value");
 
-        assert_eq!(json.get("translucency").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            json.get("translucency").and_then(Value::as_bool),
+            Some(true)
+        );
         assert_eq!(
             json.get("recentWorkspaces")
                 .and_then(Value::as_array)

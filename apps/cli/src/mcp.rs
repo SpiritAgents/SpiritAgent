@@ -245,7 +245,9 @@ pub fn assert_mcp_server_name_available(workspace_root: &Path, name: &str) -> Re
     let user = load_mcp_config_file(&user_path)?.unwrap_or_default();
     let workspace = load_mcp_config_file(&workspace_path)?.unwrap_or_default();
     if user.servers.contains_key(server_name) || workspace.servers.contains_key(server_name) {
-        return Err(anyhow!(t!("tui.mcp.server_exists", name = server_name).into_owned()));
+        return Err(anyhow!(
+            t!("tui.mcp.server_exists", name = server_name).into_owned()
+        ));
     }
     Ok(())
 }
@@ -263,17 +265,22 @@ fn resolve_mcp_server_scope(workspace_root: &Path, name: &str) -> Result<(McpSco
     {
         return Ok((McpScope::Workspace, workspace_path));
     }
-    Err(anyhow!(t!("tui.mcp.server_not_found", name = name).into_owned()))
+    Err(anyhow!(
+        t!("tui.mcp.server_not_found", name = name).into_owned()
+    ))
 }
 
 pub fn save_mcp_config(path: &Path, config: &McpConfigFile, overwrite: bool) -> Result<()> {
     if path.exists() && !overwrite {
-        return Err(anyhow!(t!("tui.mcp.config_exists", path = path.display()).into_owned()));
+        return Err(anyhow!(
+            t!("tui.mcp.config_exists", path = path.display()).into_owned()
+        ));
     }
 
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| t!("tui.mcp.config_dir_create_failed", path = parent.display()).into_owned())?;
+        fs::create_dir_all(parent).with_context(|| {
+            t!("tui.mcp.config_dir_create_failed", path = parent.display()).into_owned()
+        })?;
     }
 
     let content = serde_json::to_string_pretty(config)?;
@@ -323,12 +330,14 @@ fn resolve_env_placeholders(
     while let Some(start) = remaining.find("${env:") {
         rendered.push_str(&remaining[..start]);
         let placeholder = &remaining[start + 6..];
-        let end = placeholder
-            .find('}')
-            .ok_or_else(|| anyhow!(t!("tui.mcp.env_placeholder_invalid", value = value).into_owned()))?;
+        let end = placeholder.find('}').ok_or_else(|| {
+            anyhow!(t!("tui.mcp.env_placeholder_invalid", value = value).into_owned())
+        })?;
         let var_name = &placeholder[..end];
         if var_name.trim().is_empty() {
-            return Err(anyhow!(t!("tui.mcp.env_placeholder_invalid", value = value).into_owned()));
+            return Err(anyhow!(
+                t!("tui.mcp.env_placeholder_invalid", value = value).into_owned()
+            ));
         }
 
         rendered.push_str(&resolver(var_name)?);
@@ -353,7 +362,9 @@ fn resolve_single_env_value(var_name: &str) -> Result<String> {
         return Ok(resolved);
     }
 
-    Err(anyhow!(t!("tui.mcp.env_missing", name = var_name).into_owned()))
+    Err(anyhow!(
+        t!("tui.mcp.env_missing", name = var_name).into_owned()
+    ))
 }
 
 #[cfg(windows)]
@@ -571,7 +582,10 @@ mod tests {
             resolve_env_placeholders("Bearer ${env:GITHUB_TOKEN", |_| Ok("ignored".to_string()))
                 .expect_err("unclosed placeholder should fail");
 
-        assert!(err.to_string().contains("Invalid environment variable placeholder"));
+        assert!(
+            err.to_string()
+                .contains("Invalid environment variable placeholder")
+        );
     }
 
     #[test]

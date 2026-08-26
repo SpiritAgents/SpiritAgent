@@ -161,12 +161,17 @@ pub fn load_rule_state() -> Result<RuleStateFile> {
 pub fn save_rule_state(state: &RuleStateFile) -> Result<PathBuf> {
     let path = rules_state_file_path();
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create rule state directory: {}", parent.display()))?;
+        fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "Failed to create rule state directory: {}",
+                parent.display()
+            )
+        })?;
     }
 
     let content = serde_json::to_string_pretty(state)?;
-    fs::write(&path, content).with_context(|| format!("Failed to write rule state: {}", path.display()))?;
+    fs::write(&path, content)
+        .with_context(|| format!("Failed to write rule state: {}", path.display()))?;
     Ok(path)
 }
 

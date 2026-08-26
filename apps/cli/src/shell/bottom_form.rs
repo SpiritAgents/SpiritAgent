@@ -2872,7 +2872,8 @@ mod tests {
 
     #[test]
     fn prompt_form_user_message_round_trips() {
-        let mut form = new_mcp_prompt_form("github", &sample_prompt(true), Some("check what this does"));
+        let mut form =
+            new_mcp_prompt_form("github", &sample_prompt(true), Some("check what this does"));
 
         form.selected_field = 2;
         insert_text(&mut form, "\nand give examples");
@@ -3528,9 +3529,7 @@ mod tests {
                 "data-analysis",
                 "Analyze datasets and summarize findings.",
                 "skills/data-analysis/SKILL.md",
-                PathBuf::from(
-                    "C:/users/demo/AppData/Roaming/Spirit/skills/data-analysis/SKILL.md",
-                ),
+                PathBuf::from("C:/users/demo/AppData/Roaming/Spirit/skills/data-analysis/SKILL.md"),
                 SkillRootKind::User,
             ),
         };

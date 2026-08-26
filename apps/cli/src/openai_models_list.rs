@@ -74,7 +74,9 @@ pub fn list_openai_compatible_model_ids(
     if !key.is_empty() {
         request = request.header("Authorization", format!("Bearer {key}"));
     }
-    let response = request.send().map_err(|e| format!("List models request failed: {e}"))?;
+    let response = request
+        .send()
+        .map_err(|e| format!("List models request failed: {e}"))?;
 
     let status = response.status();
     let text = response
@@ -124,7 +126,9 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
     if !key.is_empty() {
         request = request.header("x-api-key", key);
     }
-    let response = request.send().map_err(|e| format!("List models request failed: {e}"))?;
+    let response = request
+        .send()
+        .map_err(|e| format!("List models request failed: {e}"))?;
 
     let status = response.status();
     let text = response

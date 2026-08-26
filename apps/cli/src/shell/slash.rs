@@ -341,15 +341,31 @@ fn prompt_suggestion(command: PromptSlashCommand) -> InputSuggestion {
             if prompt.arguments.is_empty() {
                 "MCP prompt".to_string()
             } else {
-                t!("tui.slash.prompt_args_count", count = prompt.arguments.len()).into_owned()
+                t!(
+                    "tui.slash.prompt_args_count",
+                    count = prompt.arguments.len()
+                )
+                .into_owned()
             }
         });
 
     let mut details = vec![format!("server: {}", server)];
     if !required_args.is_empty() {
-        details.push(t!("tui.slash.prompt_required_args", args = required_args.join(", ")).into_owned());
+        details.push(
+            t!(
+                "tui.slash.prompt_required_args",
+                args = required_args.join(", ")
+            )
+            .into_owned(),
+        );
     } else if !prompt.arguments.is_empty() {
-        details.push(t!("tui.slash.prompt_optional_args", count = prompt.arguments.len()).into_owned());
+        details.push(
+            t!(
+                "tui.slash.prompt_optional_args",
+                count = prompt.arguments.len()
+            )
+            .into_owned(),
+        );
     }
 
     InputSuggestion {

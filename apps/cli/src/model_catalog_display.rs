@@ -114,7 +114,9 @@ console.log(JSON.stringify(buildFormattedDisplayTitlesFromIds(modelIds)));
         .arg(script)
         .arg(payload)
         .output()
-        .map_err(|err| format!("Failed to start the Node format model display name process: {err}"))?;
+        .map_err(|err| {
+            format!("Failed to start the Node format model display name process: {err}")
+        })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();

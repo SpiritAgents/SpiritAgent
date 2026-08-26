@@ -227,12 +227,14 @@ impl TuiShell {
             return Ok(prompt);
         }
 
-        Err(anyhow!(t!(
-            "tui.mcp.prompt_not_found",
-            server = server,
-            prompt = prompt_name
-        )
-        .into_owned()))
+        Err(anyhow!(
+            t!(
+                "tui.mcp.prompt_not_found",
+                server = server,
+                prompt = prompt_name
+            )
+            .into_owned()
+        ))
     }
 }
 

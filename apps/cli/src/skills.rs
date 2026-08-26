@@ -171,8 +171,12 @@ pub fn load_skill_state() -> Result<SkillStateFile> {
 pub fn save_skill_state(state: &SkillStateFile) -> Result<PathBuf> {
     let path = skills_state_file_path();
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create skill state directory: {}", parent.display()))?;
+        fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "Failed to create skill state directory: {}",
+                parent.display()
+            )
+        })?;
     }
 
     let content = serde_json::to_string_pretty(state)?;
@@ -241,11 +245,12 @@ pub fn enabled_skill_catalog(entries: &[SkillEntry]) -> Vec<EnabledSkillCatalogE
 }
 
 pub fn build_active_skill_payload(entry: &SkillEntry) -> Result<ActiveSkillPayload> {
-    let skill_root = entry
-        .source
-        .path
-        .parent()
-        .ok_or_else(|| anyhow!("skill path has no parent directory: {}", entry.source.path.display()))?;
+    let skill_root = entry.source.path.parent().ok_or_else(|| {
+        anyhow!(
+            "skill path has no parent directory: {}",
+            entry.source.path.display()
+        )
+    })?;
     let (content, truncated) = truncate_active_skill_content(&entry.content);
     let (resources, resources_truncated) = collect_skill_resources(skill_root)?;
 
@@ -265,7 +270,10 @@ pub fn build_active_skill_payload(entry: &SkillEntry) -> Result<ActiveSkillPaylo
 pub fn build_activate_skill_user_turn(skill_name: &str, extra_note: &str) -> String {
     let trimmed = extra_note.trim();
     if trimmed.is_empty() {
-        return format!("Handle the current task according to the activated skill \"{}\".", skill_name);
+        return format!(
+            "Handle the current task according to the activated skill \"{}\".",
+            skill_name
+        );
     }
 
     trimmed.to_string()
@@ -616,7 +624,12 @@ fn collect_skill_resources(skill_root: &Path) -> Result<(Vec<ActiveSkillResource
         let mut stack = vec![root.clone()];
         while let Some(current) = stack.pop() {
             let mut entries = fs::read_dir(&current)
-                .with_context(|| format!("Failed to read skill resource directory: {}", current.display()))?
+                .with_context(|| {
+                    format!(
+                        "Failed to read skill resource directory: {}",
+                        current.display()
+                    )
+                })?
                 .filter_map(|entry| entry.ok())
                 .collect::<Vec<_>>();
             entries.sort_by_key(|entry| entry.path());
@@ -747,10 +760,7 @@ mod tests {
         state.set_enabled("skill-b", true);
         let path = save_skill_state(&state).expect("save skill state");
 
-        assert_eq!(
-            path,
-            appdata.join("Spirit").join(SKILLS_STATE_FILE_NAME)
-        );
+        assert_eq!(path, appdata.join("Spirit").join(SKILLS_STATE_FILE_NAME));
         assert_eq!(load_skill_state().expect("load skill state"), state);
     }
 

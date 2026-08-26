@@ -1185,7 +1185,9 @@ fn process_key_event(
             }
             KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Err(err) = shell.refresh_marketplace_catalog() {
-                    shell.push_agent_message(spirit::locale::marketplace_refresh_failed_message(&err));
+                    shell.push_agent_message(spirit::locale::marketplace_refresh_failed_message(
+                        &err,
+                    ));
                 }
             }
             KeyCode::Char('l')
@@ -1267,10 +1269,14 @@ fn process_key_event(
         KeyCode::Tab if !shell.is_shell_mode_active() => shell.toggle_input_mode(),
         KeyCode::PageUp if !shell.is_inline_mode() => shell.scroll_history_up(8),
         KeyCode::PageDown if !shell.is_inline_mode() => shell.scroll_history_down(8),
-        KeyCode::Home if key.modifiers.contains(KeyModifiers::CONTROL) && !shell.is_inline_mode() => {
+        KeyCode::Home
+            if key.modifiers.contains(KeyModifiers::CONTROL) && !shell.is_inline_mode() =>
+        {
             shell.scroll_history_to_top()
         }
-        KeyCode::End if key.modifiers.contains(KeyModifiers::CONTROL) && !shell.is_inline_mode() => {
+        KeyCode::End
+            if key.modifiers.contains(KeyModifiers::CONTROL) && !shell.is_inline_mode() =>
+        {
             shell.scroll_history_to_bottom()
         }
         KeyCode::Left => shell.move_cursor_left(),
@@ -1610,9 +1616,7 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
         Err(_) => return None,
     };
 
-    let temp_dir = std::env::temp_dir()
-        .join("spirit")
-        .join("clipboard-images");
+    let temp_dir = std::env::temp_dir().join("spirit").join("clipboard-images");
     if let Err(e) = fs::create_dir_all(&temp_dir) {
         logging::log_event(&format!("[clipboard] cannot create temp directory: {}", e));
         return None;

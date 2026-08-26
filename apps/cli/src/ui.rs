@@ -645,16 +645,12 @@ fn draw_inline_ui(
         let history_render =
             build_history_render_result(app, area.width.saturating_sub(1) as usize);
         let ranges = history_render.message_ranges.clone();
-        let (flat, plain) =
-            flatten_wrapped_history(history_render.lines, area.width.max(1), None);
+        let (flat, plain) = flatten_wrapped_history(history_render.lines, area.width.max(1), None);
         (flat, Some((plain, ranges)))
     } else {
         let live_lines = inline_history_visual_lines(app, area.width.max(1));
         let committed = app.committed_history_lines.min(live_lines.len());
-        (
-            live_lines.into_iter().skip(committed).collect(),
-            None,
-        )
+        (live_lines.into_iter().skip(committed).collect(), None)
     };
     let layout = measure_inline_chrome(app, area.width, area.height, live.len() as u16, &flags);
     let InlineChromeLayout {

@@ -268,7 +268,10 @@ pub(in crate::ui) fn draw_slash_flow_body(
         let mut header_lines = Vec::new();
         if let Some(search) = flow.search.as_ref() {
             header_lines.push(Line::from(vec![
-                Span::styled(t!("tui.marketplace.search_label").into_owned(), subtle_style),
+                Span::styled(
+                    t!("tui.marketplace.search_label").into_owned(),
+                    subtle_style,
+                ),
                 Span::styled(
                     if search.value.trim().is_empty() {
                         search.placeholder.clone()

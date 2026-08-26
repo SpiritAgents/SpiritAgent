@@ -176,7 +176,8 @@ fn build_bottom_form_view(value: &str, footer_hint: &str) -> BottomFormView {
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Text {
                     value: "GITHUB_TOKEN=demo".to_string(),
-                    placeholder: "Environment variables, optional, for example GITHUB_TOKEN=demo".to_string(),
+                    placeholder: "Environment variables, optional, for example GITHUB_TOKEN=demo"
+                        .to_string(),
                     cursor: 0,
                     mask: false,
                     disabled: false,
@@ -609,12 +610,9 @@ fn marketplace_catalog_reuses_minimal_picker_with_search() {
 
     let lines = render_ui_lines(&app, 80, 20);
 
-    assert!(
-        lines
-            .iter()
-            .any(|line| line.contains(t!("tui.marketplace.search_label").trim())
-                && line.contains("css"))
-    );
+    assert!(lines.iter().any(
+        |line| line.contains(t!("tui.marketplace.search_label").trim()) && line.contains("css")
+    ));
     assert!(lines.iter().any(|line| line.contains("> Void Desktop CSS")));
     assert!(!lines.iter().any(|line| line.contains("Extensions")));
     assert!(!lines.iter().any(|line| line.contains("2 items")));
@@ -715,11 +713,18 @@ fn truncate_from_left_keeps_combining_marks_on_tail() {
 
 #[test]
 fn rewind_picker_renders_selected_message_in_history_panel() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "Confirm requirements first"));
-    app.messages
-        .push(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
-    app.messages
-        .push(ChatMessage::new(MessageRole::User, "Then organize the implementation plan"));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::User,
+        "Confirm requirements first",
+    ));
+    app.messages.push(ChatMessage::new(
+        MessageRole::Agent,
+        "Let me look at the context first.",
+    ));
+    app.messages.push(ChatMessage::new(
+        MessageRole::User,
+        "Then organize the implementation plan",
+    ));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 3,
         selectable_message_ids: vec![1, 3],
@@ -755,7 +760,10 @@ fn rewind_picker_renders_selected_message_in_history_panel() {
 
 #[test]
 fn rewind_picker_deemphasizes_assistant_messages() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "Let me look at the context first.",
+    ));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 2,
         selectable_message_ids: vec![2],
@@ -806,8 +814,10 @@ fn rewind_picker_deemphasizes_tool_messages() {
 #[test]
 fn rewind_picker_deemphasizes_non_selectable_user_messages() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::User, "/sessions"));
-    app.messages
-        .push(ChatMessage::new(MessageRole::User, "The message actually sent to the model"));
+    app.messages.push(ChatMessage::new(
+        MessageRole::User,
+        "The message actually sent to the model",
+    ));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 2,
         selectable_message_ids: vec![2],
@@ -854,7 +864,11 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
             .iter()
             .any(|line| line.contains("I'll run this command for you."))
     );
-    assert!(preview_lines.iter().any(|line| line.contains("Run command")));
+    assert!(
+        preview_lines
+            .iter()
+            .any(|line| line.contains("Run command"))
+    );
 }
 
 #[test]
@@ -944,7 +958,10 @@ fn thinking_only_message_stays_invisible_when_aux_details_collapsed() {
 
 #[test]
 fn pending_thinking_detail_is_hidden_when_aux_details_collapsed() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "I'll handle this issue."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "I'll handle this issue.",
+    ));
     app.show_aux_details = false;
     app.pending_response_active = true;
     app.pending_assistant_msg_index = Some(0);
@@ -957,7 +974,11 @@ fn pending_thinking_detail_is_hidden_when_aux_details_collapsed() {
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
 
     assert!(lines.iter().any(|line| line.contains("Thinking...")));
-    assert!(lines.iter().any(|line| line.contains("I'll handle this issue.")));
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("I'll handle this issue."))
+    );
     assert!(
         lines
             .iter()
@@ -967,7 +988,10 @@ fn pending_thinking_detail_is_hidden_when_aux_details_collapsed() {
 
 #[test]
 fn pending_thinking_detail_is_visible_when_aux_details_expanded() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "I'll handle this issue."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "I'll handle this issue.",
+    ));
     app.pending_response_active = true;
     app.pending_assistant_msg_index = Some(0);
     app.pending_aux = Some(PendingAssistantAux {
@@ -1023,7 +1047,11 @@ fn standalone_subagent_pending_aux_renders_in_history() {
 
     let lines = render_text_lines(build_history_lines(&app, 120));
 
-    assert!(lines.iter().any(|line| line.contains("Processing started.")));
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("Processing started."))
+    );
     assert!(
         lines
             .iter()
@@ -1060,7 +1088,10 @@ fn standalone_pending_aux_hides_detail_when_collapsed() {
 
 #[test]
 fn persisted_standalone_subagent_pending_aux_renders_after_completion() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "The subagent has finished the task.",
+    ));
     app.pending_response_active = false;
     app.pending_assistant_msg_index = None;
     app.pending_aux = None;
@@ -1073,7 +1104,11 @@ fn persisted_standalone_subagent_pending_aux_renders_after_completion() {
 
     let lines = render_text_lines(build_history_lines(&app, 120));
 
-    assert!(lines.iter().any(|line| line.contains("The subagent has finished the task.")));
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("The subagent has finished the task."))
+    );
     assert!(
         lines
             .iter()
@@ -1083,7 +1118,10 @@ fn persisted_standalone_subagent_pending_aux_renders_after_completion() {
 
 #[test]
 fn persisted_subagent_status_wins_over_generic_pending_thinking() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The parent session is about to summarize results."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "The parent session is about to summarize results.",
+    ));
     app.messages
         .push(ChatMessage::new(MessageRole::Agent, String::new()));
     app.pending_response_active = true;
@@ -1115,7 +1153,10 @@ fn persisted_subagent_status_wins_over_generic_pending_thinking() {
 
 #[test]
 fn persisted_subagent_status_renders_before_parent_streaming_reply() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "The subagent has finished the task.",
+    ));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
         "Tool call succeeded! The subagent returned structured results.",
@@ -1145,7 +1186,9 @@ fn persisted_subagent_status_renders_before_parent_streaming_reply() {
         .expect("thinking line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("Tool call succeeded! The subagent returned structured results."))
+        .position(|line| {
+            line.contains("Tool call succeeded! The subagent returned structured results.")
+        })
         .expect("parent reply line exists");
 
     assert!(status_idx < parent_idx);
@@ -1154,7 +1197,10 @@ fn persisted_subagent_status_renders_before_parent_streaming_reply() {
 
 #[test]
 fn persisted_subagent_status_stays_above_parent_reply_after_completion() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "The subagent has finished the task.",
+    ));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
         "Developer debug test task: subagent test task executed successfully.",
@@ -1176,7 +1222,9 @@ fn persisted_subagent_status_stays_above_parent_reply_after_completion() {
         .expect("status line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("Developer debug test task: subagent test task executed successfully."))
+        .position(|line| {
+            line.contains("Developer debug test task: subagent test task executed successfully.")
+        })
         .expect("parent reply line exists");
 
     assert!(status_idx < parent_idx);
@@ -1184,7 +1232,10 @@ fn persisted_subagent_status_stays_above_parent_reply_after_completion() {
 
 #[test]
 fn persisted_subagent_status_stays_anchored_after_later_user_message() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "The subagent has finished the task.",
+    ));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
         "Developer debug test task: subagent test task executed successfully.",
@@ -1208,7 +1259,9 @@ fn persisted_subagent_status_stays_anchored_after_later_user_message() {
         .expect("status line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("Developer debug test task: subagent test task executed successfully."))
+        .position(|line| {
+            line.contains("Developer debug test task: subagent test task executed successfully.")
+        })
         .expect("parent reply line exists");
     let later_user_idx = lines
         .iter()
@@ -1222,7 +1275,10 @@ fn persisted_subagent_status_stays_anchored_after_later_user_message() {
 #[test]
 fn persisted_subagent_status_renders_as_separate_message_before_parent_reply_after_later_user_message()
  {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "The subagent has finished the task.",
+    ));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
         "Developer debug test task: subagent test task executed successfully.",
@@ -1246,7 +1302,9 @@ fn persisted_subagent_status_renders_as_separate_message_before_parent_reply_aft
         .expect("status line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("Developer debug test task: subagent test task executed successfully."))
+        .position(|line| {
+            line.contains("Developer debug test task: subagent test task executed successfully.")
+        })
         .expect("parent reply line exists");
 
     assert!(lines[status_idx].starts_with("> "));
@@ -1399,7 +1457,7 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
                 "tui.tool.detail.path",
                 path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png"
             )
-            .as_ref()
+            .as_ref(),
         )
     }));
     assert!(
@@ -1441,7 +1499,7 @@ fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
                 "tui.tool.detail.path",
                 path = "spirit://generated/video/example.mp4"
             )
-            .as_ref()
+            .as_ref(),
         )
     }));
 }
@@ -1599,11 +1657,13 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
             headline: "Image generated".to_string(),
-            detail_lines: vec![t!(
-                "tui.tool.detail.path",
-                path = file_path.display().to_string()
-            )
-            .into_owned()],
+            detail_lines: vec![
+                t!(
+                    "tui.tool.detail.path",
+                    path = file_path.display().to_string()
+                )
+                .into_owned(),
+            ],
             image_paths: vec![file_path.to_string_lossy().to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
@@ -1773,11 +1833,18 @@ fn inline_mode_keeps_footer_directly_below_input() {
 
 #[test]
 fn inline_rewind_picker_shows_committed_history() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "Confirm requirements first"));
-    app.messages
-        .push(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
-    app.messages
-        .push(ChatMessage::new(MessageRole::User, "Then organize the implementation plan"));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::User,
+        "Confirm requirements first",
+    ));
+    app.messages.push(ChatMessage::new(
+        MessageRole::Agent,
+        "Let me look at the context first.",
+    ));
+    app.messages.push(ChatMessage::new(
+        MessageRole::User,
+        "Then organize the implementation plan",
+    ));
     app.inline_mode = true;
     app.committed_history_lines = usize::MAX;
     app.rewind_picker = Some(RewindPickerView {
@@ -1789,16 +1856,25 @@ fn inline_rewind_picker_shows_committed_history() {
     let snapshot = lines.join("\n");
     let collapsed = snapshot.replace([' ', '\u{00a0}'], "");
     assert!(
-        collapsed.contains("Then organize the implementation plan".replace(' ', "").as_str()),
+        collapsed.contains(
+            "Then organize the implementation plan"
+                .replace(' ', "")
+                .as_str()
+        ),
         "inline rewind picker should surface committed history, got:\n{snapshot}"
     );
 }
 
 #[test]
 fn inline_fork_picker_shows_committed_history() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "Confirm requirements first"));
-    app.messages
-        .push(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::User,
+        "Confirm requirements first",
+    ));
+    app.messages.push(ChatMessage::new(
+        MessageRole::Agent,
+        "Let me look at the context first.",
+    ));
     app.inline_mode = true;
     app.committed_history_lines = usize::MAX;
     app.fork_picker = Some(ForkPickerView {

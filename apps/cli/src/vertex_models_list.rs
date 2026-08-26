@@ -56,7 +56,9 @@ pub fn list_vertex_model_ids(options: VertexListOptions) -> Result<Vec<String>, 
     }
 
     if options.project.trim().is_empty() || options.location.trim().is_empty() {
-        return Err("Listing Google Vertex models requires the GCP project ID and location.".to_string());
+        return Err(
+            "Listing Google Vertex models requires the GCP project ID and location.".to_string(),
+        );
     }
 
     let module_path = resolve_host_internal_openai_models_path()?;

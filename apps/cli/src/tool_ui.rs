@@ -163,7 +163,10 @@ mod tests {
 
     #[test]
     fn approval_decision_from_input_maps_remember_keys() {
-        assert_eq!(approval_decision_from_input("y"), json!({ "kind": "allow" }));
+        assert_eq!(
+            approval_decision_from_input("y"),
+            json!({ "kind": "allow" })
+        );
         assert_eq!(
             approval_decision_from_input("a"),
             json!({ "kind": "allow", "remember": "config" })
@@ -176,7 +179,8 @@ mod tests {
     }
 
     #[test]
-    fn retired_builtin_host_methods_stay_on_host_internal_side() {        fn is_retired(method: &str) -> bool {
+    fn retired_builtin_host_methods_stay_on_host_internal_side() {
+        fn is_retired(method: &str) -> bool {
             matches!(
                 method,
                 "host.builtinToolDefinitionEnvironment"

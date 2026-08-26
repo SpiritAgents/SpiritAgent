@@ -820,12 +820,14 @@ impl TuiShell {
                             .and_then(|item| item.installed_version.as_deref())
                             .map(str::to_string);
                         self.marketplace_filtered_version_indices(
-                            self.marketplace_selected_detail().expect("detail should exist"),
+                            self.marketplace_selected_detail()
+                                .expect("detail should exist"),
                         )
                         .into_iter()
                         .filter_map(|index| detail.versions.get(index))
                         .map(|version| {
-                            let supported = version.supported_hosts.iter().any(|host| host == "cli");
+                            let supported =
+                                version.supported_hosts.iter().any(|host| host == "cli");
                             let installed = selected_version
                                 .as_ref()
                                 .is_some_and(|installed| installed == &version.version);
@@ -872,10 +874,11 @@ impl TuiShell {
                 subtitle: None,
                 search: None,
                 empty_text: t!("tui.marketplace.no_matching_options").into_owned(),
-                selected_index: self
-                    .marketplace
-                    .confirm_selected_index
-                    .min(self.marketplace_confirmation_items().len().saturating_sub(1)),
+                selected_index: self.marketplace.confirm_selected_index.min(
+                    self.marketplace_confirmation_items()
+                        .len()
+                        .saturating_sub(1),
+                ),
                 items: {
                     let continue_label = t!("tui.marketplace.confirm_continue").into_owned();
                     let cancel_label = t!("tui.marketplace.confirm_cancel").into_owned();

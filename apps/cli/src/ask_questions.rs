@@ -43,10 +43,16 @@ impl AskQuestionsRequest {
                 return Err(anyhow!("ask_questions question id cannot be empty"));
             }
             if !seen_ids.insert(id.to_string()) {
-                return Err(anyhow!("ask_questions question id cannot be duplicated: {}", id));
+                return Err(anyhow!(
+                    "ask_questions question id cannot be duplicated: {}",
+                    id
+                ));
             }
             if question.title.trim().is_empty() {
-                return Err(anyhow!("ask_questions question title cannot be empty: {}", id));
+                return Err(anyhow!(
+                    "ask_questions question title cannot be empty: {}",
+                    id
+                ));
             }
 
             let mut seen_option_ids = HashSet::new();
@@ -63,7 +69,10 @@ impl AskQuestionsRequest {
                     ));
                 }
                 if option.label.trim().is_empty() {
-                    return Err(anyhow!("ask_questions option label cannot be empty: {}", id));
+                    return Err(anyhow!(
+                        "ask_questions option label cannot be empty: {}",
+                        id
+                    ));
                 }
             }
         }
