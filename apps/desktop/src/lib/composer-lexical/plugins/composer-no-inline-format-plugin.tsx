@@ -15,11 +15,7 @@ export function ComposerNoInlineFormatPlugin() {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
-    return editor.registerCommand(
-      FORMAT_TEXT_COMMAND,
-      () => true,
-      COMMAND_PRIORITY_BEFORE_EDITOR,
-    );
+    return editor.registerCommand(FORMAT_TEXT_COMMAND, () => true, COMMAND_PRIORITY_BEFORE_EDITOR);
   }, [editor]);
 
   return null;
