@@ -67,9 +67,7 @@ mod runtime_events;
 mod subagent;
 mod workspace_trust;
 
-pub use inline::{
-    INLINE_BOOTSTRAP_HEIGHT, InlineBackend, InlineRecreate, leave_inline_prompt,
-};
+pub use inline::{INLINE_BOOTSTRAP_HEIGHT, InlineBackend, InlineRecreate, leave_inline_prompt};
 
 use conversation::ConversationUiState;
 use forms::BottomFormUiState;
@@ -97,6 +95,7 @@ pub struct TuiShell {
     fork_picker_active: bool,
     fork_picker_index: usize,
     session_display_name: Option<String>,
+    session_title_source: Option<String>,
     model_picker_active: bool,
     model_picker_index: usize,
     model_display_titles: HashMap<String, String>,
@@ -216,6 +215,7 @@ impl TuiShell {
             fork_picker_active: false,
             fork_picker_index: 0,
             session_display_name: None,
+            session_title_source: None,
             model_picker_active: false,
             model_picker_index: 0,
             model_display_titles: HashMap::new(),
@@ -267,7 +267,9 @@ impl TuiShell {
         };
 
         if let Err(err) = shell.runtime.prime_workspace_file_reference_index() {
-            logging::log_event(&format!("[file-reference] failed to warm up index: {err:#}"));
+            logging::log_event(&format!(
+                "[file-reference] failed to warm up index: {err:#}"
+            ));
         }
 
         shell.refresh_prompt_slash_commands(&initial_mcp_status);
@@ -331,7 +333,10 @@ impl TuiShell {
     }
 
     pub fn refresh_extensions_from_disk(&mut self) -> Result<()> {
-        self.extension_entries = self.runtime.list_extensions().context("Failed to read extension list")?;
+        self.extension_entries = self
+            .runtime
+            .list_extensions()
+            .context("Failed to read extension list")?;
         self.cli_ui_hooks = compile_cli_ui_hooks(&self.extension_entries);
         if self.current_slash_query().is_some() {
             self.refresh_suggestions();
@@ -360,7 +365,9 @@ impl TuiShell {
                 }
                 Err(err) => {
                     self.file_reference_index_loading = false;
-                    logging::log_event(&format!("[file-reference] failed to query candidates: {err:#}"));
+                    logging::log_event(&format!(
+                        "[file-reference] failed to query candidates: {err:#}"
+                    ));
                     self.slash.suggestions.clear();
                 }
             };
@@ -460,6 +467,7 @@ impl TuiShell {
         self.subagent.picker_active = false;
         self.close_subagent_view();
         self.session_display_name = None;
+        self.session_title_source = None;
         self.todo_items.clear();
         self.todo_strip_expanded = false;
         self.pending_assistant_msg_index = None;
@@ -829,6 +837,7 @@ impl TuiShell {
                 }
                 self.apply_runtime_events();
                 self.session_display_name = archive.session_display_name.clone();
+                self.session_title_source = archive.session_title_source.clone();
                 self.scroll_history_to_bottom();
                 let loaded_message = match outcome {
                     AttachChatSessionOutcome::AttachedLive => {
@@ -848,8 +857,21 @@ impl TuiShell {
 
     fn apply_runtime_events(&mut self) {
         runtime_events::apply_runtime_events(self);
+        self.apply_pending_generated_session_title();
         self.refresh_todo_items();
         self.maybe_resync_live_desktop_timeline();
+    }
+
+    fn apply_pending_generated_session_title(&mut self) {
+        let Some(title) = self.runtime.take_pending_session_title() else {
+            return;
+        };
+        if let Some((display_name, source)) =
+            apply_generated_session_title_if_allowed(self.session_title_source.as_deref(), &title)
+        {
+            self.session_display_name = Some(display_name);
+            self.session_title_source = Some(source);
+        }
     }
 
     fn push_session_notice(&mut self, content: String) {
@@ -997,6 +1019,8 @@ impl TuiShell {
             .export_chat_archive(&messages, &assistant_aux)?;
         let desktop_messages = self.conversation_snapshots_for_message_count(message_count);
         archive.desktop_messages = (!desktop_messages.is_empty()).then_some(desktop_messages);
+        archive.session_display_name = self.session_display_name.clone();
+        archive.session_title_source = self.session_title_source.clone();
         Ok(archive)
     }
 
@@ -1095,11 +1119,13 @@ impl TuiShell {
             anchor_index,
         );
         fork_archive.session_display_name = Some(fork_display_name.clone());
+        fork_archive.session_title_source = Some("seed".to_string());
 
         let todos = self.runtime.list_session_todos()?;
         let saved_path = self.chat_repository.save(None, &fork_archive)?;
         self.runtime.activate_forked_session(&fork_archive, todos)?;
         self.session_display_name = Some(fork_display_name);
+        self.session_title_source = Some("seed".to_string());
         self.session_notices.clear();
         self.restore_conversation_from_snapshots(&truncated);
         self.scroll_history_to_bottom();
@@ -1127,6 +1153,9 @@ impl TuiShell {
             ));
         }
         self.restore_conversation_from_snapshots(&outcome.before_messages);
+        if conversation_user_message_count(&self.messages) == 0 {
+            self.session_title_source = Some("seed".to_string());
+        }
         self.scroll_history_to_bottom();
     }
 
@@ -1167,6 +1196,27 @@ fn user_turn_text_for_mode(
     raw_message: &str,
 ) -> String {
     raw_message.to_string()
+}
+
+fn apply_generated_session_title_if_allowed(
+    session_title_source: Option<&str>,
+    title: &str,
+) -> Option<(String, String)> {
+    let trimmed = title.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if session_title_source == Some("manual") {
+        return None;
+    }
+    Some((trimmed.to_string(), "llm".to_string()))
+}
+
+fn conversation_user_message_count(messages: &[ChatMessage]) -> usize {
+    messages
+        .iter()
+        .filter(|message| message.role == MessageRole::User)
+        .count()
 }
 
 fn manual_shell_tool_command(command: &str) -> String {
@@ -1386,7 +1436,8 @@ fn parse_cli_ui_hook_token_role(role: &str) -> Option<CliUiHookTokenRole> {
 #[cfg(test)]
 mod tests {
     use super::{
-        TuiShell, is_standalone_subagent_status_aux, manual_shell_tool_command,
+        TuiShell, apply_generated_session_title_if_allowed, conversation_user_message_count,
+        is_standalone_subagent_status_aux, manual_shell_tool_command,
         next_persisted_standalone_pending_aux, next_persisted_standalone_pending_aux_anchor,
         should_reanchor_persisted_subagent_status_on_begin_assistant_response,
         should_toggle_aux_details_on_enter_rewind_picker,
@@ -1417,6 +1468,34 @@ mod tests {
             user_turn_text_for_mode(&workspace_root, MainInputMode::Plan, raw_message);
 
         assert_eq!(runtime_turn, raw_message);
+    }
+
+    #[test]
+    fn apply_generated_session_title_skips_manual_source() {
+        assert_eq!(
+            apply_generated_session_title_if_allowed(Some("manual"), "LLM title"),
+            None
+        );
+        assert_eq!(
+            apply_generated_session_title_if_allowed(Some("llm"), "  New title  "),
+            Some(("New title".to_string(), "llm".to_string()))
+        );
+        assert_eq!(
+            apply_generated_session_title_if_allowed(None, "First title"),
+            Some(("First title".to_string(), "llm".to_string()))
+        );
+        assert_eq!(apply_generated_session_title_if_allowed(None, "   "), None);
+    }
+
+    #[test]
+    fn conversation_user_message_count_ignores_agent_notices() {
+        let messages = vec![
+            ChatMessage::new(MessageRole::User, "hello"),
+            ChatMessage::new(MessageRole::Agent, "reply"),
+            ChatMessage::new(MessageRole::Agent, "saved"),
+        ];
+        assert_eq!(conversation_user_message_count(&messages), 1);
+        assert_eq!(conversation_user_message_count(&[]), 0);
     }
 
     #[test]
@@ -1499,7 +1578,10 @@ mod tests {
         };
 
         let should_reanchor = should_reanchor_persisted_subagent_status_on_begin_assistant_response(
-            Some(&ChatMessage::new(MessageRole::Agent, "previous parent reply")),
+            Some(&ChatMessage::new(
+                MessageRole::Agent,
+                "previous parent reply",
+            )),
             Some(&persisted),
         );
 

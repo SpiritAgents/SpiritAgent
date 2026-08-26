@@ -75,7 +75,6 @@ test("startWorktreeBootstrapTurnCommand inserts user message and running worktre
       persistCurrentSessionIfNeeded: async () => {
         persisted = true;
       },
-      scheduleSessionTitleGenerationIfNeeded: () => {},
       dispatchUserMessageExtensionEvent: async () => {},
       emitLiveSnapshotUpdate: () => {},
       buildSnapshot: () => ({ conversation: { messages: bundle.messages } }),

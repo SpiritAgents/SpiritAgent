@@ -119,6 +119,8 @@ export const SESSION_DESKTOP_TIMELINE_UPDATED = "session.desktopTimelineUpdated"
 export const WORKSPACE_TRUST_REQUESTED = "workspace.trustRequested";
 /** Notification: a tool wrote/changed a file (rewind bookkeeping). */
 export const SESSION_FILE_CHANGED = "session.fileChanged";
+/** Notification: LLM-generated display title for the first user turn. */
+export const SESSION_TITLE_UPDATED = "session.titleUpdated";
 
 export type ClientKind = "cli" | "desktop" | "web";
 
@@ -275,4 +277,9 @@ export interface SessionGetDesktopTimelineResult {
 export interface SessionDesktopTimelineUpdatedParams {
   sessionId: string;
   revision: number;
+}
+
+export interface SessionTitleUpdatedParams {
+  sessionId: string;
+  title: string;
 }

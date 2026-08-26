@@ -40,6 +40,8 @@ struct ChatFile {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     session_display_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    session_title_source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     workspace_root: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     git_branch: Option<String>,
@@ -79,6 +81,7 @@ pub struct LoadedChat {
     pub desktop_messages: Option<Vec<ConversationMessageSnapshot>>,
     pub rewind: Option<Value>,
     pub session_display_name: Option<String>,
+    pub session_title_source: Option<String>,
 }
 
 pub fn chat_dir_path() -> PathBuf {
@@ -205,6 +208,7 @@ pub struct SaveChatParams<'a> {
     pub rewind: Option<&'a Value>,
     pub desktop_messages: Option<&'a [ConversationMessageSnapshot]>,
     pub session_display_name_override: Option<&'a str>,
+    pub session_title_source: Option<&'a str>,
 }
 
 pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
@@ -219,11 +223,16 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
         rewind,
         desktop_messages,
         session_display_name_override,
+        session_title_source,
     } = params;
     let path = resolve_save_path(path_arg)?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create conversation directory: {}", parent.display()))?;
+        fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "Failed to create conversation directory: {}",
+                parent.display()
+            )
+        })?;
     }
 
     let desktop_messages = desktop_messages
@@ -232,7 +241,9 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
         .unwrap_or_else(|| build_fallback_desktop_messages(messages, assistant_aux));
     let desktop_message_timeline = build_persisted_timeline(&desktop_messages);
     if desktop_message_timeline.is_empty() {
-        return Err(anyhow!("chat schema v2 refuses to write an empty session timeline"));
+        return Err(anyhow!(
+            "chat schema v2 refuses to write an empty session timeline"
+        ));
     }
     let workspace_root = current_workspace_root();
 
@@ -265,6 +276,10 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
         session_display_name: session_display_name_override
             .map(str::to_string)
             .or_else(|| derive_session_display_name(&desktop_messages)),
+        session_title_source: session_title_source
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string),
         workspace_root: workspace_root
             .as_ref()
             .map(|path| path.to_string_lossy().to_string()),
@@ -274,7 +289,8 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
     };
 
     let content = serde_json::to_string_pretty(&file)?;
-    fs::write(&path, content).with_context(|| format!("Failed to write conversation: {}", path.display()))?;
+    fs::write(&path, content)
+        .with_context(|| format!("Failed to write conversation: {}", path.display()))?;
     Ok(path)
 }
 
@@ -291,12 +307,16 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
     let parsed: ChatFile = serde_json::from_value(parsed)
         .with_context(|| format!("Failed to parse chat schema v2: {}", path.display()))?;
     if parsed.desktop_message_timeline.is_empty() {
-        return Err(anyhow!("chat schema v2 requires a non-empty desktopMessageTimeline"));
+        return Err(anyhow!(
+            "chat schema v2 requires a non-empty desktopMessageTimeline"
+        ));
     }
 
     let desktop_messages = hydrate_desktop_messages_from_timeline(&parsed.desktop_message_timeline);
     if desktop_messages.is_empty() {
-        return Err(anyhow!("chat schema v2 timeline did not restore any messages"));
+        return Err(anyhow!(
+            "chat schema v2 timeline did not restore any messages"
+        ));
     }
     let (messages, assistant_aux) = derive_archive_projection(&desktop_messages);
 
@@ -328,6 +348,7 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
         desktop_messages: Some(desktop_messages),
         rewind: parsed.rewind,
         session_display_name: parsed.session_display_name,
+        session_title_source: parsed.session_title_source,
     })
 }
 
@@ -501,7 +522,10 @@ pub fn resolve_chat_file_path(path_arg: &str) -> Result<PathBuf> {
     };
 
     if !candidate.exists() {
-        return Err(anyhow!("Conversation file does not exist: {}", candidate.display()));
+        return Err(anyhow!(
+            "Conversation file does not exist: {}",
+            candidate.display()
+        ));
     }
 
     Ok(candidate)
@@ -596,6 +620,7 @@ mod tests {
             rewind: None,
             desktop_messages: Some(&desktop_messages),
             session_display_name_override: None,
+            session_title_source: None,
         })
         .expect("save chat");
 
@@ -620,6 +645,48 @@ mod tests {
                 .len(),
             3
         );
+
+        let _ = fs::remove_file(saved);
+    }
+
+    #[test]
+    fn save_chat_persists_session_title_source() {
+        let file_path = test_file_path("title-source");
+        let desktop_messages = vec![ConversationMessageSnapshot {
+            id: 1,
+            role: ConversationMessageRole::User,
+            content: "hello from title source test".to_string(),
+            tool: None,
+            aux: None,
+            pending: false,
+        }];
+        let messages = vec![(
+            "user".to_string(),
+            "hello from title source test".to_string(),
+        )];
+        let saved = save_chat(SaveChatParams {
+            path_arg: Some(file_path.to_string_lossy().as_ref()),
+            messages: &messages,
+            assistant_aux: &[],
+            llm_history: &[],
+            loop_enabled: false,
+            approval_level: "default",
+            subagent_sessions: &[],
+            rewind: None,
+            desktop_messages: Some(&desktop_messages),
+            session_display_name_override: Some("LLM title"),
+            session_title_source: Some("llm"),
+        })
+        .expect("save chat");
+
+        let raw = fs::read_to_string(&saved).expect("read saved chat");
+        let parsed: Value = serde_json::from_str(&raw).expect("parse saved chat json");
+        assert_eq!(parsed["sessionDisplayName"], json!("LLM title"));
+        assert_eq!(parsed["sessionTitleSource"], json!("llm"));
+
+        let loaded = load_chat(saved.to_string_lossy().as_ref()).expect("reload chat");
+        assert_eq!(loaded.session_display_name.as_deref(), Some("LLM title"));
+        assert_eq!(loaded.session_title_source.as_deref(), Some("llm"));
 
         let _ = fs::remove_file(saved);
     }
@@ -810,11 +877,7 @@ mod tests {
     }
 
     fn test_file_path(label: &str) -> PathBuf {
-        let file_name = format!(
-            "spirit-chat-store-{}-{}.json",
-            label,
-            current_unix_millis()
-        );
+        let file_name = format!("spirit-chat-store-{}-{}.json", label, current_unix_millis());
         env::temp_dir().join(file_name)
     }
 }

@@ -115,7 +115,6 @@ export interface SessionTurnOrchestratorContext {
   allocateMessageId(bundle?: SessionBundle): number;
   resetStreamingPlacementState(full: boolean, bundle?: SessionBundle): void;
   persistCurrentSessionIfNeeded(bundle?: SessionBundle): Promise<void>;
-  scheduleSessionTitleGenerationIfNeeded(seedText: string, bundle?: SessionBundle): void;
   dispatchUserMessageExtensionEvent(
     text: string,
     displayText: string,
@@ -204,7 +203,6 @@ export async function submitUserTurnAfterInitializedCommand(
   ctx.resetStreamingPlacementState(false, bundle);
   const todoSessionKeyBeforePersist = ctx.resolveTodoSessionKeyForBundle(bundle);
   await ctx.persistCurrentSessionIfNeeded(bundle);
-  ctx.scheduleSessionTitleGenerationIfNeeded(displayText, bundle);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);

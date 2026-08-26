@@ -74,6 +74,7 @@ pub fn build_truncated_chat_archive_for_fork(
         desktop_messages: Some(truncated_desktop),
         rewind: Some(rewind::create_desktop_rewind_metadata().as_json()),
         session_display_name: None,
+        session_title_source: None,
     }
 }
 
@@ -287,6 +288,7 @@ mod tests {
             desktop_messages: Some(desktop.clone()),
             rewind: None,
             session_display_name: None,
+            session_title_source: None,
         };
 
         let truncated = build_truncated_chat_archive_for_fork(&source, &desktop, 1);

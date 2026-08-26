@@ -22,7 +22,6 @@ export interface SessionDeleteContext
     Pick<SessionSplitHostContext, "visiblePaneSessionPaths" | "setVisiblePaneSessionPaths"> {
   removeEphemeralSession(filePath: string): void;
   bundleRuntimeIsBusy(sessionPath: string): boolean;
-  clearSessionTitleGeneration(sessionPath: string): void;
   disposeSessionRuntime(bundle: SessionBundle): Promise<void>;
 }
 
@@ -139,7 +138,6 @@ export async function deleteSessionCommand(
       await deleteSessionRewindData(spiritDataDir(), rewindSessionId);
     }
     await deleteDesktopTranscriptSessionDirForChatPath(resolvedPath);
-    ctx.clearSessionTitleGeneration(resolvedPath);
 
     ctx.setLastRuntimeError("");
     return ctx.buildSnapshot();

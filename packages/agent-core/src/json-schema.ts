@@ -7,6 +7,8 @@ export interface JsonSchemaCompletionRequest {
   schema: JsonObject;
   systemSections?: Array<string | undefined>;
   includeToolAgentHostPrompt?: boolean;
+  imagePaths?: readonly string[];
+  videoPaths?: readonly string[];
 }
 
 export interface JsonSchemaCompletionResult<T extends JsonValue = JsonValue> {

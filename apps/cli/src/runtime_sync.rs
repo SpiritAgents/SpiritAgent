@@ -38,6 +38,8 @@ pub(crate) struct RuntimeSyncState {
     pub(crate) subagent_message_cache: HashMap<String, Vec<ChatMessage>>,
     /// A `session.desktopTimelineUpdated` arrived; the TUI applies it once idle.
     pub(crate) desktop_timeline_resync_pending: bool,
+    /// Latest `session.titleUpdated` title for this session; TUI takes and applies it.
+    pub(crate) pending_session_title: Option<String>,
     pub(crate) events: VecDeque<RuntimeEvent>,
 }
 
@@ -54,6 +56,7 @@ impl RuntimeSyncState {
             child_sessions_cache: Vec::new(),
             subagent_message_cache: HashMap::new(),
             desktop_timeline_resync_pending: false,
+            pending_session_title: None,
             events: VecDeque::new(),
         }
     }
@@ -168,15 +171,16 @@ impl RuntimeSyncState {
                 } => {
                     let summary = summary_preview
                         .unwrap_or_else(|| t!("tui.session.compact_summary_empty").into_owned());
-                    self.events.push_back(RuntimeEvent::PushMessage(ChatMessage::new(
-                        MessageRole::Agent,
-                        t!(
-                            "tui.session.compacted",
-                            count = dropped_messages,
-                            summary = summary
-                        )
-                        .into_owned(),
-                    )));
+                    self.events
+                        .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
+                            MessageRole::Agent,
+                            t!(
+                                "tui.session.compacted",
+                                count = dropped_messages,
+                                summary = summary
+                            )
+                            .into_owned(),
+                        )));
                 }
                 BridgeRuntimeEvent::BackgroundToolStatus { .. } => {}
                 BridgeRuntimeEvent::ContextUsageUpdated { .. } => {}
@@ -427,7 +431,12 @@ impl RuntimeSyncState {
                             format_tool_ui_message(&request, tool_name, output)
                         },
                         if failed {
-                            tool_failed_block(tool_name, None, &t!("tui.tool.failed_headline"), output)
+                            tool_failed_block(
+                                tool_name,
+                                None,
+                                &t!("tui.tool.failed_headline"),
+                                output,
+                            )
                         } else {
                             build_tool_result_block(&request, tool_name, None, output)
                         },
@@ -440,8 +449,12 @@ impl RuntimeSyncState {
                         if failed {
                             t!("tui.tool.failed_request_parse", output = output).into_owned()
                         } else {
-                            t!("tui.tool.done_request_parse_failed", err = err, output = output)
-                                .into_owned()
+                            t!(
+                                "tui.tool.done_request_parse_failed",
+                                err = err,
+                                output = output
+                            )
+                            .into_owned()
                         },
                     )));
             }

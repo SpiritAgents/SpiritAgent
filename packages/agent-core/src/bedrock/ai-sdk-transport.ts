@@ -129,7 +129,11 @@ export class AiSdkBedrockTransport
     request: OpenAiJsonSchemaCompletionRequest,
   ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
     const messages = buildJsonSchemaCompletionMessages(
-      { model: config.model, llmVendor: "bedrock" },
+      {
+        model: config.model,
+        llmVendor: "bedrock",
+        ...(config.workspaceRoot ? { workspaceRoot: config.workspaceRoot } : {}),
+      },
       request,
     );
     const normalizedMessages = normalizeMessagesForBedrockPrompt(messages);

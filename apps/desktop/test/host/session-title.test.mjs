@@ -11,6 +11,7 @@ import {
   countUserMessages,
   prepareSessionTitleForFirstUserTurn,
 } from "../../dist-electron/src/host/session-title-first-turn.js";
+import { applyGeneratedSessionTitle } from "../../dist-electron/src/host/session-title-service.js";
 import { createEmptySessionBundle } from "../../dist-electron/src/host/session-bundle.js";
 
 test("buildSessionTitlePrompt includes user message and language rule", () => {
@@ -69,4 +70,37 @@ test("prepareSessionTitleForFirstUserTurn is a no-op when user messages already 
   assert.equal(bundle.sessionTitleSource, "llm");
   assert.equal(bundle.activeSession.displayName, "Existing title");
   assert.equal(countUserMessages(bundle), 1);
+});
+
+test("buildSessionTitlePrompt describes attached media when the user text is empty", () => {
+  const prompt = buildSessionTitlePrompt("", { hasMedia: true });
+  assert.match(prompt, /media attachments/i);
+  assert.doesNotMatch(prompt, /\(empty\)/);
+});
+
+test("applyGeneratedSessionTitle ignores a late title after manual rename", async () => {
+  const bundle = createEmptySessionBundle("/tmp/workspace");
+  const sessionPath = "/tmp/workspace/session.json";
+  bundle.activeSession = {
+    filePath: sessionPath,
+    displayName: "Manual title",
+    kind: "stored",
+  };
+  bundle.sessionTitleSource = "manual";
+  let persisted = false;
+  await applyGeneratedSessionTitle({
+    sessionPath,
+    title: "LLM title",
+    registry: {
+      findBySessionPath: () => bundle,
+    },
+    runSerialized: async (work) => work(),
+    persistBundle: async () => {
+      persisted = true;
+    },
+    notifySessionListUpdated: () => {},
+  });
+  assert.equal(bundle.activeSession.displayName, "Manual title");
+  assert.equal(bundle.sessionTitleSource, "manual");
+  assert.equal(persisted, false);
 });

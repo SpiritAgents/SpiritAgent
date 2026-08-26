@@ -73,6 +73,7 @@ import {
   SESSION_TURN_FINISHED,
   SESSION_USER_TURN_SUBMITTED,
   SESSION_FILE_CHANGED,
+  SESSION_TITLE_UPDATED,
   SERVER_SET_LLM_CLIENT_VERSION,
   SERVER_SET_LLM_HTTP_VERSION,
   WORKSPACE_TRUST_REQUESTED,
@@ -357,6 +358,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     },
     broadcastDesktopTimelineUpdated: (sessionId, revision) => {
       broadcast(SESSION_DESKTOP_TIMELINE_UPDATED, { sessionId, revision });
+    },
+    broadcastTitleUpdated: (sessionId, title) => {
+      broadcast(SESSION_TITLE_UPDATED, { sessionId, title });
     },
     log,
   });

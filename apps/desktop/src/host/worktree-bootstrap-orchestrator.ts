@@ -131,7 +131,6 @@ export async function startWorktreeBootstrapTurnCommand(
 
   const todoSessionKeyBeforePersist = ctx.resolveTodoSessionKeyForBundle(bundle);
   await ctx.persistCurrentSessionIfNeeded();
-  ctx.scheduleSessionTitleGenerationIfNeeded(displayText);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);

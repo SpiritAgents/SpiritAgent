@@ -304,6 +304,7 @@ impl SessionModel {
             desktop_messages: None,
             rewind: None,
             session_display_name: None,
+            session_title_source: None,
         }
     }
 }

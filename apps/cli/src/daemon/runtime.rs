@@ -125,7 +125,9 @@ impl DaemonRuntime {
             .next_notification(Duration::from_secs(5))?
             .ok_or_else(|| anyhow!("daemon handshake timed out: server.connected not received"))?;
         if hello.get("method").and_then(Value::as_str) != Some("server.connected") {
-            return Err(anyhow!("daemon handshake failed: first frame was not server.connected"));
+            return Err(anyhow!(
+                "daemon handshake failed: first frame was not server.connected"
+            ));
         }
 
         client.call(
@@ -176,6 +178,7 @@ impl DaemonRuntime {
     }
 
     fn detach_current_session(&mut self) {
+        self.sync.pending_session_title = None;
         if self.daemon_failed {
             return;
         }
@@ -321,6 +324,10 @@ impl DaemonRuntime {
 
     pub fn clear_desktop_timeline_resync_pending(&mut self) {
         self.sync.desktop_timeline_resync_pending = false;
+    }
+
+    pub fn take_pending_session_title(&mut self) -> Option<String> {
+        self.sync.pending_session_title.take()
     }
 
     /// Pull the daemon-stored desktop timeline and hydrate it like a disk load.
@@ -493,6 +500,17 @@ impl DaemonRuntime {
             "workspace.trustRequested" if for_this_session => {
                 self.handle_trust_request(&params);
             }
+            "session.titleUpdated" if for_this_session => {
+                let title = params
+                    .get("title")
+                    .and_then(Value::as_str)
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                    .map(str::to_string);
+                if let Some(title) = title {
+                    self.sync.pending_session_title = Some(title);
+                }
+            }
             "session.userTurnSubmitted" if for_this_session => {
                 let text = params
                     .get("text")
@@ -614,7 +632,9 @@ impl DaemonRuntime {
 
     pub fn continue_assistant_completion(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon is no longer available; cannot continue completing the reply"));
+            return Err(anyhow!(
+                "daemon is no longer available; cannot continue completing the reply"
+            ));
         }
         self.call_daemon("session.continueAssistantCompletion", None)?;
         self.sync.is_busy_cache = true;
@@ -623,7 +643,9 @@ impl DaemonRuntime {
 
     pub fn run_session_start(&mut self, source: &str) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon is no longer available; cannot run sessionStart"));
+            return Err(anyhow!(
+                "daemon is no longer available; cannot run sessionStart"
+            ));
         }
         self.call_daemon("session.runSessionStart", Some(json!({ "source": source })))?;
         self.sync_snapshot_remote()?;
@@ -632,15 +654,17 @@ impl DaemonRuntime {
 
     pub fn reset_session(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon is no longer available; cannot start a new session"));
+            return Err(anyhow!(
+                "daemon is no longer available; cannot start a new session"
+            ));
         }
         self.call_daemon("session.reset", None)?;
+        self.sync.pending_session_title = None;
         self.rewind = rewind::create_desktop_rewind_metadata();
         let session_key = self.rewind.session_id.clone();
         self.set_todo_session_key(&session_key)?;
         self.active_plan_path = None;
-        self.plan_metadata =
-            plan::plan_metadata_snapshot(self.plan_metadata.agent_mode(), None);
+        self.plan_metadata = plan::plan_metadata_snapshot(self.plan_metadata.agent_mode(), None);
         self.sync_snapshot_remote()?;
         Ok(())
     }
@@ -780,7 +804,9 @@ impl DaemonRuntime {
 
     pub fn activate_skill(&mut self, skill: ActiveSkillPayload) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon is no longer available; cannot activate skill"));
+            return Err(anyhow!(
+                "daemon is no longer available; cannot activate skill"
+            ));
         }
         self.call_daemon("session.activateSkill", Some(json!({ "skill": skill })))?;
         Ok(())
@@ -1138,6 +1164,7 @@ impl DaemonRuntime {
         archive: &ChatArchive,
         todos: Vec<rewind::HostTodoRecord>,
     ) -> Result<()> {
+        self.sync.pending_session_title = None;
         self.replace_runtime_archive(archive)?;
         self.rewind = rewind::normalize_desktop_rewind_metadata(archive.rewind.as_ref());
         self.active_plan_path =
@@ -1263,7 +1290,8 @@ impl DaemonRuntime {
                     change_id: Some(metadata.id.clone()),
                     path: metadata.resolved_path.clone(),
                     action: metadata.kind.clone(),
-                    message: "File change snapshot is missing; this rewind item was skipped.".to_string(),
+                    message: "File change snapshot is missing; this rewind item was skipped."
+                        .to_string(),
                 });
             }
         }
@@ -1693,6 +1721,7 @@ impl DaemonRuntime {
             desktop_messages,
             rewind: Some(self.rewind.as_json()),
             session_display_name: None,
+            session_title_source: None,
         })
     }
 

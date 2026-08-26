@@ -392,7 +392,6 @@ import {
   nextMessageIdFromMessages,
   removeEphemeralSessionRecord,
 } from "./sessions.js";
-import { generateSessionTitleFromModelTask } from "./session-title-generation.js";
 import { prepareSessionTitleForFirstUserTurn as resetSessionTitleForFirstUserTurn } from "./session-title-first-turn.js";
 import { applyGeneratedSessionTitle } from "./session-title-service.js";
 import {
@@ -632,8 +631,6 @@ class DesktopHostService {
   private readonly dreamUpdateListeners = new Set<(snapshot: DesktopSnapshot) => void>();
   private readonly automationUpdateListeners = new Set<(snapshot: DesktopSnapshot) => void>();
   private readonly sessionListUpdateListeners = new Set<() => void>();
-  private readonly sessionTitleGenerationInFlight = new Set<string>();
-  private readonly sessionTitleGenerationEpoch = new Map<string, number>();
   private subagentViewerTargetToolCallId: string | null = null;
   private gitRefreshInFlight: Promise<void> | null = null;
   private workspaceContentInvalidation: WorkspaceContentInvalidation | undefined;
@@ -864,8 +861,6 @@ class DesktopHostService {
       resetStreamingPlacementState: (full, bundle) =>
         this.resetStreamingPlacementState(full, bundle),
       persistCurrentSessionIfNeeded: (bundle) => this.persistCurrentSessionIfNeeded(bundle),
-      scheduleSessionTitleGenerationIfNeeded: (seedText, bundle) =>
-        this.scheduleSessionTitleGenerationIfNeeded(seedText, bundle),
       dispatchUserMessageExtensionEvent: (text, displayText, messageId) =>
         this.dispatchExtensionEvent({
           type: "onUserMessage",
@@ -2764,8 +2759,6 @@ class DesktopHostService {
         const bundle = this.sessionRegistry.findBySessionPath(sessionPath);
         return isSessionBundleBusy(bundle);
       },
-      clearSessionTitleGeneration: (sessionPath) =>
-        this.clearSessionTitleGenerationForSession(sessionPath),
       disposeSessionRuntime: async (bundle) => {
         await closeRemoteDesktopRuntime(bundle.runtime);
         bundle.runtime = undefined;
@@ -2918,6 +2911,9 @@ class DesktopHostService {
       },
       onFileChange: (change: unknown) => {
         this.applyRecordedWorkspaceFileChange(bundle, change as HostRecordedFileChange);
+      },
+      onSessionTitleUpdated: (sessionId: string, title: string) => {
+        this.applyRemoteSessionTitle(sessionId, title);
       },
     };
     try {
@@ -3313,94 +3309,26 @@ class DesktopHostService {
     if (!resetSessionTitleForFirstUserTurn(bundle, displayText)) {
       return;
     }
-    const filePath = bundle.activeSession?.filePath;
-    if (filePath) {
-      this.invalidateSessionTitleGeneration(filePath);
-    }
   }
 
-  private invalidateSessionTitleGeneration(sessionPath: string): void {
-    const filePath = path.resolve(sessionPath);
-    this.sessionTitleGenerationEpoch.set(
-      filePath,
-      (this.sessionTitleGenerationEpoch.get(filePath) ?? 0) + 1,
-    );
-    this.sessionTitleGenerationInFlight.delete(filePath);
-  }
-
-  /** Release title-generation state after session deletion; keep the incremented epoch entry during in-flight generation so its completion is discarded. */
-  private clearSessionTitleGenerationForSession(sessionPath: string): void {
-    const filePath = path.resolve(sessionPath);
-    if (this.sessionTitleGenerationInFlight.has(filePath)) {
-      this.invalidateSessionTitleGeneration(filePath);
+  private applyRemoteSessionTitle(sessionId: string, title: string): void {
+    const trimmed = title.trim();
+    if (!trimmed) {
       return;
     }
-    this.sessionTitleGenerationEpoch.delete(filePath);
-  }
-
-  private scheduleSessionTitleGenerationIfNeeded(
-    seedText: string,
-    bundle: SessionBundle = this.activeBundle(),
-  ): void {
-    const activeSession = bundle.activeSession;
-    if (!activeSession || activeSession.readOnly === true || activeSession.kind === "ephemeral") {
+    let sessionPath: string | undefined;
+    for (const bundle of this.sessionRegistry.all()) {
+      if (remoteDesktopSessionId(bundle.runtime) === sessionId) {
+        sessionPath = bundle.activeSession?.filePath;
+        break;
+      }
+    }
+    if (!sessionPath) {
       return;
     }
-
-    const userMessageCount = bundle.messageTimeline
-      .toMessages()
-      .filter((message) => message.role === "user").length;
-    if (userMessageCount !== 1) {
-      return;
-    }
-
-    if (bundle.sessionTitleSource !== "seed") {
-      return;
-    }
-
-    if (!resolveLightweightChatModelProfile(this.requireState().config)) {
-      return;
-    }
-
-    const filePath = path.resolve(activeSession.filePath);
-    if (this.sessionTitleGenerationInFlight.has(filePath)) {
-      return;
-    }
-
-    const epoch = this.sessionTitleGenerationEpoch.get(filePath) ?? 0;
-    this.sessionTitleGenerationInFlight.add(filePath);
-    void this.generateAndApplySessionTitle(bundle, seedText, filePath, epoch)
-      .catch((error) => {
-        console.warn(
-          "[session-title] generation failed:",
-          error instanceof Error ? error.message : String(error),
-        );
-      })
-      .finally(() => {
-        this.sessionTitleGenerationInFlight.delete(filePath);
-      });
-  }
-
-  private async generateAndApplySessionTitle(
-    bundle: SessionBundle,
-    seedText: string,
-    filePath: string,
-    epoch: number,
-  ): Promise<void> {
-    const state = this.requireState();
-    const fallbackSeed = bundle.activeSession?.displayName ?? deriveDisplayNameFromSeed(seedText);
-    const result = await generateSessionTitleFromModelTask({
-      config: state.config,
-      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-      firstUserMessage: seedText,
-      fallbackSeedTitle: fallbackSeed,
-    });
-    if ((this.sessionTitleGenerationEpoch.get(filePath) ?? 0) !== epoch) {
-      return;
-    }
-    await applyGeneratedSessionTitle({
-      sessionPath: filePath,
-      title: result.title,
+    void applyGeneratedSessionTitle({
+      sessionPath,
+      title: trimmed,
       registry: this.sessionRegistry,
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       persistBundle: (target) =>
@@ -3412,6 +3340,11 @@ class DesktopHostService {
       onActiveSessionTitleApplied: () => {
         this.emitLiveSnapshotUpdate();
       },
+    }).catch((error) => {
+      console.warn(
+        "[session-title] apply failed:",
+        error instanceof Error ? error.message : String(error),
+      );
     });
   }
 

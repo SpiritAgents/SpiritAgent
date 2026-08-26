@@ -1,7 +1,12 @@
-import type { JsonObject, JsonValue } from "../ports.js";
+import {
+  createLlmMessageContentFromTextAndImages,
+  type JsonObject,
+  type JsonValue,
+} from "../ports.js";
 import { buildToolAgentSystemMessage, cloneJsonValue, isJsonObject } from "../tool-agent.js";
 
 import type { OpenAiTransportConfig } from "./openai-compat.js";
+import { llmMessageToOpenAiMessage } from "./openai-multimodal-messages.js";
 
 export interface OpenAiJsonSchemaCompletionRequest {
   userPrompt: string;
@@ -9,6 +14,8 @@ export interface OpenAiJsonSchemaCompletionRequest {
   schema: JsonObject;
   systemSections?: Array<string | undefined>;
   includeToolAgentHostPrompt?: boolean;
+  imagePaths?: readonly string[];
+  videoPaths?: readonly string[];
 }
 
 export interface OpenAiJsonSchemaCompletionResult<T extends JsonValue = JsonValue> {
@@ -36,7 +43,7 @@ export type StructuredOutputResponseFormat =
     };
 
 export function buildJsonSchemaCompletionMessages(
-  config: { model: string; llmVendor?: string },
+  config: { model: string; llmVendor?: string; workspaceRoot?: string },
   request: OpenAiJsonSchemaCompletionRequest,
 ): JsonValue[] {
   const structuredOutputSystemSection = buildStructuredOutputSystemSection(config, request);
@@ -53,11 +60,30 @@ export function buildJsonSchemaCompletionMessages(
           ? sections.join("\n\n")
           : buildToolAgentSystemMessage(config.model, config.llmVendor, ...sections),
     },
-    {
+    buildJsonSchemaCompletionUserMessage(config.workspaceRoot, request),
+  ];
+}
+
+function buildJsonSchemaCompletionUserMessage(
+  workspaceRoot: string | undefined,
+  request: OpenAiJsonSchemaCompletionRequest,
+): JsonValue {
+  const imagePaths = request.imagePaths ?? [];
+  const videoPaths = request.videoPaths ?? [];
+  if (imagePaths.length === 0 && videoPaths.length === 0) {
+    return {
       role: "user",
       content: request.userPrompt,
+    };
+  }
+
+  return llmMessageToOpenAiMessage(
+    {
+      role: "user",
+      content: createLlmMessageContentFromTextAndImages(request.userPrompt, imagePaths, videoPaths),
     },
-  ];
+    workspaceRoot ?? process.cwd(),
+  );
 }
 
 export function extractJsonSchemaCompletionContent(response: {

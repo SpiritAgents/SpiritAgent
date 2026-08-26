@@ -150,6 +150,7 @@ export class AiSdkOpenResponsesTransport
       {
         model: config.model,
         ...(config.llmVendor ? { llmVendor: config.llmVendor } : {}),
+        ...(config.workspaceRoot ? { workspaceRoot: config.workspaceRoot } : {}),
       },
       request,
     );

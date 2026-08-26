@@ -83,6 +83,7 @@ After the upgrade handshake the server sends a `server.connected` notification (
 | `session.userTurnSubmitted`             | notification | Shared user-turn boundary, including a client turn id for origin-client deduplication                                                                            |
 | `session.turnFinished`                  | notification | Terminal state of a turn: `completed` / `failed` / `cancelled`                                                                                                   |
 | `session.snapshot`                      | notification | Session projection pushed at interaction boundaries (approval/questions/turn end)                                                                                |
+| `session.titleUpdated`                  | notification | LLM-generated display title after the first user turn                                                                                                            |
 | `workspace.trustRequested`              | notification | Hooks ask for workspace capability trust; reply with `session.replyWorkspaceCapabilityTrust`                                                                     |
 
 Notes for client authors:

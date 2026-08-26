@@ -11,6 +11,8 @@ import type {
 import type { BridgeRuntimeSnapshot } from "@spiritagent/agent-core/host-bridge";
 import {
   createHostTodoStore,
+  deriveSessionTitleFallbackSeed,
+  generateSessionTitleForTurn,
   type ApprovalLevel,
   type HostDreamScope,
   type HostDreamSourceSessionRef,
@@ -25,6 +27,10 @@ import {
 } from "./runtime-factory.js";
 import { McpRegistry } from "./mcp-registry.js";
 import { buildServerSnapshot } from "./snapshot-projector.js";
+import {
+  mediaPathsFromLatestUserMessage,
+  shouldScheduleSessionTitleGeneration,
+} from "./session-title-generation.js";
 
 export type TurnStopReason = "completed" | "failed" | "cancelled";
 
@@ -143,6 +149,8 @@ export interface SessionManagerCallbacks {
   broadcastFileChange: (sessionId: string, change: unknown) => void;
   /** A host client pushed a new desktop timeline snapshot. */
   broadcastDesktopTimelineUpdated?: (sessionId: string, revision: number) => void;
+  /** LLM session title for the first user turn. */
+  broadcastTitleUpdated?: (sessionId: string, title: string) => void;
   log?: (message: string) => void;
 }
 
@@ -657,9 +665,49 @@ export class SessionManager {
       turn.explicitWorkspaceFiles,
       activeSkills,
     );
+    this.scheduleSessionTitleGenerationIfNeeded(session, turn.text);
     this.callbacks.broadcastUserTurnSubmitted?.(session.info.sessionId, turn);
     // Push the busy edge immediately so clients see the turn start.
     this.callbacks.broadcastSnapshot(session.info.sessionId, this.snapshotForSession(session));
+  }
+
+  private scheduleSessionTitleGenerationIfNeeded(session: ServerSession, userText: string): void {
+    const history = session.runtimeResult.runtime.history();
+    if (
+      !shouldScheduleSessionTitleGeneration({
+        sessionKind: session.createParams.sessionKind,
+        conversationKey: session.info.conversationKey ?? session.createParams.conversationKey,
+        history,
+      })
+    ) {
+      return;
+    }
+
+    const { imagePaths, videoPaths } = mediaPathsFromLatestUserMessage(history);
+    const fallbackSeedTitle = deriveSessionTitleFallbackSeed(userText);
+    const sessionId = session.info.sessionId;
+    void generateSessionTitleForTurn({
+      spiritDataDir: this.spiritDataDir,
+      workspaceRoot: session.info.workspaceRoot,
+      userText,
+      imagePaths,
+      videoPaths,
+      fallbackSeedTitle,
+    })
+      .then((result) => {
+        const live = this.sessions.get(sessionId);
+        if (!live) {
+          return;
+        }
+        live.info.title = result.title;
+        this.callbacks.broadcastTitleUpdated?.(sessionId, result.title);
+      })
+      .catch((error) => {
+        console.warn(
+          "[session-title] generation failed:",
+          error instanceof Error ? error.message : String(error),
+        );
+      });
   }
 
   private finishTurn(

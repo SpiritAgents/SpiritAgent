@@ -420,6 +420,10 @@ impl RuntimeHandle {
         self.backend.clear_desktop_timeline_resync_pending()
     }
 
+    pub fn take_pending_session_title(&mut self) -> Option<String> {
+        self.backend.take_pending_session_title()
+    }
+
     pub fn fetch_live_desktop_timeline(
         &mut self,
     ) -> Result<Option<Vec<crate::rewind::ConversationMessageSnapshot>>> {

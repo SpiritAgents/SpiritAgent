@@ -106,7 +106,11 @@ impl SecretStore for KeyringSecretStore {
         match entry.get_password() {
             Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
             Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
-            Err(err) => Err(anyhow!("Failed to read API Key for model {}: {}", model_name, err)),
+            Err(err) => Err(anyhow!(
+                "Failed to read API Key for model {}: {}",
+                model_name,
+                err
+            )),
         }
     }
 
@@ -142,6 +146,7 @@ impl ChatRepository for JsonChatRepository {
             rewind: archive.rewind.as_ref(),
             desktop_messages: archive.desktop_messages.as_deref(),
             session_display_name_override: archive.session_display_name.as_deref(),
+            session_title_source: archive.session_title_source.as_deref(),
         })
     }
 
@@ -157,6 +162,7 @@ impl ChatRepository for JsonChatRepository {
             desktop_messages: loaded.desktop_messages,
             rewind: loaded.rewind,
             session_display_name: loaded.session_display_name,
+            session_title_source: loaded.session_title_source,
         })
     }
 }

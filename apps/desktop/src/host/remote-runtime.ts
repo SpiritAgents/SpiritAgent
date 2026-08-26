@@ -71,6 +71,7 @@ interface RemoteDesktopRuntimeInput {
     explicitWorkspaceFiles: PendingWorkspaceFile[];
   }) => void;
   onFileChange?: (change: unknown) => void;
+  onSessionTitleUpdated?: (sessionId: string, title: string) => void;
 }
 
 interface SessionCreateResult {
@@ -174,6 +175,7 @@ function buildRemoteDesktopRuntime(
     | "onWorkspaceCapabilityTrustRequested"
     | "onRemoteUserTurnSubmitted"
     | "onFileChange"
+    | "onSessionTitleUpdated"
   >,
 ): RemoteDesktopRuntime {
   return new RemoteDesktopRuntime(
@@ -184,6 +186,7 @@ function buildRemoteDesktopRuntime(
     input.onWorkspaceCapabilityTrustRequested,
     input.onRemoteUserTurnSubmitted,
     input.onFileChange,
+    input.onSessionTitleUpdated,
   );
 }
 
@@ -360,6 +363,7 @@ export class RemoteDesktopRuntime {
       explicitWorkspaceFiles: PendingWorkspaceFile[];
     }) => void,
     private readonly onFileChange?: (change: unknown) => void,
+    private readonly onSessionTitleUpdated?: (sessionId: string, title: string) => void,
   ) {
     this.archive = structuredClone(archive);
     this.archiveMessages = structuredClone(archive.messages);
@@ -772,6 +776,11 @@ export class RemoteDesktopRuntime {
     }
     if (method === "session.fileChanged") {
       this.onFileChange?.(params["change"]);
+      return;
+    }
+    if (method === "session.titleUpdated" && typeof params["title"] === "string") {
+      this.onSessionTitleUpdated?.(this.sessionId, params["title"]);
+      this.onActivity?.();
       return;
     }
     if (method === "session.subagentEvents" && Array.isArray(params["drains"])) {
