@@ -29,6 +29,24 @@ test("shouldUseKimiCodeWebSearch matches kimi-code vendor and api base", () => {
     shouldUseKimiCodeWebSearch({
       transportKind: "openai-compatible",
       apiKey: "k",
+      model: "kimi-for-coding",
+      baseUrl: "https://api.kimi.ai/coding/v1",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseKimiCodeWebSearch({
+      transportKind: "anthropic",
+      apiKey: "k",
+      model: "kimi-for-coding",
+      baseUrl: "https://api.kimi.ai/coding",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseKimiCodeWebSearch({
+      transportKind: "openai-compatible",
+      apiKey: "k",
       model: "kimi-k2.5",
       llmVendor: "moonshot-ai",
     }),
@@ -41,6 +59,16 @@ test("shouldUseKimiCodeWebSearch matches kimi-code vendor and api base", () => {
       model: "kimi-k2.5",
       llmVendor: "moonshot-ai",
       baseUrl: "https://api.kimi.com/coding/v1",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseKimiCodeWebSearch({
+      transportKind: "openai-compatible",
+      apiKey: "k",
+      model: "kimi-k2.5",
+      llmVendor: "moonshot-ai",
+      baseUrl: "https://api.kimi.ai/coding/v1",
     }),
     false,
   );

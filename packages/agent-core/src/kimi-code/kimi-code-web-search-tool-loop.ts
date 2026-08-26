@@ -22,7 +22,12 @@ export async function executeKimiCodeWebSearchToolCall(
   const query = readKimiCodeWebSearchQuery(call.argumentsJson);
   const apiKey = (config as { apiKey?: string }).apiKey ?? "";
 
-  const searchResult = await invokeKimiCodeSearch(apiKey, { query }, fetchImpl);
+  const searchResult = await invokeKimiCodeSearch(
+    apiKey,
+    { query },
+    fetchImpl,
+    (config as { baseUrl?: string }).baseUrl,
+  );
 
   if (searchResult.kind === "failed") {
     return {

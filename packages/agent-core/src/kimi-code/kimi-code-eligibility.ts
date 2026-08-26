@@ -7,7 +7,8 @@ function isKimiCodeApiBase(baseUrl: string | undefined): boolean {
   }
 
   try {
-    return new URL(trimmed).hostname === "api.kimi.com";
+    const hostname = new URL(trimmed).hostname;
+    return hostname === "api.kimi.com" || hostname === "api.kimi.ai";
   } catch {
     return false;
   }
@@ -22,7 +23,7 @@ export function shouldUseKimiCodeWebSearch(config: LlmTransportConfig | undefine
   if (vendor === "kimi-code") {
     return true;
   }
-  // Symmetric with Formula excluding kimi-code: moonshot-ai does not use managed search even if baseUrl points at api.kimi.com
+  // Symmetric with Formula excluding kimi-code: moonshot-ai does not use managed search even if baseUrl points at api.kimi.com / api.kimi.ai
   if (vendor === "moonshot-ai") {
     return false;
   }
