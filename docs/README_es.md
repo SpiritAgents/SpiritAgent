@@ -169,9 +169,9 @@ Setup manual fuera del editor:
 node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 
-| Variable de entorno    | Requerida | Descripción                                                                              |
-| ---------------------- | --------- | ---------------------------------------------------------------------------------------- |
-| `SPIRIT_ACP_WORKSPACE` | No        | Raíz del workspace (predeterminado: `cwd` del cliente)                                   |
+| Variable de entorno    | Requerida | Descripción                                                                        |
+| ---------------------- | --------- | ---------------------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | No        | Raíz del workspace (predeterminado: `cwd` del cliente)                             |
 | `SPIRIT_ACP_DATA_DIR`  | No        | Directorio de datos Spirit (predeterminado: `%APPDATA%/Spirit` o `~/.spirit-data`) |
 
 ## Desarrollo
