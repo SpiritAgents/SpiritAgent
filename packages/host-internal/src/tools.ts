@@ -1999,13 +1999,11 @@ export class NodeHostToolService<
           return `[write]\naction: edit_file\npath: ${target}\nreplaced_once: true\nmatch_mode: normalized_newlines\nold_chars: ${[...oldText].length}\nnew_chars: ${[...newText].length}`;
         }
       }
-      throw new Error(
-        "edit_file failed: old_text did not match the target file (details written to CLI logs; use /log)",
-      );
+      throw new Error("edit_file failed: old_text did not match the target file");
     }
     if (occurrences > 1) {
       throw new Error(
-        `edit_file failed: old_text matched ${occurrences} times; provide a more specific snippet (details written to CLI logs; use /log)`,
+        `edit_file failed: old_text matched ${occurrences} times; provide a more specific snippet`,
       );
     }
 
