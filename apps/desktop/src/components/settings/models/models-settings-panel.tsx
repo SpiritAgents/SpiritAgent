@@ -458,7 +458,10 @@ export function ModelsSettingsPanel({
               const groupHasKey = groupModels.some((m) => m.keyConfigured);
               const groupLabel = groupDisplayLabel(group);
               return (
-                <div key={group.id} className="rounded-lg border border-border/40 bg-background/80">
+                <div
+                  key={group.id}
+                  className="overflow-hidden rounded-lg border border-border/40 bg-background/80"
+                >
                   <div className="flex items-center justify-between gap-3 border-b border-border/35 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{groupLabel}</span>
