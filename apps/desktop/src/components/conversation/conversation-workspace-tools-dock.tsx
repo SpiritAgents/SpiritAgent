@@ -109,6 +109,7 @@ export function ConversationWorkspaceToolsDock({
         widthPx={workspaceTools.workspaceToolsWidthPx}
         onWidthPxChange={workspaceTools.setWorkspaceToolsWidthPx}
         gitSnapshot={snapshot?.git}
+        workspaceContentInvalidation={snapshot?.workspaceContentInvalidation}
         gitChipBusy={composer.gitChipBusy}
         readGitWorkingTree={runtime.readGitWorkingTree}
         readGitHistory={runtime.readGitHistory}

@@ -8,6 +8,7 @@ import type {
   DesktopHookListItem,
   DesktopGitSnapshot,
   DesktopMcpServerListItem,
+  WorkspaceContentInvalidation,
   DesktopModelCatalogHint,
   DesktopSnapshot,
   McpStatusSnapshot,
@@ -29,6 +30,7 @@ export interface BuildDesktopSnapshotInput {
   workspaceRoot: string;
   config: DesktopConfigFile;
   git: DesktopGitSnapshot;
+  workspaceContentInvalidation?: WorkspaceContentInvalidation;
   metadata: HostMetadataSummary;
   plan: DesktopSnapshot["plan"];
   extensionsList: DesktopExtensionListItem[];
@@ -73,6 +75,9 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
       normalizeWorkspaceBinding(input.config.workspaceBinding),
     ),
     git: { ...input.git },
+    ...(input.workspaceContentInvalidation
+      ? { workspaceContentInvalidation: { ...input.workspaceContentInvalidation } }
+      : {}),
     dreams: {
       settings: {
         enabled: input.config.dreams.enabled === true,

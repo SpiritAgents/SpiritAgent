@@ -64,8 +64,10 @@ import type {
 } from "@/lib/workspace-editor-navigation";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import { installContainedSelectAll } from "@/lib/contained-text-selection";
+import { workspaceContentInvalidationTouchesPath } from "@/lib/workspace-content-invalidation";
 import type {
   PlanSnapshot,
+  WorkspaceContentInvalidation,
   WorkspaceContentSearchMatch,
   WorkspaceContentSearchRequest,
   WorkspaceContentSearchResult,
@@ -365,6 +367,7 @@ export type WorkspaceFilesTabProps = {
   onFileSnippetAddToSession?: (attachment: FileSnippetAttachment) => void;
   onWorkspaceFileAddToSession?: (relativePath: string) => void;
   gitRevision?: number;
+  workspaceContentInvalidation?: WorkspaceContentInvalidation;
   useTranslucency?: boolean;
   codeCompletionEnabled?: boolean;
 };
@@ -401,6 +404,7 @@ export function WorkspaceFilesTab({
   onFileSnippetAddToSession,
   onWorkspaceFileAddToSession,
   gitRevision,
+  workspaceContentInvalidation,
   useTranslucency = false,
   codeCompletionEnabled = true,
 }: WorkspaceFilesTabProps) {
@@ -446,6 +450,12 @@ export function WorkspaceFilesTab({
   });
   const prevSelectedEntryRef = useRef(selectedEntry);
   const journalFlushRef = useRef<{ path: string; baseline: string; current: string } | null>(null);
+  const selectedEntryRef = useRef(selectedEntry);
+  const draftSavedRef = useRef({ draftText, savedText });
+  const workspaceContentInvalidationRef = useRef(workspaceContentInvalidation);
+  selectedEntryRef.current = selectedEntry;
+  draftSavedRef.current = { draftText, savedText };
+  workspaceContentInvalidationRef.current = workspaceContentInvalidation;
 
   latestFileTreeWidthPxRef.current = fileTreeWidthPx;
 
@@ -770,6 +780,54 @@ export function WorkspaceFilesTab({
     selectedPath,
     workspaceRoot,
   ]);
+
+  useEffect(() => {
+    const invalidation = workspaceContentInvalidationRef.current;
+    if (!invalidation || invalidation.revision <= 0) {
+      return;
+    }
+    const entry = selectedEntryRef.current;
+    if (!entry || entry.kind !== "workspace") {
+      return;
+    }
+    const { draftText: currentDraft, savedText: currentSaved } = draftSavedRef.current;
+    if (currentDraft !== currentSaved) {
+      return;
+    }
+    if (!workspaceContentInvalidationTouchesPath(invalidation, entry.relativePath)) {
+      return;
+    }
+
+    let cancelled = false;
+    void readWorkspaceTextFile(entry.relativePath)
+      .then((r) => {
+        if (cancelled || r.binary || r.image) {
+          return;
+        }
+        if (r.text === currentDraft) {
+          return;
+        }
+        setDraftText(r.text);
+        setSavedText(r.text);
+        setDoc((prev) =>
+          prev?.status === "ready"
+            ? { ...prev, text: r.text }
+            : {
+                status: "ready",
+                text: r.text,
+                readOnly: false,
+                title: pathBasename(entry.relativePath),
+                subtitle: entry.relativePath,
+              },
+        );
+      })
+      .catch(() => {
+        // Keep the current buffer when a background reload fails; the next invalidation retries.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [readWorkspaceTextFile, workspaceContentInvalidation?.revision]);
 
   useEffect(() => {
     if (doc?.status !== "image") {

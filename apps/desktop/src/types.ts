@@ -1017,6 +1017,12 @@ export interface DesktopSnapshot {
   workspaceBinding: DesktopWorkspaceBinding;
   availableWorkspaces: DesktopWorkspaceListItem[];
   git: DesktopGitSnapshot;
+  /**
+   * Monotonic workspace-content invalidation. Bumps when an agent mutates files or when
+   * a git working-tree refresh observes a real change; file views and git consumers
+   * subscribe here instead of polling on their own.
+   */
+  workspaceContentInvalidation?: WorkspaceContentInvalidation;
   dreams: DesktopDreamSnapshot;
   runtimeReady: boolean;
   runtimeError?: string;
@@ -1288,6 +1294,15 @@ export interface DesktopUpdateAutomationRequest {
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel?: ApprovalLevel;
   enabled?: boolean;
+}
+
+export type WorkspaceContentInvalidationReason = "agent-file-change" | "git-working-tree";
+
+export interface WorkspaceContentInvalidation {
+  revision: number;
+  /** Workspace-relative POSIX paths. Empty means "unspecified" (git working-tree refresh). */
+  paths: string[];
+  reason: WorkspaceContentInvalidationReason;
 }
 
 export interface DesktopGitSnapshot {

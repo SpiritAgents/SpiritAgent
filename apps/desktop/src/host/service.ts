@@ -103,6 +103,7 @@ import type {
   PlanSnapshot,
   DeleteSkillRequest,
   DesktopSnapshot,
+  WorkspaceContentInvalidation,
   FileRewindWarning,
   RunExtensionRequest,
   SaveHookEntryRequest,
@@ -495,6 +496,11 @@ import {
 } from "./workspace-root-sync.js";
 import { DesktopConversationSnapshotView } from "./conversation-snapshot.js";
 import { buildDesktopSnapshot, buildModelCatalogHints } from "./snapshot.js";
+import {
+  gitWorkingTreeFingerprint,
+  nextWorkspaceContentInvalidation,
+  toWorkspaceRelativePosixPath,
+} from "../lib/workspace-content-invalidation.js";
 import { applyToolCallSummaryCopy } from "./message-ordering.js";
 import {
   mapPendingAuxState,
@@ -630,6 +636,8 @@ class DesktopHostService {
   private readonly sessionTitleGenerationEpoch = new Map<string, number>();
   private subagentViewerTargetToolCallId: string | null = null;
   private gitRefreshInFlight: Promise<void> | null = null;
+  private workspaceContentInvalidation: WorkspaceContentInvalidation | undefined;
+  private workspaceContentInvalidationWorkspaceRoot = "";
   private contextUsageCatalogRefreshInFlight: Promise<void> | null = null;
   private modelCatalogStartupRefreshInFlight: Promise<void> | null = null;
   private pendingContextUsageCatalogRefresh:
@@ -2909,7 +2917,7 @@ class DesktopHostService {
         this.projectRemoteUserTurn(bundle, input);
       },
       onFileChange: (change: unknown) => {
-        void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
+        this.applyRecordedWorkspaceFileChange(bundle, change as HostRecordedFileChange);
       },
     };
     try {
@@ -3025,7 +3033,7 @@ class DesktopHostService {
       fileChangeObserver: {
         recordFileChange: (change) => {
           void lsp?.syncFromRecordedChange(change);
-          void this.recordHostFileChange(bundle, change);
+          this.applyRecordedWorkspaceFileChange(bundle, change);
         },
       },
       extensions: {
@@ -3086,10 +3094,50 @@ class DesktopHostService {
     if (!state) {
       return;
     }
+    const previousFingerprint = gitWorkingTreeFingerprint(state.git);
     const snapshot = await readWorkspaceGitSnapshot(state.workspaceRoot);
     state.git = applyGitRevision(snapshot, state.git.revision ?? 0, {
       reset: options.resetRevision === true,
     });
+    if (gitWorkingTreeFingerprint(state.git) !== previousFingerprint) {
+      this.noteWorkspaceContentInvalidation([], "git-working-tree");
+    }
+  }
+
+  private noteWorkspaceContentInvalidation(
+    paths: readonly string[],
+    reason: WorkspaceContentInvalidation["reason"],
+  ): void {
+    const workspaceRoot = this.state?.workspaceRoot ?? "";
+    const current =
+      workspaceRoot === this.workspaceContentInvalidationWorkspaceRoot
+        ? this.workspaceContentInvalidation
+        : undefined;
+    this.workspaceContentInvalidationWorkspaceRoot = workspaceRoot;
+    this.workspaceContentInvalidation = nextWorkspaceContentInvalidation(current, paths, reason);
+  }
+
+  private applyRecordedWorkspaceFileChange(
+    bundle: SessionBundle,
+    change: HostRecordedFileChange,
+  ): void {
+    void this.recordHostFileChange(bundle, change).then(() => {
+      this.publishWorkspaceFileMutation(change);
+    });
+  }
+
+  private publishWorkspaceFileMutation(change: HostRecordedFileChange): void {
+    const state = this.state;
+    if (!state) {
+      return;
+    }
+    const relativePath = toWorkspaceRelativePosixPath(state.workspaceRoot, change.resolvedPath);
+    this.noteWorkspaceContentInvalidation(relativePath ? [relativePath] : [], "agent-file-change");
+    void this.runCoalescedGitRefresh()
+      .catch(() => {})
+      .finally(() => {
+        this.emitLiveSnapshotUpdate();
+      });
   }
 
   private async runCoalescedGitRefresh(options: { resetRevision?: boolean } = {}): Promise<void> {
@@ -3667,6 +3715,10 @@ class DesktopHostService {
       workspaceRoot: state.workspaceRoot,
       config: state.config,
       git: this.buildClientGitSnapshot(),
+      ...(this.workspaceContentInvalidation &&
+      this.workspaceContentInvalidationWorkspaceRoot === state.workspaceRoot
+        ? { workspaceContentInvalidation: this.workspaceContentInvalidation }
+        : {}),
       metadata: state.metadata,
       plan: state.plan,
       extensionsList: state.extensionsList,

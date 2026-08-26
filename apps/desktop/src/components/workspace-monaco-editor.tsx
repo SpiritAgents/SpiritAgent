@@ -166,6 +166,16 @@ export const WorkspaceMonacoEditor = forwardRef<
   }, [applyRevealLocation, revealLocation]);
 
   useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || editor.getValue() === initialText) {
+      return;
+    }
+    baselineRef.current = baselineText ?? initialText;
+    editor.setValue(initialText);
+    onDirtyChangeRef.current?.(false);
+  }, [baselineText, initialText]);
+
+  useEffect(() => {
     ensureMonacoWorkers();
     const root = containerRef.current;
     if (!root) {

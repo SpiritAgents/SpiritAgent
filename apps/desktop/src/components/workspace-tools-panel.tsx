@@ -93,6 +93,7 @@ import {
 } from "@/lib/workspace-tool-tabs";
 import type {
   DesktopGitSnapshot,
+  WorkspaceContentInvalidation,
   GetGitHubPullRequestDetailRequest,
   GitHubAuthStatus,
   GitHubPullRequestDetail,
@@ -214,6 +215,7 @@ export type WorkspaceToolsDockProps = {
   maxWidthPx?: number;
   onWidthPxChange(next: number): void;
   gitSnapshot?: DesktopGitSnapshot;
+  workspaceContentInvalidation?: WorkspaceContentInvalidation;
   gitChipBusy?: boolean;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
@@ -512,6 +514,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   mergeGitHubPullRequest,
   markGitHubPullRequestReady,
   gitSnapshot,
+  workspaceContentInvalidation,
   gitChipBusy = false,
   readGitWorkingTree,
   readGitHistory,
@@ -937,6 +940,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     plan={plan}
                     listExplorerChildren={listExplorerChildren}
                     gitRevision={gitSnapshot?.revision}
+                    workspaceContentInvalidation={workspaceContentInvalidation}
                     readWorkspaceTextFile={readWorkspaceTextFile}
                     writeWorkspaceTextFile={writeWorkspaceTextFile}
                     readHostTextFile={readHostTextFile}
