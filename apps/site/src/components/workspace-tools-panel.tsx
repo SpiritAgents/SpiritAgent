@@ -6,7 +6,7 @@ import { FileText, GitBranch, Globe, Terminal } from "lucide-react";
 import { WorkspaceBrowserPreviewTab } from "@/components/workspace-browser-preview-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitPreviewTab } from "@/components/workspace-git-preview-tab";
-import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
+import { WorkspaceTerminalTab } from "@/components/workspace-terminal-tab";
 import { protectBrandTokens } from "@/components/no-translate";
 import { useI18n } from "@/i18n/provider";
 import type { DesignModeDemoState } from "@/lib/design-mode-demo-state";
@@ -199,7 +199,7 @@ export function WorkspaceToolsDock({
     if (legacyTab === "terminal") {
       return (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-          <WorkspaceShellTab workspaceRoot={workspaceRoot} />
+          <WorkspaceTerminalTab workspaceRoot={workspaceRoot} />
         </div>
       );
     }
@@ -235,7 +235,7 @@ export function WorkspaceToolsDock({
     if (tab.kind === "terminal") {
       return (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-          <WorkspaceShellTab workspaceRoot={workspaceRoot} />
+          <WorkspaceTerminalTab workspaceRoot={workspaceRoot} />
         </div>
       );
     }
