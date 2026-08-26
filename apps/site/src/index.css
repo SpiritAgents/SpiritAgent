@@ -302,7 +302,6 @@ body {
     font-family: var(--font-sans);
     color-scheme: light;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   html.dark {
