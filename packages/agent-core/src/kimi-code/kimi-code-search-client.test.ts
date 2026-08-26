@@ -3,7 +3,7 @@ import { test } from "vitest";
 
 import {
   KIMI_CODE_CN_SEARCH_URL,
-  KIMI_CODE_SEARCH_URL,
+  KIMI_CODE_INTL_SEARCH_URL,
   formatKimiCodeSearchResults,
   invokeKimiCodeSearch,
   resolveKimiCodeSearchUrl,
@@ -29,14 +29,19 @@ test("formatKimiCodeSearchResults serializes result fields", () => {
 });
 
 test("resolveKimiCodeSearchUrl follows the chat endpoint host", () => {
-  assert.equal(resolveKimiCodeSearchUrl(), KIMI_CODE_SEARCH_URL);
-  assert.equal(resolveKimiCodeSearchUrl("https://api.kimi.ai/coding/v1"), KIMI_CODE_SEARCH_URL);
-  assert.equal(resolveKimiCodeSearchUrl("https://api.kimi.ai/coding"), KIMI_CODE_SEARCH_URL);
+  assert.equal(resolveKimiCodeSearchUrl(), KIMI_CODE_INTL_SEARCH_URL);
+  assert.equal(resolveKimiCodeSearchUrl("   "), KIMI_CODE_INTL_SEARCH_URL);
   assert.equal(
-    resolveKimiCodeSearchUrl("https://api.kimi.com/coding/v1"),
-    KIMI_CODE_CN_SEARCH_URL,
+    resolveKimiCodeSearchUrl("https://api.kimi.ai/coding/v1"),
+    KIMI_CODE_INTL_SEARCH_URL,
   );
+  assert.equal(resolveKimiCodeSearchUrl("https://api.kimi.ai/coding"), KIMI_CODE_INTL_SEARCH_URL);
+  assert.equal(resolveKimiCodeSearchUrl("https://api.kimi.com/coding/v1"), KIMI_CODE_CN_SEARCH_URL);
   assert.equal(resolveKimiCodeSearchUrl("https://api.kimi.com/coding"), KIMI_CODE_CN_SEARCH_URL);
+  assert.equal(
+    resolveKimiCodeSearchUrl("https://example.test/coding/v1"),
+    KIMI_CODE_INTL_SEARCH_URL,
+  );
 });
 
 test("invokeKimiCodeSearch posts text_query to coding/v1/search", async () => {
@@ -58,7 +63,7 @@ test("invokeKimiCodeSearch posts text_query to coding/v1/search", async () => {
 
   const result = await invokeKimiCodeSearch("sk-test", { query: "latest news" }, fetchImpl);
   assert.equal(result.kind, "succeeded");
-  assert.equal(capturedUrl, KIMI_CODE_SEARCH_URL);
+  assert.equal(capturedUrl, KIMI_CODE_INTL_SEARCH_URL);
   assert.equal(capturedAuth, "Bearer sk-test");
   assert.deepEqual(capturedBody, { text_query: "latest news" });
   if (result.kind === "succeeded") {

@@ -1,18 +1,27 @@
 import { getLlmFetch } from "../llm-fetch.js";
+import {
+  KIMI_CODE_CN_HOST,
+  KIMI_CODE_INTL_HOST,
+  parseKimiCodeHostname,
+} from "./kimi-code-eligibility.js";
 
-export const KIMI_CODE_CN_SEARCH_URL = "https://api.kimi.com/coding/v1/search";
-export const KIMI_CODE_SEARCH_URL = "https://api.kimi.ai/coding/v1/search";
+const KIMI_CODE_SEARCH_PATH = "/coding/v1/search";
+
+function kimiCodeSearchUrlForHost(
+  hostname: typeof KIMI_CODE_CN_HOST | typeof KIMI_CODE_INTL_HOST,
+): string {
+  return `https://${hostname}${KIMI_CODE_SEARCH_PATH}`;
+}
+
+export const KIMI_CODE_CN_SEARCH_URL = kimiCodeSearchUrlForHost(KIMI_CODE_CN_HOST);
+export const KIMI_CODE_INTL_SEARCH_URL = kimiCodeSearchUrlForHost(KIMI_CODE_INTL_HOST);
 
 export function resolveKimiCodeSearchUrl(baseUrl?: string): string {
-  try {
-    const hostname = new URL(baseUrl?.trim() ?? "").hostname;
-    if (hostname === "api.kimi.com") {
-      return KIMI_CODE_CN_SEARCH_URL;
-    }
-  } catch {
-    // Missing or invalid baseUrl falls through to the International default.
+  const hostname = parseKimiCodeHostname(baseUrl);
+  if (hostname === KIMI_CODE_CN_HOST || hostname === KIMI_CODE_INTL_HOST) {
+    return kimiCodeSearchUrlForHost(hostname);
   }
-  return KIMI_CODE_SEARCH_URL;
+  return KIMI_CODE_INTL_SEARCH_URL;
 }
 
 type KimiCodeSearchResult = {
