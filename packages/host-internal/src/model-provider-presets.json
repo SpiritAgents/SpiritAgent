@@ -4,7 +4,7 @@
     "deepseek": "https://api.deepseek.com/v1",
     "xai": "https://api.x.ai/v1",
     "moonshot-ai": "https://api.moonshot.ai/v1",
-    "kimi-code": "https://api.kimi.com/coding/v1",
+    "kimi-code": "https://api.kimi.ai/coding/v1",
     "z-ai": "https://api.z.ai/api/paas/v4",
     "zhipu-ai": "https://open.bigmodel.cn/api/paas/v4",
     "minimax": "https://api.minimax.io/anthropic/v1",
@@ -45,8 +45,8 @@
       "open-responses": "https://api.deepseek.com"
     },
     "kimi-code": {
-      "openai-compatible": "https://api.kimi.com/coding/v1",
-      "anthropic": "https://api.kimi.com/coding"
+      "openai-compatible": "https://api.kimi.ai/coding/v1",
+      "anthropic": "https://api.kimi.ai/coding"
     },
     "xiaomi": {
       "openai-compatible": "https://api.xiaomimimo.com/v1",
@@ -150,6 +150,21 @@
           "fallbackLabel": "eu-central-1",
           "apiBase": "https://{workspaceId}.eu-central-1.maas.aliyuncs.com/compatible-mode/v1",
           "requiresWorkspaceId": true
+        }
+      }
+    },
+    "kimi-code": {
+      "defaultSite": "intl",
+      "sites": {
+        "cn": {
+          "labelKey": "providers.kimiCodeSite.cn",
+          "fallbackLabel": "China",
+          "apiBase": "https://api.kimi.com/coding/v1"
+        },
+        "intl": {
+          "labelKey": "providers.kimiCodeSite.intl",
+          "fallbackLabel": "International",
+          "apiBase": "https://api.kimi.ai/coding/v1"
         }
       }
     },

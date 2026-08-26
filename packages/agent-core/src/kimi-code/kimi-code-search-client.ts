@@ -1,6 +1,28 @@
 import { getLlmFetch } from "../llm-fetch.js";
+import {
+  KIMI_CODE_CN_HOST,
+  KIMI_CODE_INTL_HOST,
+  parseKimiCodeHostname,
+} from "./kimi-code-eligibility.js";
 
-export const KIMI_CODE_SEARCH_URL = "https://api.kimi.com/coding/v1/search";
+const KIMI_CODE_SEARCH_PATH = "/coding/v1/search";
+
+function kimiCodeSearchUrlForHost(
+  hostname: typeof KIMI_CODE_CN_HOST | typeof KIMI_CODE_INTL_HOST,
+): string {
+  return `https://${hostname}${KIMI_CODE_SEARCH_PATH}`;
+}
+
+export const KIMI_CODE_CN_SEARCH_URL = kimiCodeSearchUrlForHost(KIMI_CODE_CN_HOST);
+export const KIMI_CODE_INTL_SEARCH_URL = kimiCodeSearchUrlForHost(KIMI_CODE_INTL_HOST);
+
+export function resolveKimiCodeSearchUrl(baseUrl?: string): string {
+  const hostname = parseKimiCodeHostname(baseUrl);
+  if (hostname === KIMI_CODE_CN_HOST || hostname === KIMI_CODE_INTL_HOST) {
+    return kimiCodeSearchUrlForHost(hostname);
+  }
+  return KIMI_CODE_INTL_SEARCH_URL;
+}
 
 type KimiCodeSearchResult = {
   url?: string;
@@ -51,6 +73,7 @@ export async function invokeKimiCodeSearch(
   apiKey: string,
   body: { query: string },
   fetchImpl: typeof fetch = getLlmFetch(),
+  baseUrl?: string,
 ): Promise<KimiCodeSearchInvokeResult> {
   const query = body.query.trim();
   if (!query) {
@@ -63,7 +86,7 @@ export async function invokeKimiCodeSearch(
   }
 
   try {
-    const response = await fetchImpl(KIMI_CODE_SEARCH_URL, {
+    const response = await fetchImpl(resolveKimiCodeSearchUrl(baseUrl), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${trimmedKey}`,

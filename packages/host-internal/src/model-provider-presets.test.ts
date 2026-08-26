@@ -349,15 +349,32 @@ test("resolveProviderConnectApiBase prefers site apiBase for moonshot-ai", () =>
   );
 });
 
-test("resolveProviderConnectApiBase resolves kimi-code transport endpoints", () => {
-  assert.equal(providerSupportsSiteSelection("kimi-code"), false);
+test("resolveProviderConnectApiBase prefers site apiBase for kimi-code", () => {
+  assert.equal(providerSupportsSiteSelection("kimi-code"), true);
+  assert.equal(defaultProviderConnectSite("kimi-code"), "intl");
   assert.equal(
     resolveProviderConnectApiBase("kimi-code", "openai-compatible"),
-    "https://api.kimi.com/coding/v1",
+    "https://api.kimi.ai/coding/v1",
   );
   assert.equal(
     resolveProviderConnectApiBase("kimi-code", "anthropic"),
+    "https://api.kimi.ai/coding",
+  );
+  assert.equal(
+    resolveProviderConnectApiBase("kimi-code", "openai-compatible", { site: "cn" }),
+    "https://api.kimi.com/coding/v1",
+  );
+  assert.equal(
+    resolveProviderConnectApiBase("kimi-code", "anthropic", { site: "cn" }),
     "https://api.kimi.com/coding",
+  );
+  assert.equal(
+    resolveProviderConnectApiBase("kimi-code", "openai-compatible", { site: "intl" }),
+    "https://api.kimi.ai/coding/v1",
+  );
+  assert.equal(
+    resolveProviderConnectApiBase("kimi-code", "anthropic", { site: "intl" }),
+    "https://api.kimi.ai/coding",
   );
 });
 
