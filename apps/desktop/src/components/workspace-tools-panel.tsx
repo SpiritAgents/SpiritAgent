@@ -113,7 +113,7 @@ export type { WorkspaceToolTab, WorkspaceToolTabKind };
 
 const TAB_KIND_META: Record<WorkspaceToolTabKind, { labelKey: string; icon: typeof FileText }> = {
   files: { labelKey: "workspace.files", icon: FileText },
-  shell: { labelKey: "workspace.shell", icon: Terminal },
+  terminal: { labelKey: "workspace.terminal", icon: Terminal },
   git: { labelKey: "workspace.gitTab", icon: GitBranch },
   browser: { labelKey: "workspace.browser", icon: Globe },
   pr: { labelKey: "workspace.prTab", icon: GitPullRequest },
@@ -567,7 +567,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId), [activeTabId, tabs]);
 
   useEffect(() => {
-    if (activeTab?.kind !== "shell") {
+    if (activeTab?.kind !== "terminal") {
       return;
     }
     setMountedShellTabIds((prev) => {
@@ -842,7 +842,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
               DESKTOP_OVERLAY_LIST_LIST_GAP,
             )}
           >
-            {(["files", "shell", "git", "browser", "pr"] as const).map((kind) => {
+            {(["files", "terminal", "git", "browser", "pr"] as const).map((kind) => {
               const meta = TAB_KIND_META[kind];
               const Icon = meta.icon;
               const browserDisabled = kind === "browser" && !browserTabEnabled;
@@ -910,7 +910,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       >
         {tabs.map((item) => {
           const selected = item.id === activeTabId;
-          const panelPadding = item.kind === "files" || item.kind === "shell" ? "p-0" : "p-0";
+          const panelPadding = item.kind === "files" || item.kind === "terminal" ? "p-0" : "p-0";
           const planRevealEnabled =
             item.kind === "files" && planRevealTabId != null && item.id === planRevealTabId;
           const fileRevealEnabled =
@@ -974,7 +974,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     codeCompletionEnabled={codeCompletionEnabled}
                   />
                 </div>
-              ) : item.kind === "shell" ? (
+              ) : item.kind === "terminal" ? (
                 mountedShellTabIds.has(item.id) ? (
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <WorkspaceShellTab

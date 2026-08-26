@@ -74,7 +74,7 @@ export function WorkspaceShellTab({
       bridge: b,
       onTitleChange: (title) => onTitleChangeRef.current?.(title),
       onEmbedError: setEmbedError,
-      shellExitedMessage: (exitCode) => tRef.current("workspace.shellExited", { exitCode }),
+      shellExitedMessage: (exitCode) => tRef.current("workspace.terminalExited", { exitCode }),
       isResizeSuspended: () => suspendResizeRef.current,
     });
     setTerminal(session.terminal);
@@ -105,7 +105,7 @@ export function WorkspaceShellTab({
   }
 
   if (!canEmbed || !bridge?.openSystemTerminal) {
-    return <p className="text-muted-foreground">{t("workspace.shellElectronOnly")}</p>;
+    return <p className="text-muted-foreground">{t("workspace.terminalElectronOnly")}</p>;
   }
 
   return (
