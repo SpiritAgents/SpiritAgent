@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   LoaderCircle,
-  MessageSquare,
+  MessageCircle,
   PanelRightClose,
   PanelRightOpen,
   Pencil,
@@ -365,7 +365,7 @@ export function DesktopLayoutChromeBar({
                 <div className="p-1">
                   {showSideChat ? (
                     <DropdownMenuItem className="gap-2" onSelect={() => onSideChat?.()}>
-                      <MessageSquare
+                      <MessageCircle
                         className="size-3.5 shrink-0 text-muted-foreground"
                         aria-hidden
                       />
