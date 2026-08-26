@@ -115,12 +115,13 @@ function cloneRowForPersistence(
   }
 
   if (row.kind === "user") {
-    if (!hasTrimmedContent(row.content)) {
+    const hasAttachments = Boolean(row.localFileAttachments?.length);
+    if (!hasTrimmedContent(row.content) && !hasAttachments) {
       return undefined;
     }
     return {
       ...base,
-      content: row.content,
+      ...(hasTrimmedContent(row.content) ? { content: row.content } : {}),
       ...(row.localFileAttachments?.length
         ? {
             localFileAttachments: row.localFileAttachments.map((attachment) => ({ ...attachment })),
@@ -237,8 +238,10 @@ function validatePersistedTimelineRowV2(
 
   switch (row.kind) {
     case "user":
-      if (!hasTrimmedContent(row.content)) {
-        throw new ChatSessionSchemaError(`${path}: user rows require non-empty content`);
+      if (!hasTrimmedContent(row.content) && !row.localFileAttachments?.length) {
+        throw new ChatSessionSchemaError(
+          `${path}: user rows require content or localFileAttachments`,
+        );
       }
       return;
     case "assistant-text":

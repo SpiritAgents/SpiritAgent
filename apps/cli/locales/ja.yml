@@ -462,6 +462,7 @@ tui.help.api_key_priority: "API Key の優先順位: SPIRIT_API_KEY > モデル�
 tui.plan.start_implementing_only_plan: "このコマンドは Plan モードでのみ使用できます。Tab キーを押して Plan に切り替えてから再試行してください。"
 tui.file_reference.indexing: "ワークスペースのファイルインデックスはまだ準備中です。お待ちください。"
 tui.user.attached_images: "\n[添付画像: %{paths}]"
+tui.user.empty_message: "空のメッセージ"
 tui.user.attached_mcp_resources: "\n[添付 MCP リソース: %{summary}]"
 tui.user.attached_image: "%{prompt}\n[添付画像] %{path}"
 tui.image_queue.added_auto_attach: "画像を保留キューに追加しました (%{count})。次の通常メッセージにこれらの画像が自動添付されます。"

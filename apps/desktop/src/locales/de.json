@@ -715,6 +715,7 @@
     "diagramZoomOut": "Verkleinern",
     "diagramZoomReset": "Zoom und Position zurücksetzen",
     "typeMessage": "Nachricht eingeben…",
+    "emptyMessage": "Leere Nachricht",
     "emptySessionGreeting": {
       "startSomething": "Starte etwas.",
       "letsBuild": "Lass uns bauen.",

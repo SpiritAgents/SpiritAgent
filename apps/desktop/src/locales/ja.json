@@ -715,6 +715,7 @@
     "diagramZoomOut": "縮小",
     "diagramZoomReset": "ズームとパンをリセット",
     "typeMessage": "メッセージを入力…",
+    "emptyMessage": "空のメッセージ",
     "emptySessionGreeting": {
       "startSomething": "何かを始めましょう。",
       "letsBuild": "作りましょう。",

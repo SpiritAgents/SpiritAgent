@@ -715,6 +715,7 @@
     "diagramZoomOut": "縮小",
     "diagramZoomReset": "重設縮放與平移",
     "typeMessage": "輸入訊息…",
+    "emptyMessage": "空訊息",
     "emptySessionGreeting": {
       "startSomething": "開始做些事。",
       "letsBuild": "讓我們來打造。",

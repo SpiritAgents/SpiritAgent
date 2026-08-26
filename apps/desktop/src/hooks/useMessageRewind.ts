@@ -16,6 +16,7 @@ import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { messageContentToRichSegments } from "@/lib/composer-segment-model";
 import {
   composerAttachmentViewFromPath,
+  isAttachmentOnlyDisplayText,
   normalizeSlashPath as normalizeAttachmentPath,
   snapshotsToComposerAttachmentViews,
 } from "@/lib/local-file-attachments";
@@ -94,7 +95,13 @@ export function useMessageRewind({
       if (!canStartMessageRewind({ messageRewindComposerEnabled, message })) {
         return;
       }
-      const segments = messageContentToRichSegments(message.content, String(message.id));
+      const rewindContent = isAttachmentOnlyDisplayText(
+        message.content,
+        message.localFileAttachments,
+      )
+        ? ""
+        : message.content;
+      const segments = messageContentToRichSegments(rewindContent, String(message.id));
       setRewindDraft({
         messageId: message.id,
         listIndex,

@@ -499,9 +499,6 @@ impl DaemonRuntime {
                     .and_then(Value::as_str)
                     .unwrap_or_default()
                     .to_string();
-                if text.is_empty() {
-                    return;
-                }
                 if let Some(client_turn_id) = params.get("clientTurnId").and_then(Value::as_str) {
                     if self.pending_local_client_turn_ids.remove(client_turn_id) {
                         return;

@@ -715,6 +715,7 @@
     "diagramZoomOut": "Reduzir Zoom",
     "diagramZoomReset": "Redefinir Zoom e Pan",
     "typeMessage": "Digite uma mensagem…",
+    "emptyMessage": "Mensagem vazia",
     "emptySessionGreeting": {
       "startSomething": "Comece algo.",
       "letsBuild": "Vamos construir.",

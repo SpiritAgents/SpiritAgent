@@ -462,6 +462,7 @@ tui.help.api_key_priority: "API Key 출처 우선순위: SPIRIT_API_KEY > 모델
 tui.plan.start_implementing_only_plan: "이 명령어는 Plan 모드에서만 사용 가능합니다. Tab 키를 눌러 Plan 모드로 전환한 후 다시 시도하세요."
 tui.file_reference.indexing: "작업공간 파일 인덱스가 아직 준비 중입니다. 잠시 기다려 주세요."
 tui.user.attached_images: "\n[첨부 이미지: %{paths}]"
+tui.user.empty_message: "빈 메시지"
 tui.user.attached_mcp_resources: "\n[첨부 MCP 리소스: %{summary}]"
 tui.user.attached_image: "%{prompt}\n[첨부 이미지] %{path}"
 tui.image_queue.added_auto_attach: "이미지가 대기열에 추가되었습니다 (%{count}개). 다음 일반 메시지에 이 이미지들이 자동으로 포함됩니다."

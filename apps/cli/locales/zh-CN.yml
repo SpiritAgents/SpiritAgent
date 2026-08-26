@@ -463,6 +463,7 @@ tui.help.api_key_priority: "API Key 来源优先级: SPIRIT_API_KEY > 模型专�
 tui.plan.start_implementing_only_plan: "该命令仅在 Plan 模式下可用；按 Tab 切到 Plan 后重试。"
 tui.file_reference.indexing: "工作区文件索引仍在准备中，请稍候。"
 tui.user.attached_images: "\n[已附加图片: %{paths}]"
+tui.user.empty_message: "空消息"
 tui.user.attached_mcp_resources: "\n[已附加 MCP resource: %{summary}]"
 tui.user.attached_image: "%{prompt}\n[已附加图片] %{path}"
 tui.image_queue.added_auto_attach: "已添加图片到待发送队列（%{count} 张）。下一条普通消息会自动携带这些图片。"

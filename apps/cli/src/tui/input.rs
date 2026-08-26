@@ -372,7 +372,7 @@ impl TuiShell {
     pub fn submit_input(&mut self) {
         let raw_message = self.input.value.clone();
         let trimmed_message = raw_message.trim();
-        if trimmed_message.is_empty() {
+        if trimmed_message.is_empty() && self.runtime.session().pending_image_paths().is_empty() {
             return;
         }
 
@@ -442,7 +442,8 @@ impl TuiShell {
         }
 
         let mut user_content = raw_message.clone();
-        if !trimmed_message.starts_with('/')
+        if !trimmed_message.is_empty()
+            && !trimmed_message.starts_with('/')
             && !self.runtime.session().pending_image_paths().is_empty()
         {
             user_content.push_str(

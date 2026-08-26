@@ -715,6 +715,7 @@
     "diagramZoomOut": "Уменьшить",
     "diagramZoomReset": "Сбросить масштаб и положение",
     "typeMessage": "Введите сообщение…",
+    "emptyMessage": "Пустое сообщение",
     "emptySessionGreeting": {
       "startSomething": "Начнём.",
       "letsBuild": "Давайте строить.",

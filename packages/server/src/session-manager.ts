@@ -601,7 +601,11 @@ export class SessionManager {
     const session = this.requireSession(sessionId);
     const { runtime } = session.runtimeResult;
     const text = params.text.trim();
-    if (!text) {
+    const imageCount = params.explicitImages?.length ?? 0;
+    const fileCount = params.explicitWorkspaceFiles?.length ?? 0;
+    const pendingImageCount = runtime.pendingImagePaths().length;
+    const hasPayload = Boolean(text) || imageCount > 0 || fileCount > 0 || pendingImageCount > 0;
+    if (!hasPayload) {
       throw new Error("empty user turn");
     }
 

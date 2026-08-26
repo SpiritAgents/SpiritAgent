@@ -462,6 +462,7 @@ tui.help.api_key_priority: "API-Key-Quellenpriorität: SPIRIT_API_KEY > modellsp
 tui.plan.start_implementing_only_plan: "Dieser Befehl ist nur im Plan-Modus verfügbar. Drücken Sie Tab, um in den Plan-Modus zu wechseln und es erneut zu versuchen."
 tui.file_reference.indexing: "Der Workspace-Dateiindex wird noch vorbereitet. Bitte warten."
 tui.user.attached_images: "\n[angehängte Bilder: %{paths}]"
+tui.user.empty_message: "Leere Nachricht"
 tui.user.attached_mcp_resources: "\n[angehängte MCP-Ressourcen: %{summary}]"
 tui.user.attached_image: "%{prompt}\n[angehängtes Bild] %{path}"
 tui.image_queue.added_auto_attach: "Bild zur Warteschlange hinzugefügt (%{count}). Ihre nächste normale Nachricht wird diese Bilder automatisch enthalten."

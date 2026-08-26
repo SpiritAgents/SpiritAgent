@@ -70,20 +70,8 @@ export function appendQueuedUserTurnSnapshots(
   return [...messages, ...projectQueuedUserTurnSnapshots(queued)];
 }
 
-function defaultDisplayTextForQueuedTurn(
-  text: string,
-  explicitWorkspaceFiles: readonly PendingWorkspaceFile[],
-): string {
-  const trimmed = text.trim();
-  if (trimmed) {
-    return trimmed;
-  }
-  if (explicitWorkspaceFiles.length === 0) {
-    return "";
-  }
-  return i18n.t("error.attachedFiles", {
-    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
-  });
+function defaultDisplayTextForQueuedTurn(text: string): string {
+  return text.trim();
 }
 
 function pendingWorkspaceFilesToAttachmentSnapshots(
@@ -121,12 +109,7 @@ export async function enqueueUserTurnCommand(
     throw new Error(i18n.t("error.pendingApprovalSend"));
   }
 
-  const displayText = (
-    input.displayText ?? defaultDisplayTextForQueuedTurn(input.text, explicitWorkspaceFiles)
-  ).trim();
-  if (!displayText) {
-    throw new Error(i18n.t("error.messageRequired"));
-  }
+  const displayText = (input.displayText ?? defaultDisplayTextForQueuedTurn(input.text)).trim();
 
   const localFileAttachments =
     explicitWorkspaceFiles.length > 0

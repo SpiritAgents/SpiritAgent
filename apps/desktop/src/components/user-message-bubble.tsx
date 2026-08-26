@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   GitCommit,
   GitMerge,
@@ -280,6 +281,7 @@ export function UserMessageBubble({
   readLocalImagePreviewDataUrl,
   saveLocalImageAs,
 }: UserMessageBubbleProps) {
+  const { t } = useTranslation();
   const contentParts = useMemo(() => parseMessageContentParts(message.content), [message.content]);
   // `@` workspace-file references render as inline chips; their attachment snapshots are
   // attributed by matching the chip-recorded path and excluded from the upload card strip.
@@ -330,6 +332,7 @@ export function UserMessageBubble({
       )) &&
     !isAttachmentOnlyDisplayText(message.content, uploadAttachmentSnapshots);
   const hasAttachments = attachmentViews.length > 0;
+  const showEmptyPlaceholder = !showText;
 
   if (!showText && !hasAttachments) {
     return null;
@@ -371,6 +374,20 @@ export function UserMessageBubble({
             className="flex flex-wrap justify-end gap-1.5"
             saveLocalImageAs={saveLocalImageAs}
           />
+        </div>
+      ) : null}
+      {showEmptyPlaceholder ? (
+        <div
+          data-spirit-surface="message-bubble"
+          className={cn(bubbleClassName, "max-w-full min-w-0")}
+          role={canStartRewind ? "button" : undefined}
+          tabIndex={canStartRewind ? 0 : undefined}
+          onClick={canStartRewind ? onRewindStart : undefined}
+          onKeyDown={canStartRewind ? handleRewindKeyDown : undefined}
+        >
+          <pre className="m-0 max-w-full min-w-0 whitespace-pre-wrap font-sans text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+            {t("app.emptyMessage")}
+          </pre>
         </div>
       ) : null}
       {showText ? (

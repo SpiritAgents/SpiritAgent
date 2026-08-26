@@ -32,20 +32,8 @@ export interface WorktreeBootstrapHostContext {
   setLastRuntimeError(error: string): void;
 }
 
-function defaultDisplayTextForUserTurn(
-  text: string,
-  explicitWorkspaceFiles: readonly PendingWorkspaceFile[],
-): string {
-  const trimmed = text.trim();
-  if (trimmed) {
-    return trimmed;
-  }
-  if (explicitWorkspaceFiles.length === 0) {
-    return "";
-  }
-  return i18n.t("error.attachedFiles", {
-    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
-  });
+function defaultDisplayTextForUserTurn(text: string): string {
+  return text.trim();
 }
 
 function pendingWorkspaceFilesToAttachmentSnapshots(
@@ -84,13 +72,8 @@ export async function startWorktreeBootstrapTurnCommand(
   const bundle = ctx.activeBundle();
   const trimmed = text.trim();
   const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
-  const displayText = (
-    options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)
-  ).trim();
+  const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text)).trim();
   if (!trimmed && explicitWorkspaceFiles.length === 0) {
-    throw new Error(i18n.t("error.messageRequired"));
-  }
-  if (!displayText) {
     throw new Error(i18n.t("error.messageRequired"));
   }
 

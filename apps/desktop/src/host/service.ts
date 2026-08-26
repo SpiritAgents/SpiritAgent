@@ -4252,12 +4252,8 @@ class DesktopHostService {
     bundle: SessionBundle,
     input: { text: string; explicitWorkspaceFiles: PendingWorkspaceFile[] },
   ): void {
-    const displayText =
-      input.text.trim() ||
-      i18n.t("error.attachedFiles", {
-        files: input.explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
-      });
-    if (!displayText) {
+    const displayText = input.text.trim();
+    if (!displayText && input.explicitWorkspaceFiles.length === 0) {
       return;
     }
     const localFileAttachments =

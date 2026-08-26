@@ -462,6 +462,7 @@ tui.help.api_key_priority: "Prioridad de origen de la API Key: SPIRIT_API_KEY > 
 tui.plan.start_implementing_only_plan: "Este comando solo está disponible en modo Plan. Presiona Tab para cambiar a Plan e inténtalo de nuevo."
 tui.file_reference.indexing: "El índice de archivos del espacio de trabajo aún se está preparando. Por favor, espera."
 tui.user.attached_images: "\n[imágenes adjuntas: %{paths}]"
+tui.user.empty_message: "Mensaje vacío"
 tui.user.attached_mcp_resources: "\n[recursos MCP adjuntos: %{summary}]"
 tui.user.attached_image: "%{prompt}\n[imagen adjunta] %{path}"
 tui.image_queue.added_auto_attach: "Imagen añadida a la cola pendiente (%{count}). Tu próximo mensaje normal incluirá estas imágenes automáticamente."

@@ -462,6 +462,7 @@ tui.help.api_key_priority: "Приоритет источников API Key: SPI
 tui.plan.start_implementing_only_plan: "Эта команда доступна только в режиме Plan. Нажмите Tab для переключения в Plan и повторите попытку."
 tui.file_reference.indexing: "Индекс файлов рабочей области всё ещё подготавливается. Пожалуйста, подождите."
 tui.user.attached_images: "\n[прикреплённые изображения: %{paths}]"
+tui.user.empty_message: "Пустое сообщение"
 tui.user.attached_mcp_resources: "\n[прикреплённые MCP-ресурсы: %{summary}]"
 tui.user.attached_image: "%{prompt}\n[прикреплённое изображение] %{path}"
 tui.image_queue.added_auto_attach: "Изображение добавлено в очередь (%{count}). Ваше следующее обычное сообщение будет содержать эти изображения автоматически."

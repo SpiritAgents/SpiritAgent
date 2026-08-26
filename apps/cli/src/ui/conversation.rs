@@ -693,7 +693,10 @@ pub(in crate::ui) fn render_message_lines(
     if let Some(first) = iter.next() {
         push_message_line(first);
     } else if msg.role == MessageRole::User {
-        push_message_line(Vec::new());
+        push_message_line(vec![Span::styled(
+            t!("tui.user.empty_message").into_owned(),
+            Style::default().fg(Color::DarkGray),
+        )]);
     }
 
     for line in iter {

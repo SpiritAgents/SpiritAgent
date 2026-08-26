@@ -348,7 +348,11 @@ impl TuiShell {
             targets.push((
                 targets.len() + 1,
                 message_id,
-                truncate_rewind_preview(&message.content),
+                if message.content.trim().is_empty() {
+                    t!("ui.rewind.empty_message").into_owned()
+                } else {
+                    truncate_rewind_preview(&message.content)
+                },
             ));
         }
         targets
