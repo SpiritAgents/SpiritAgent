@@ -48,7 +48,7 @@ import {
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspacePrTab } from "@/components/workspace-pr-tab";
-import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
+import { WorkspaceTerminalTab } from "@/components/workspace-terminal-tab";
 import {
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
   DESKTOP_OVERLAY_LIST_ITEM,
@@ -532,8 +532,8 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   const gitHubAuthConnected = useGitHubAuthConnected(getGitHubAuthStatus, prTabEnabled);
   const prMenuBlocked =
     prTabEnabled && (gitHubAuthConnected === null || gitHubAuthConnected === false);
-  /** Mount the terminal only after the user first switches to the Shell tab (so the default tab does not trigger node-pty); keep it mounted after switching away. */
-  const [mountedShellTabIds, setMountedShellTabIds] = useState<ReadonlySet<string>>(
+  /** Mount the terminal only after the user first switches to the Terminal tab (so the default tab does not trigger node-pty); keep it mounted after switching away. */
+  const [mountedTerminalTabIds, setMountedTerminalTabIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
   const [pendingCloseTabId, setPendingCloseTabId] = useState<string | null>(null);
@@ -570,7 +570,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
     if (activeTab?.kind !== "terminal") {
       return;
     }
-    setMountedShellTabIds((prev) => {
+    setMountedTerminalTabIds((prev) => {
       if (prev.has(activeTabId)) {
         return prev;
       }
@@ -617,7 +617,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       });
       onTabsChange(next.tabs);
       onActiveTabIdChange(next.activeId);
-      setMountedShellTabIds((prev) => {
+      setMountedTerminalTabIds((prev) => {
         if (!prev.has(closeId)) {
           return prev;
         }
@@ -975,9 +975,9 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                   />
                 </div>
               ) : item.kind === "terminal" ? (
-                mountedShellTabIds.has(item.id) ? (
+                mountedTerminalTabIds.has(item.id) ? (
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    <WorkspaceShellTab
+                    <WorkspaceTerminalTab
                       workspaceRoot={workspaceRoot}
                       useTranslucency={useTranslucency}
                       onTitleChange={(title) => handleTabTitleChange(item.id, title)}
