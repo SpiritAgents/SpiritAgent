@@ -1,4 +1,4 @@
-export type WorkspaceToolTabKind = "files" | "shell" | "git" | "browser";
+export type WorkspaceToolTabKind = "files" | "terminal" | "git" | "browser";
 
 export const BROWSER_NEW_TAB_SENTINEL = "__spirit_browser_new_tab__";
 
@@ -32,7 +32,7 @@ export function createWorkspaceToolTab(kind: WorkspaceToolTabKind): WorkspaceToo
 }
 
 export function createDefaultWorkspaceToolTabs(includeBrowser = false): WorkspaceToolTab[] {
-  const kinds: WorkspaceToolTabKind[] = ["files", "shell", "git"];
+  const kinds: WorkspaceToolTabKind[] = ["files", "terminal", "git"];
   if (includeBrowser) {
     kinds.push("browser");
   }

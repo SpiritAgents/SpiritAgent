@@ -160,7 +160,7 @@
     },
     "tools": {
       "filesTab": "Файлы",
-      "shellTab": "Shell",
+      "terminalTab": "Терминал",
       "gitTab": "Git",
       "browserTab": "Браузер",
       "browserBack": "Назад",

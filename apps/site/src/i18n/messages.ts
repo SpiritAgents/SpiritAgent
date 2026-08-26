@@ -182,7 +182,7 @@ type DesktopFilesCopy = {
 
 type DesktopToolsCopy = {
   filesTab: string;
-  shellTab: string;
+  terminalTab: string;
   gitTab: string;
   browserTab: string;
   browserBack: string;

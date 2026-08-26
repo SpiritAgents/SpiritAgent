@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { PlanSnapshot, WorkspaceExplorerListResult } from "@/types/spirit-desktop";
 
-export type WorkspaceToolsTab = "files" | "shell" | "git";
+export type WorkspaceToolsTab = "files" | "terminal" | "git";
 
 export type WorkspaceToolsDockProps = {
   workspaceRoot: string;
@@ -55,20 +55,20 @@ export type WorkspaceToolsDockProps = {
 
 const LEGACY_TAB_ITEMS: Array<{
   id: WorkspaceToolsTab;
-  labelKey: "filesTab" | "shellTab" | "gitTab";
+  labelKey: "filesTab" | "terminalTab" | "gitTab";
   icon: typeof FileText;
 }> = [
   { id: "files", labelKey: "filesTab", icon: FileText },
-  { id: "shell", labelKey: "shellTab", icon: Terminal },
+  { id: "terminal", labelKey: "terminalTab", icon: Terminal },
   { id: "git", labelKey: "gitTab", icon: GitBranch },
 ];
 
 const DESIGN_TAB_META: Record<
   WorkspaceToolTabKind,
-  { labelKey: "filesTab" | "shellTab" | "gitTab" | "browserTab"; icon: typeof FileText }
+  { labelKey: "filesTab" | "terminalTab" | "gitTab" | "browserTab"; icon: typeof FileText }
 > = {
   files: { labelKey: "filesTab", icon: FileText },
-  shell: { labelKey: "shellTab", icon: Terminal },
+  terminal: { labelKey: "terminalTab", icon: Terminal },
   git: { labelKey: "gitTab", icon: GitBranch },
   browser: { labelKey: "browserTab", icon: Globe },
 };
@@ -196,7 +196,7 @@ export function WorkspaceToolsDock({
         </div>
       );
     }
-    if (legacyTab === "shell") {
+    if (legacyTab === "terminal") {
       return (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
           <WorkspaceShellTab workspaceRoot={workspaceRoot} />
@@ -232,7 +232,7 @@ export function WorkspaceToolsDock({
         </div>
       );
     }
-    if (tab.kind === "shell") {
+    if (tab.kind === "terminal") {
       return (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
           <WorkspaceShellTab workspaceRoot={workspaceRoot} />
@@ -380,7 +380,7 @@ export function WorkspaceToolsDock({
           className={cn(
             "flex min-h-0 flex-1 flex-col overflow-hidden text-xs",
             dockMode === "legacy" &&
-              (legacyTab === "files" || legacyTab === "shell"
+              (legacyTab === "files" || legacyTab === "terminal"
                 ? "p-0"
                 : "p-3 text-muted-foreground"),
           )}
