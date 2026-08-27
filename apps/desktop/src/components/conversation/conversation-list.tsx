@@ -15,6 +15,7 @@ import {
   type TurnContinuePresentation,
 } from "@/lib/conversation-continue-ui";
 import {
+  findRenderIndexForMessageId,
   isMessageHiddenByProcessGroup,
   type ConversationRenderItem,
 } from "@/lib/conversation-process-groups";
@@ -67,6 +68,9 @@ export type ConversationListProps = {
   getScrollElement: () => HTMLElement | null;
   /** Synchronously pins to the bottom while tail-following (stream tail owns the stick semantics); called on every commit where totalSize changes */
   pinScrollToTail: () => void;
+  releaseTailFollow?: () => void;
+  quoteScrollRequest?: { messageId: number; behavior: ScrollBehavior; nonce: number } | null;
+  onQuoteScrollHandled?: () => void;
   subagentViewActive: boolean;
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -111,6 +115,9 @@ export function ConversationList({
   conversationRenderItems,
   getScrollElement,
   pinScrollToTail,
+  releaseTailFollow,
+  quoteScrollRequest,
+  onQuoteScrollHandled,
   subagentViewActive,
   composerSessionKey,
   conversationListScopeKey,
@@ -332,6 +339,7 @@ export function ConversationList({
   // bottom (measured forced pulls from 14~17px above the bottom) — i.e. "scrolling down but not
   // yet at the bottom suddenly jumps to the bottom".
   const lastPinnedTotalSizeRef = useRef(-1);
+  const suppressTailPinRef = useRef(false);
   const virtualizer = useVirtualizer({
     count: conversationRenderItems.length,
     getScrollElement: () => scrollElement,
@@ -346,6 +354,9 @@ export function ConversationList({
         return;
       }
       lastPinnedTotalSizeRef.current = totalSize;
+      if (suppressTailPinRef.current) {
+        return;
+      }
       pinScrollToTail();
     },
   });
@@ -370,6 +381,44 @@ export function ConversationList({
     observer.observe(listEl);
     return () => observer.disconnect();
   }, [scrollElement, composerSessionKey, conversationListScopeKey, conversationListRemountEpoch]);
+
+  useEffect(() => {
+    if (!quoteScrollRequest) {
+      return;
+    }
+    const found = findRenderIndexForMessageId(
+      messages,
+      conversationRenderItems,
+      quoteScrollRequest.messageId,
+    );
+    if (!found) {
+      onQuoteScrollHandled?.();
+      return;
+    }
+    if (found.processGroupId) {
+      onProcessGroupManualOpenChange(found.processGroupId, true);
+    }
+    suppressTailPinRef.current = true;
+    releaseTailFollow?.();
+    virtualizer.scrollToIndex(found.renderIndex, {
+      align: "start",
+      behavior: quoteScrollRequest.behavior,
+    });
+    const delayMs = quoteScrollRequest.behavior === "smooth" ? 450 : 50;
+    const timer = window.setTimeout(() => {
+      suppressTailPinRef.current = false;
+      onQuoteScrollHandled?.();
+    }, delayMs);
+    return () => window.clearTimeout(timer);
+  }, [
+    conversationRenderItems,
+    messages,
+    onProcessGroupManualOpenChange,
+    onQuoteScrollHandled,
+    quoteScrollRequest,
+    releaseTailFollow,
+    virtualizer,
+  ]);
 
   const renderRow = (renderIndex: number): ReactNode => {
     const renderItem = conversationRenderItems[renderIndex];

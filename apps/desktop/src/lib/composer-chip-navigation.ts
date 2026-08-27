@@ -56,6 +56,9 @@ export type ComposerChipNavigateEnv = {
   sessions: readonly ComposerChipNavigateSession[];
   skills: readonly ComposerChipNavigateSkill[];
   workspaceRoot: string;
+  followSessionPathAlias?: (path: string) => string;
+  loadedMessageIdsBySessionPath?: ReadonlyMap<string, ReadonlySet<number>>;
+  knownSessionPathKeys?: ReadonlySet<string>;
 };
 
 export type ComposerChipNavigateAction =
@@ -248,9 +251,22 @@ export function resolveComposerChipNavigate(
       });
     }
     case "messageQuote": {
-      const sessionPath = target.quoteSessionPath?.trim();
+      const rawPath = target.quoteSessionPath?.trim();
       const messageId = target.quoteMessageId;
-      if (!sessionPath || typeof messageId !== "number" || !Number.isFinite(messageId)) {
+      if (!rawPath || typeof messageId !== "number" || !Number.isFinite(messageId)) {
+        return { navigable: false };
+      }
+      const sessionPath = env.followSessionPathAlias?.(rawPath) ?? rawPath;
+      const pathKey = normalizeSessionPathKey(sessionPath);
+      if (
+        env.knownSessionPathKeys &&
+        env.knownSessionPathKeys.size > 0 &&
+        !env.knownSessionPathKeys.has(pathKey)
+      ) {
+        return { navigable: false };
+      }
+      const loadedIds = env.loadedMessageIdsBySessionPath?.get(pathKey);
+      if (loadedIds && !loadedIds.has(messageId)) {
         return { navigable: false };
       }
       return {

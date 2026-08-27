@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
   CSSProperties,
@@ -347,7 +347,7 @@ export function ConversationView({
     streaming: snapshot?.conversation.isBusy === true,
   });
 
-  const { pinScrollToTail, followingTail } = useConversationStreamScrollTail({
+  const { pinScrollToTail, followingTail, releaseTailFollow } = useConversationStreamScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
     messages: list.messages,
     pendingAuxState: list.conversationPendingAuxState,
@@ -355,6 +355,20 @@ export function ConversationView({
     scrollBedPaddingPx: conversationScrollBedPaddingPx,
     enabled: conversationMessagesVisible,
   });
+  const [quoteScrollRequest, setQuoteScrollRequest] = useState<{
+    messageId: number;
+    behavior: ScrollBehavior;
+    nonce: number;
+  } | null>(null);
+  const quoteSessionPathForScroll =
+    composerDock.paneSessionPath ?? snapshot?.activeSession?.filePath ?? "";
+  useEffect(() => {
+    if (!paneId) {
+      return;
+    }
+    split.registerQuoteScrollHandler(paneId, quoteSessionPathForScroll, setQuoteScrollRequest);
+    return () => split.registerQuoteScrollHandler(paneId, quoteSessionPathForScroll, null);
+  }, [paneId, quoteSessionPathForScroll, split]);
 
   const dropOverlayActive = Boolean(
     paneId && paneDropOverlayActive && (onPaneDrop || onSidebarSessionDrop),
@@ -629,6 +643,9 @@ export function ConversationView({
                     conversationRenderItems={list.conversationRenderItems}
                     getScrollElement={getConversationScrollElement}
                     pinScrollToTail={pinScrollToTail}
+                    releaseTailFollow={releaseTailFollow}
+                    quoteScrollRequest={quoteScrollRequest}
+                    onQuoteScrollHandled={() => setQuoteScrollRequest(null)}
                     subagentViewActive={subagentViewActive}
                     composerSessionKey={list.composerSessionKey}
                     conversationListScopeKey={list.conversationListScopeKey}

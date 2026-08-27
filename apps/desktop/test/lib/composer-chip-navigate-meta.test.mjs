@@ -6,6 +6,7 @@ import {
   applyChipNavigateMeta,
   extractChipNavigateMeta,
   parseChipNavigateMeta,
+  remapChipNavigateMetaQuoteSessionPath,
 } from "../../src/lib/composer-chip-navigate-meta.ts";
 import {
   messageContentToRichSegments,
@@ -108,5 +109,43 @@ test("parseChipNavigateMeta rejects unknown kinds", () => {
   assert.equal(parseChipNavigateMeta([{ kind: "loop" }]), undefined);
   assert.deepEqual(parseChipNavigateMeta([{ kind: "workspaceFile", sourceTabId: " tab " }]), [
     { kind: "workspaceFile", sourceTabId: "tab" },
+  ]);
+});
+
+test("remapChipNavigateMetaQuoteSessionPath rewrites matching quote paths only", () => {
+  const meta = [
+    { kind: "workspaceFile", sourceTabId: "tab-1" },
+    {
+      kind: "messageQuote",
+      quoteSessionPath: "/tmp/chats/old.json",
+      quoteMessageId: 7,
+      quoteOrigin: "session",
+    },
+    {
+      kind: "messageQuote",
+      quoteSessionPath: "/tmp/chats/other.json",
+      quoteMessageId: 8,
+      quoteOrigin: "side-chat",
+    },
+  ];
+  const remapped = remapChipNavigateMetaQuoteSessionPath(
+    meta,
+    "/tmp/chats/old.json",
+    "/tmp/chats/new.json",
+  );
+  assert.deepEqual(remapped, [
+    { kind: "workspaceFile", sourceTabId: "tab-1" },
+    {
+      kind: "messageQuote",
+      quoteSessionPath: "/tmp/chats/new.json",
+      quoteMessageId: 7,
+      quoteOrigin: "session",
+    },
+    {
+      kind: "messageQuote",
+      quoteSessionPath: "/tmp/chats/other.json",
+      quoteMessageId: 8,
+      quoteOrigin: "side-chat",
+    },
   ]);
 });

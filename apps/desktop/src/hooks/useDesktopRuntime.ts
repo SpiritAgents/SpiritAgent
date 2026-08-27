@@ -23,8 +23,12 @@ import {
 } from "@/lib/local-file-attachments";
 import { isCompactSlashComposerRequest, isExportSessionSlashInput } from "@/lib/skill-slash";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
-import type { RichSegment } from "@/lib/composer-segment-model";
-import { normalizeComposerPlain, segmentsToPlainText } from "@/lib/composer-segment-model";
+import { followQuoteSessionPathsInSegments } from "@/lib/composer-chip-navigate-meta";
+import {
+  normalizeComposerPlain,
+  segmentsToPlainText,
+  type RichSegment,
+} from "@/lib/composer-segment-model";
 import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segments";
 import { isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
@@ -43,6 +47,10 @@ import {
   normalizePaneSessionPathKey,
   resolvePaneDesktopSnapshot,
 } from "@/lib/pane-desktop-snapshot";
+import {
+  applySessionPathAliasesToSnapshot,
+  followSessionPathAlias,
+} from "@/lib/session-path-alias";
 import { isProvisionalSessionPromotion } from "@/lib/session-path-kind";
 import { getWebClientViewingSessionPath, setWebClientViewingSessionPath } from "@/adapters/web";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
@@ -769,7 +777,7 @@ export function useDesktopRuntime() {
       }
       appliedComposerSessionKeyRef.current = effectiveNext.composerSessionKey;
       appliedConversationRevisionRef.current = effectiveNext.conversation.revision ?? revision;
-      setSnapshot(effectiveNext);
+      setSnapshot(applySessionPathAliasesToSnapshot(effectiveNext));
       setSessions((current) => {
         const patched = patchActiveSessionDisplayNameInList(
           current,
@@ -842,6 +850,14 @@ export function useDesktopRuntime() {
     },
     [],
   );
+
+  const reapplySessionPathAliases = useCallback(() => {
+    const follow = followSessionPathAlias;
+    setSnapshot((current) =>
+      current ? applySessionPathAliasesToSnapshot(current, follow) : current,
+    );
+    setComposerSegments((current) => followQuoteSessionPathsInSegments(current, follow));
+  }, []);
 
   const acknowledgeSessionAttention = useCallback((path: string) => {
     setUnseenCompletedSessionPaths((current) => {
@@ -4052,6 +4068,7 @@ export function useDesktopRuntime() {
     pairWebHost,
     resetSession,
     rewindAndSubmitMessage,
+    reapplySessionPathAliases,
     forkSession,
     reorderQueuedUserTurn,
     sendQueuedUserTurnNow,

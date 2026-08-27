@@ -1,5 +1,6 @@
 import type { MessageContentPart, RichSegment } from "./composer-segment-model.js";
 import type { QuoteChipOrigin } from "./message-quote-attachment.js";
+import { normalizeSessionPathKey } from "./session-path-kind.js";
 
 export type { QuoteChipOrigin };
 
@@ -236,4 +237,68 @@ export function parseChipNavigateMeta(value: unknown): ComposerChipNavigateMeta[
     parsed.push(next);
   }
   return parsed;
+}
+
+export function followChipNavigateMetaQuoteSessionPaths(
+  meta: readonly ComposerChipNavigateMeta[] | undefined,
+  follow: (path: string) => string,
+): ComposerChipNavigateMeta[] | undefined {
+  if (!meta || meta.length === 0) {
+    return meta as ComposerChipNavigateMeta[] | undefined;
+  }
+  let changed = false;
+  const next = meta.map((item) => {
+    const current = item.quoteSessionPath?.trim();
+    if (!current) {
+      return item;
+    }
+    const followed = follow(current).trim();
+    if (!followed || followed === current) {
+      return item;
+    }
+    changed = true;
+    return { ...item, quoteSessionPath: followed };
+  });
+  return changed ? next : (meta as ComposerChipNavigateMeta[]);
+}
+
+export function remapChipNavigateMetaQuoteSessionPath(
+  meta: readonly ComposerChipNavigateMeta[] | undefined,
+  fromPath: string,
+  toPath: string,
+): ComposerChipNavigateMeta[] | undefined {
+  const fromKey = normalizeSessionPathKey(fromPath);
+  const toNormalized = toPath.trim();
+  if (!fromKey || !toNormalized || fromKey === normalizeSessionPathKey(toNormalized)) {
+    return meta as ComposerChipNavigateMeta[] | undefined;
+  }
+  return followChipNavigateMetaQuoteSessionPaths(meta, (path) =>
+    normalizeSessionPathKey(path) === fromKey ? toNormalized : path,
+  );
+}
+
+export function followQuoteSessionPathsInSegments(
+  segments: readonly RichSegment[],
+  follow: (path: string) => string,
+): RichSegment[] {
+  let changed = false;
+  const next = segments.map((segment) => {
+    if (segment.kind !== "messageQuote") {
+      return segment;
+    }
+    const current = segment.attachment.sessionPath?.trim();
+    if (!current) {
+      return segment;
+    }
+    const followed = follow(current).trim();
+    if (!followed || followed === current) {
+      return segment;
+    }
+    changed = true;
+    return {
+      ...segment,
+      attachment: { ...segment.attachment, sessionPath: followed },
+    };
+  });
+  return changed ? next : (segments as RichSegment[]);
 }

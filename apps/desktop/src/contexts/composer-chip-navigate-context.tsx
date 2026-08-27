@@ -9,8 +9,10 @@ import {
   resolveComposerChipNavigate,
   type ComposerChipNavigateTarget,
 } from "@/lib/composer-chip-navigation";
-import { findLeafBySessionPath } from "@/lib/conversation-split-layout";
+import { collectSplitLayoutLeaves, findLeafBySessionPath } from "@/lib/conversation-split-layout";
 import { isMarkdownPath } from "@/lib/file-picker-path";
+import { followSessionPathAlias } from "@/lib/session-path-alias";
+import { normalizeSessionPathKey } from "@/lib/session-path-kind";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -49,20 +51,62 @@ export function NavigableChipLabel({
 export function ComposerChipNavigateProvider({
   runtime,
   snapshot,
+  baseSnapshot,
   workspaceTools,
+  paneId,
+  paneSessionPath,
   children,
 }: {
   runtime: DesktopRuntime;
   snapshot: DesktopSnapshot | null;
+  baseSnapshot?: DesktopSnapshot | null;
   workspaceTools: WorkspaceTools;
+  paneId?: string;
+  paneSessionPath?: string;
   children: ReactNode;
 }) {
   const split = useConversationSplit();
   const githubConnected =
     useGitHubAuthConnected(runtime.getGitHubAuthStatus, workspaceTools.prTabEnabled) === true;
+  const sourceSnapshot = baseSnapshot ?? snapshot;
 
-  const env = useMemo(
-    () => ({
+  const env = useMemo(() => {
+    const loadedMessageIdsBySessionPath = new Map<string, Set<number>>();
+    const addMessages = (
+      sessionPath: string | undefined,
+      messages: { id: number }[] | undefined,
+    ) => {
+      const key = sessionPath ? normalizeSessionPathKey(sessionPath) : "";
+      if (!key || !messages) {
+        return;
+      }
+      const ids = loadedMessageIdsBySessionPath.get(key) ?? new Set<number>();
+      for (const message of messages) {
+        ids.add(message.id);
+      }
+      loadedMessageIdsBySessionPath.set(key, ids);
+    };
+    addMessages(snapshot?.activeSession?.filePath, snapshot?.conversation.messages);
+    addMessages(sourceSnapshot?.activeSession?.filePath, sourceSnapshot?.conversation.messages);
+    for (const [path, slice] of Object.entries(sourceSnapshot?.paneSessions ?? {})) {
+      addMessages(path, slice.conversation.messages);
+    }
+    addMessages(paneSessionPath, snapshot?.conversation.messages);
+
+    const knownSessionPathKeys = new Set<string>();
+    for (const session of runtime.sessions) {
+      knownSessionPathKeys.add(normalizeSessionPathKey(session.path));
+    }
+    if (split.layout) {
+      for (const leaf of collectSplitLayoutLeaves(split.layout)) {
+        knownSessionPathKeys.add(normalizeSessionPathKey(leaf.sessionPath));
+      }
+    }
+    for (const key of loadedMessageIdsBySessionPath.keys()) {
+      knownSessionPathKeys.add(key);
+    }
+
+    return {
       tabs: workspaceTools.workspaceToolTabs,
       supportsBrowserTabs: workspaceTools.browserTabEnabled,
       supportsPrTabs: workspaceTools.prTabEnabled,
@@ -71,39 +115,41 @@ export function ComposerChipNavigateProvider({
         path: session.path,
         transcriptPath: session.transcriptPath,
       })),
-      skills: (snapshot?.skillsList ?? []).map((skill) => ({
+      skills: (snapshot?.skillsList ?? sourceSnapshot?.skillsList ?? []).map((skill) => ({
         name: skill.name,
         path: skill.path,
       })),
-      workspaceRoot: snapshot?.workspaceRoot ?? "",
-    }),
-    [
-      githubConnected,
-      runtime.sessions,
-      snapshot?.skillsList,
-      snapshot?.workspaceRoot,
-      workspaceTools.browserTabEnabled,
-      workspaceTools.prTabEnabled,
-      workspaceTools.workspaceToolTabs,
-    ],
-  );
+      workspaceRoot: snapshot?.workspaceRoot ?? sourceSnapshot?.workspaceRoot ?? "",
+      followSessionPathAlias,
+      loadedMessageIdsBySessionPath,
+      knownSessionPathKeys,
+    };
+  }, [
+    githubConnected,
+    paneSessionPath,
+    runtime.sessions,
+    snapshot?.activeSession?.filePath,
+    snapshot?.conversation.messages,
+    snapshot?.skillsList,
+    snapshot?.workspaceRoot,
+    sourceSnapshot?.activeSession?.filePath,
+    sourceSnapshot?.conversation.messages,
+    sourceSnapshot?.paneSessions,
+    sourceSnapshot?.skillsList,
+    sourceSnapshot?.workspaceRoot,
+    split.layout,
+    workspaceTools.browserTabEnabled,
+    workspaceTools.prTabEnabled,
+    workspaceTools.workspaceToolTabs,
+  ]);
 
   const isNavigable = useCallback(
-    (target: ComposerChipNavigateTarget) => {
-      // Quote scrolling lands in Phase 3 (virtualizer + side-chat split).
-      if (target.kind === "messageQuote") {
-        return false;
-      }
-      return resolveComposerChipNavigate(target, env).navigable;
-    },
+    (target: ComposerChipNavigateTarget) => resolveComposerChipNavigate(target, env).navigable,
     [env],
   );
 
   const navigate = useCallback(
     (target: ComposerChipNavigateTarget) => {
-      if (target.kind === "messageQuote") {
-        return;
-      }
       const decision = resolveComposerChipNavigate(target, env);
       if (!decision.navigable) {
         return;
@@ -164,15 +210,50 @@ export function ComposerChipNavigateProvider({
           void runtime.openSession(action.chatPath);
           return;
         }
-        case "scroll-quote":
+        case "scroll-quote": {
+          const currentKey = paneSessionPath ? normalizeSessionPathKey(paneSessionPath) : "";
+          const targetKey = normalizeSessionPathKey(action.sessionPath);
+          const leaf = split.layout
+            ? findLeafBySessionPath(split.layout, action.sessionPath)
+            : undefined;
+          if (currentKey && currentKey === targetKey) {
+            split.requestQuoteScroll({
+              sessionPath: action.sessionPath,
+              messageId: action.messageId,
+              behavior: "smooth",
+            });
+            return;
+          }
+          if (leaf) {
+            split.focusPane(leaf.paneId, leaf.sessionPath);
+            split.requestQuoteScroll({
+              sessionPath: action.sessionPath,
+              messageId: action.messageId,
+              behavior: "smooth",
+            });
+            return;
+          }
+          split.requestQuoteScroll({
+            sessionPath: action.sessionPath,
+            messageId: action.messageId,
+            behavior: "auto",
+          });
+          if (action.origin === "side-chat" && paneId) {
+            void split.openStoredSessionInSplitPane(paneId, action.sessionPath, "horizontal", {
+              asSideChat: true,
+            });
+            return;
+          }
+          void runtime.openSession(action.sessionPath);
           return;
+        }
         default: {
           const _exhaustive: never = action;
           return _exhaustive;
         }
       }
     },
-    [env, runtime, split, workspaceTools],
+    [env, paneId, paneSessionPath, runtime, split, workspaceTools],
   );
 
   const value = useMemo(() => ({ isNavigable, navigate }), [isNavigable, navigate]);

@@ -250,6 +250,31 @@ export function isMessageHiddenByProcessGroup(
   return messageIndexInSealedProcessGroup(renderItems, messageIndex) !== undefined;
 }
 
+/** Map a message id to the virtualizer render index (process-group rows consume multiple messages). */
+export function findRenderIndexForMessageId(
+  messages: readonly { id: number }[],
+  renderItems: readonly ConversationRenderItem[],
+  messageId: number,
+): { renderIndex: number; processGroupId?: string } | null {
+  const messageIndex = messages.findIndex((message) => message.id === messageId);
+  if (messageIndex < 0) {
+    return null;
+  }
+  for (let renderIndex = 0; renderIndex < renderItems.length; renderIndex += 1) {
+    const item = renderItems[renderIndex];
+    if (!item) {
+      continue;
+    }
+    if (item.kind === "message" && item.messageIndex === messageIndex) {
+      return { renderIndex };
+    }
+    if (item.kind === "process-group" && item.messageIndices.includes(messageIndex)) {
+      return { renderIndex, processGroupId: item.groupId };
+    }
+  }
+  return null;
+}
+
 export { isProcessEligibleMetaMessage, isAssistantBodyTextMessage };
 
 export function resolveMessageForRenderSpacing(

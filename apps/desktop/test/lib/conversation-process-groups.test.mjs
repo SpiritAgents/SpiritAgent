@@ -3,6 +3,7 @@ import { test } from "vitest";
 
 import {
   buildConversationRenderItems,
+  findRenderIndexForMessageId,
   isMessageHiddenByProcessGroup,
   isProcessEligibleMetaMessage,
 } from "../../src/lib/conversation-process-groups.ts";
@@ -418,4 +419,24 @@ test("buildConversationRenderItems keeps todo_write outside process groups", () 
   assert.deepEqual(secondGroup.messageIndices, [4, 5]);
   assert.equal(secondGroup.toolCounts.edit, 1);
   assert.equal(secondGroup.toolCounts.explore, 1);
+});
+
+test("findRenderIndexForMessageId maps grouped tools to the process-group row", () => {
+  const messages = [
+    { id: 1, role: "user", content: "go", pending: false },
+    {
+      id: 2,
+      role: "assistant",
+      content: "",
+      pending: false,
+      tool: { toolName: "read_file", toolCallId: "c1" },
+    },
+    { id: 3, role: "assistant", content: "Done.", pending: false },
+  ];
+  const items = buildConversationRenderItems(messages, scopeKey);
+  assert.deepEqual(findRenderIndexForMessageId(messages, items, 1), { renderIndex: 0 });
+  const grouped = findRenderIndexForMessageId(messages, items, 2);
+  assert.equal(grouped?.renderIndex, 1);
+  assert.equal(typeof grouped?.processGroupId, "string");
+  assert.equal(findRenderIndexForMessageId(messages, items, 99), null);
 });

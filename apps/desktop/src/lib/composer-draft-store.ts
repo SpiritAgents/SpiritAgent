@@ -255,3 +255,59 @@ export function clearComposerDraft(
   delete file.drafts[normalizedKey];
   writeStoreFile(storage, file);
 }
+
+function remapQuoteSessionPathInSegments(
+  segments: RichSegment[],
+  fromKey: string,
+  toPath: string,
+): { segments: RichSegment[]; changed: boolean } {
+  let changed = false;
+  const next = segments.map((segment) => {
+    if (segment.kind !== "messageQuote") {
+      return segment;
+    }
+    const current = segment.attachment.sessionPath?.trim();
+    if (!current || normalizeSessionPathKey(current) !== fromKey) {
+      return segment;
+    }
+    changed = true;
+    return {
+      ...segment,
+      attachment: { ...segment.attachment, sessionPath: toPath },
+    };
+  });
+  return { segments: next, changed };
+}
+
+/** Rewrite quote chip sessionPath in every persisted composer draft after a session path promotion. */
+export function remapComposerDraftQuoteSessionPaths(
+  fromPath: string,
+  toPath: string,
+  storage: ComposerDraftStorage | undefined = defaultStorage(),
+): void {
+  const fromKey = normalizeSessionPathKey(fromPath);
+  const toNormalized = toPath.trim();
+  if (!fromKey || !toNormalized || fromKey === normalizeSessionPathKey(toNormalized) || !storage) {
+    return;
+  }
+  const file = readStoreFile(storage);
+  let changed = false;
+  const drafts: Record<string, ComposerDraftEntry> = {};
+  for (const [key, entry] of Object.entries(file.drafts)) {
+    const remapped = remapQuoteSessionPathInSegments(entry.segments, fromKey, toNormalized);
+    if (!remapped.changed) {
+      drafts[key] = entry;
+      continue;
+    }
+    changed = true;
+    drafts[key] = {
+      ...entry,
+      segments: remapped.segments,
+      text: draftPlainText(remapped.segments),
+      updatedAt: Date.now(),
+    };
+  }
+  if (changed) {
+    writeStoreFile(storage, { version: STORE_VERSION, drafts });
+  }
+}

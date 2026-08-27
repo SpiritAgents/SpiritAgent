@@ -171,6 +171,46 @@ test("quote chips without sessionPath or messageId are not navigable", () => {
   );
 });
 
+test("quote chips are not navigable when the loaded session no longer has the message", () => {
+  const pathKey = "/tmp/chats/chat-1.json";
+  assert.equal(
+    resolveComposerChipNavigate(
+      { kind: "messageQuote", quoteSessionPath: pathKey, quoteMessageId: 99 },
+      env({
+        loadedMessageIdsBySessionPath: new Map([[pathKey, new Set([7])]]),
+      }),
+    ).navigable,
+    false,
+  );
+});
+
+test("quote chips follow session-path aliases before checking availability", () => {
+  assert.deepEqual(
+    resolveComposerChipNavigate(
+      {
+        kind: "messageQuote",
+        quoteSessionPath: "/tmp/chats/old.json",
+        quoteMessageId: 3,
+      },
+      env({
+        followSessionPathAlias: (path) =>
+          path === "/tmp/chats/old.json" ? "/tmp/chats/new.json" : path,
+        knownSessionPathKeys: new Set(["/tmp/chats/new.json"]),
+        loadedMessageIdsBySessionPath: new Map([["/tmp/chats/new.json", new Set([3])]]),
+      }),
+    ),
+    {
+      navigable: true,
+      action: {
+        type: "scroll-quote",
+        sessionPath: "/tmp/chats/new.json",
+        messageId: 3,
+        origin: "session",
+      },
+    },
+  );
+});
+
 test("trackedTabOfKind ignores surviving tabs of the wrong kind", () => {
   const tabs = [{ id: "tab-1", kind: "files" }];
   assert.equal(trackedTabOfKind(tabs, "tab-1", "terminal"), undefined);

@@ -31,6 +31,11 @@ import {
   type MessageContentPart,
 } from "@/lib/composer-segment-model";
 import {
+  alignChipNavigateMetaToParts,
+  isNavigableComposerChipKind,
+  type ComposerChipNavigateMeta,
+} from "@/lib/composer-chip-navigate-meta";
+import {
   formatGitCommitChipLabel,
   formatGitCommitChipTitle,
   GIT_COMMIT_CHIP_ICON_CLASS,
@@ -72,7 +77,22 @@ import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 import { NavigableChipLabel } from "@/contexts/composer-chip-navigate-context";
 
-function ElementCard({ tagName, url }: { tagName: string; url: string }) {
+function sourceTabIdFields(
+  meta: ComposerChipNavigateMeta | undefined,
+): { sourceTabId: string } | Record<string, never> {
+  const sourceTabId = meta?.sourceTabId?.trim();
+  return sourceTabId ? { sourceTabId } : {};
+}
+
+function ElementCard({
+  tagName,
+  url,
+  navigateMeta,
+}: {
+  tagName: string;
+  url: string;
+  navigateMeta?: ComposerChipNavigateMeta;
+}) {
   return (
     <span title={url} className={MESSAGE_BUBBLE_CHIP_CLASS}>
       <PenTool
@@ -80,13 +100,23 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
         aria-hidden
       />
       <NavigableChipLabel
-        target={{ kind: "element", pageUrl: url }}
+        target={{
+          kind: "element",
+          pageUrl: url,
+          ...sourceTabIdFields(navigateMeta),
+        }}
       >{`<${tagName}>`}</NavigableChipLabel>
     </span>
   );
 }
 
-function WorkspaceFileCard({ path }: { path: string }) {
+function WorkspaceFileCard({
+  path,
+  navigateMeta,
+}: {
+  path: string;
+  navigateMeta?: ComposerChipNavigateMeta;
+}) {
   const normalized = path.replace(/\\/gu, "/");
   const presentation = resolveWorkspaceFileChipPresentation(normalized);
   return (
@@ -98,7 +128,13 @@ function WorkspaceFileCard({ path }: { path: string }) {
         colorMode="inherit"
         className={cn("shrink-0", presentation.iconClass)}
       />
-      <NavigableChipLabel target={{ kind: "workspaceFile", path: normalized }}>
+      <NavigableChipLabel
+        target={{
+          kind: "workspaceFile",
+          path: normalized,
+          ...sourceTabIdFields(navigateMeta),
+        }}
+      >
         {workspaceFileBasename(normalized)}
       </NavigableChipLabel>
     </span>
@@ -142,7 +178,13 @@ function prDiffStatusIcon(status: PullRequestChipStatus) {
   }
 }
 
-function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDiff" }> }) {
+function PrDiffCard({
+  part,
+  navigateMeta,
+}: {
+  part: Extract<MessageContentPart, { kind: "prDiff" }>;
+  navigateMeta?: ComposerChipNavigateMeta;
+}) {
   const Icon = prDiffStatusIcon(part.status);
   return (
     <span
@@ -158,7 +200,13 @@ function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDif
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <Icon className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, PR_DIFF_CHIP_ICON_CLASS)} aria-hidden />
-      <NavigableChipLabel target={{ kind: "prDiff", prUrl: part.prUrl }}>
+      <NavigableChipLabel
+        target={{
+          kind: "prDiff",
+          prUrl: part.prUrl,
+          ...sourceTabIdFields(navigateMeta),
+        }}
+      >
         {formatPrDiffChipLabel(part.filename, part.lineStart, part.lineEnd)}
       </NavigableChipLabel>
     </span>
@@ -167,8 +215,10 @@ function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDif
 
 function TerminalCard({
   part,
+  navigateMeta,
 }: {
   part: Extract<MessageContentPart, { kind: "terminalSnippet" }>;
+  navigateMeta?: ComposerChipNavigateMeta;
 }) {
   return (
     <span
@@ -185,14 +235,25 @@ function TerminalCard({
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, TERMINAL_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      <NavigableChipLabel target={{ kind: "terminalSnippet" }}>
+      <NavigableChipLabel
+        target={{
+          kind: "terminalSnippet",
+          ...sourceTabIdFields(navigateMeta),
+        }}
+      >
         {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
       </NavigableChipLabel>
     </span>
   );
 }
 
-function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "fileSnippet" }> }) {
+function FileSnippetCard({
+  part,
+  navigateMeta,
+}: {
+  part: Extract<MessageContentPart, { kind: "fileSnippet" }>;
+  navigateMeta?: ComposerChipNavigateMeta;
+}) {
   return (
     <span
       title={formatFileSnippetChipTitle({
@@ -214,6 +275,7 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
           filePath: part.filePath,
           lineStart: part.lineStart,
           lineEnd: part.lineEnd,
+          ...sourceTabIdFields(navigateMeta),
         }}
       >
         {formatFileSnippetChipLabel(part.filePath, part.lineStart, part.lineEnd)}
@@ -224,8 +286,10 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
 
 function MessageQuoteCard({
   part,
+  navigateMeta,
 }: {
   part: Extract<MessageContentPart, { kind: "messageQuote" }>;
+  navigateMeta?: ComposerChipNavigateMeta;
 }) {
   return (
     <span
@@ -236,14 +300,27 @@ function MessageQuoteCard({
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, MESSAGE_QUOTE_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      <NavigableChipLabel target={{ kind: "messageQuote" }}>
+      <NavigableChipLabel
+        target={{
+          kind: "messageQuote",
+          quoteSessionPath: navigateMeta?.quoteSessionPath,
+          quoteMessageId: navigateMeta?.quoteMessageId,
+          quoteOrigin: navigateMeta?.quoteOrigin,
+        }}
+      >
         {formatMessageQuoteChipLabel(part.selectedText)}
       </NavigableChipLabel>
     </span>
   );
 }
 
-function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gitCommit" }> }) {
+function GitCommitCard({
+  part,
+  navigateMeta,
+}: {
+  part: Extract<MessageContentPart, { kind: "gitCommit" }>;
+  navigateMeta?: ComposerChipNavigateMeta;
+}) {
   return (
     <span
       title={formatGitCommitChipTitle({
@@ -260,7 +337,12 @@ function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gi
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, GIT_COMMIT_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      <NavigableChipLabel target={{ kind: "gitCommit" }}>
+      <NavigableChipLabel
+        target={{
+          kind: "gitCommit",
+          ...sourceTabIdFields(navigateMeta),
+        }}
+      >
         {formatGitCommitChipLabel(part.subject)}
       </NavigableChipLabel>
     </span>
@@ -319,6 +401,17 @@ export function UserMessageBubble({
 }: UserMessageBubbleProps) {
   const { t } = useTranslation();
   const contentParts = useMemo(() => parseMessageContentParts(message.content), [message.content]);
+  const alignedMeta = useMemo(
+    () => alignChipNavigateMetaToParts(contentParts, message.chipNavigateMeta),
+    [contentParts, message.chipNavigateMeta],
+  );
+  const partsWithMeta = useMemo(() => {
+    let chipIndex = 0;
+    return contentParts.map((part) => ({
+      part,
+      meta: isNavigableComposerChipKind(part.kind) ? alignedMeta?.[chipIndex++] : undefined,
+    }));
+  }, [alignedMeta, contentParts]);
   // `@` workspace-file references render as inline chips; their attachment snapshots are
   // attributed by matching the chip-recorded path and excluded from the upload card strip.
   const referencedFilePathKeys = useMemo(() => {
@@ -436,12 +529,14 @@ export function UserMessageBubble({
           onKeyDown={canStartRewind ? handleRewindKeyDown : undefined}
         >
           <pre className="m-0 max-w-full min-w-0 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground [overflow-wrap:anywhere]">
-            {contentParts.map((part, i) => {
+            {partsWithMeta.map(({ part, meta }, i) => {
               if (part.kind === "element") {
-                return <ElementCard key={i} tagName={part.tagName} url={part.url} />;
+                return (
+                  <ElementCard key={i} tagName={part.tagName} url={part.url} navigateMeta={meta} />
+                );
               }
               if (part.kind === "workspaceFile") {
-                return <WorkspaceFileCard key={i} path={part.path} />;
+                return <WorkspaceFileCard key={i} path={part.path} navigateMeta={meta} />;
               }
               if (part.kind === "sessionReference") {
                 return <SessionReferenceCard key={i} path={part.path} title={part.title} />;
@@ -450,19 +545,19 @@ export function UserMessageBubble({
                 return <SkillCard key={i} alias={part.alias} />;
               }
               if (part.kind === "prDiff") {
-                return <PrDiffCard key={i} part={part} />;
+                return <PrDiffCard key={i} part={part} navigateMeta={meta} />;
               }
               if (part.kind === "gitCommit") {
-                return <GitCommitCard key={i} part={part} />;
+                return <GitCommitCard key={i} part={part} navigateMeta={meta} />;
               }
               if (part.kind === "terminalSnippet") {
-                return <TerminalCard key={i} part={part} />;
+                return <TerminalCard key={i} part={part} navigateMeta={meta} />;
               }
               if (part.kind === "fileSnippet") {
-                return <FileSnippetCard key={i} part={part} />;
+                return <FileSnippetCard key={i} part={part} navigateMeta={meta} />;
               }
               if (part.kind === "messageQuote") {
-                return <MessageQuoteCard key={i} part={part} />;
+                return <MessageQuoteCard key={i} part={part} navigateMeta={meta} />;
               }
               const prev = i > 0 ? contentParts[i - 1] : null;
               const next = i < contentParts.length - 1 ? contentParts[i + 1] : null;

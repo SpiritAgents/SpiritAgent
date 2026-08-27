@@ -176,7 +176,10 @@ export function ConversationPaneHost({
     <ComposerChipNavigateProvider
       runtime={controllerInput.runtime}
       snapshot={pane.paneSnapshot}
+      baseSnapshot={controllerInput.baseSnapshot}
       workspaceTools={controllerInput.workspaceTools}
+      paneId={paneId}
+      paneSessionPath={sessionPath}
     >
       <ConversationView
         useTranslucency={useTranslucency}
