@@ -5,7 +5,10 @@ import type { QuoteChipOrigin } from "./message-quote-attachment.js";
 import { looksLikeAbsolutePath } from "./file-picker-path.js";
 import { tryResolveWorkspaceRelativePath } from "./read-file-tool-navigation.js";
 import { skillSlashAlias } from "./skill-slash.js";
-import { normalizeSessionPathKey } from "./session-path-kind.js";
+import {
+  isSideChatPaneProvisionalSessionPath,
+  normalizeSessionPathKey,
+} from "./session-path-kind.js";
 import { isWorkspaceDirectoryChipPath } from "./workspace-file-chip-styles.js";
 import {
   findWorkspaceToolTab,
@@ -258,7 +261,10 @@ export function resolveComposerChipNavigate(
       }
       const sessionPath = env.followSessionPathAlias?.(rawPath) ?? rawPath;
       const pathKey = normalizeSessionPathKey(sessionPath);
+      const canReopenClosedSideChat =
+        target.quoteOrigin === "side-chat" || isSideChatPaneProvisionalSessionPath(sessionPath);
       if (
+        !canReopenClosedSideChat &&
         env.knownSessionPathKeys &&
         env.knownSessionPathKeys.size > 0 &&
         !env.knownSessionPathKeys.has(pathKey)

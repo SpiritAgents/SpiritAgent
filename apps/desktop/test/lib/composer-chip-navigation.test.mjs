@@ -171,6 +171,45 @@ test("quote chips without sessionPath or messageId are not navigable", () => {
   );
 });
 
+test("ordinary session quotes are not navigable when the target session is unknown", () => {
+  assert.equal(
+    resolveComposerChipNavigate(
+      {
+        kind: "messageQuote",
+        quoteSessionPath: "/tmp/chats/missing.json",
+        quoteMessageId: 7,
+        quoteOrigin: "session",
+      },
+      env({ knownSessionPathKeys: new Set(["/tmp/chats/other.json"]) }),
+    ).navigable,
+    false,
+  );
+});
+
+test("closed side-chat quotes stay navigable so the pane can be reopened", () => {
+  const sideChatPath = "/tmp/__provisional__/side-chat-pane-1.json";
+  assert.deepEqual(
+    resolveComposerChipNavigate(
+      {
+        kind: "messageQuote",
+        quoteSessionPath: sideChatPath,
+        quoteMessageId: 7,
+        quoteOrigin: "side-chat",
+      },
+      env({ knownSessionPathKeys: new Set(["/tmp/chats/main.json"]) }),
+    ),
+    {
+      navigable: true,
+      action: {
+        type: "scroll-quote",
+        sessionPath: sideChatPath,
+        messageId: 7,
+        origin: "side-chat",
+      },
+    },
+  );
+});
+
 test("quote chips are not navigable when the loaded session no longer has the message", () => {
   const pathKey = "/tmp/chats/chat-1.json";
   assert.equal(
