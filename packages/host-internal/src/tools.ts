@@ -1495,15 +1495,10 @@ export class NodeHostToolService<
     if (!trimmed) {
       throw new Error("path must not be empty");
     }
-    const joined = path.isAbsolute(trimmed)
+    // Writes are gated by authorize(); do not re-apply a workspace allowlist here.
+    return path.isAbsolute(trimmed)
       ? path.resolve(trimmed)
       : path.resolve(this.workspaceRoot, trimmed);
-    if (!isAllowedWritePath(joined, this.context)) {
-      throw new Error(
-        `Writes are only allowed inside the workspace or Spirit-managed user rules/plan/skills paths: ${joined}`,
-      );
-    }
-    return joined;
   }
 
   private async executeLs(inputPath: string): Promise<string> {
@@ -2784,8 +2779,7 @@ function isInsideSpiritManagedUserArea(
   resolvedPath: string,
   context: InstructionDiscoveryContext,
 ): boolean {
-  // Shared by the built-in no-rule read fallback and the write-path check:
-  // user rules, plans and user skills are Spirit-managed locations.
+  // Built-in no-rule read fallback: user rules, plans and user skills.
   const paths = resolveInstructionPaths({
     workspaceRoot: context.workspaceRoot,
     spiritDataDir: context.spiritDataDir,
@@ -2793,13 +2787,6 @@ function isInsideSpiritManagedUserArea(
   return [paths.userRuleFile, paths.plansDir, paths.userSkillsDir]
     .map((allowed) => path.resolve(allowed))
     .some((allowed) => pathHasPrefix(resolvedPath, allowed));
-}
-
-function isAllowedWritePath(resolvedPath: string, context: InstructionDiscoveryContext): boolean {
-  return (
-    isWithinRoot(resolvedPath, path.resolve(context.workspaceRoot)) ||
-    isInsideSpiritManagedUserArea(resolvedPath, context)
-  );
 }
 
 function pathCompareKey(inputPath: string): string {
