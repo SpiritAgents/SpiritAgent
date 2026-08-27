@@ -2021,15 +2021,16 @@ function latestAssistantContent(
   return undefined;
 }
 
-test("resolveEarlyToolCallArguments canonicalizes partial read_file path JSON", () => {
-  const resolved = resolveEarlyToolCallArguments("read_file", '{"path":"Cargo.toml"');
+test("resolveEarlyToolCallArguments waits for complete read_file JSON", () => {
+  assert.equal(resolveEarlyToolCallArguments("read_file", '{"path":"Cargo.toml"'), undefined);
+  const resolved = resolveEarlyToolCallArguments("read_file", '{"path":"Cargo.toml"}');
   assert.deepEqual(resolved, {
     argumentsJson: '{"path":"Cargo.toml"}',
     canonicalArgumentsJson: '{"path":"Cargo.toml"}',
   });
 });
 
-test("startEarlyToolExecution executes read_file once path is streamed", async () => {
+test("startEarlyToolExecution executes read_file once arguments JSON is complete", async () => {
   const executed: string[] = [];
   const events: RuntimeEvent<{ name: string; path: string }>[] = [];
   const runtime = {
@@ -2054,7 +2055,7 @@ test("startEarlyToolExecution executes read_file once path is streamed", async (
   const early = new Map();
   const record = startEarlyToolExecution(
     runtime,
-    { id: "call-preview-read", name: "read_file", argumentsJson: '{"path":"preview.txt"' },
+    { id: "call-preview-read", name: "read_file", argumentsJson: '{"path":"preview.txt"}' },
     early,
   );
   assert.ok(record);

@@ -484,27 +484,13 @@ export function shouldRepeatStreamingToolPreview(
   return nextArgsLen >= previousArgsLen + STREAMING_PREVIEW_UPDATE_MIN_DELTA_CHARS;
 }
 
-/** Whether partial `read_file` args are safe to execute before the JSON object closes. */
+/**
+ * Whether `read_file` args are safe to execute early.
+ * Incomplete JSON must not start: offset/limit often stream after path, and a path-only
+ * approval cannot be reused once the formal pass has a different range.
+ */
 export function readFilePartialAllowsEarlyExecution(argumentsJson: string): boolean {
-  if (hostToolArgumentsReadyForPreview("read_file", argumentsJson)) {
-    return true;
-  }
-  const fields = tryExtractPartialReadFileFields(argumentsJson);
-  if (!fields.path) {
-    return false;
-  }
-  const hasOffsetKey = /"offset"\s*:/.test(argumentsJson);
-  const hasLimitKey = /"limit"\s*:/.test(argumentsJson);
-  if (!hasOffsetKey && !hasLimitKey) {
-    return true;
-  }
-  if (hasOffsetKey && fields.offset === undefined) {
-    return false;
-  }
-  if (hasLimitKey && fields.limit === undefined) {
-    return false;
-  }
-  return true;
+  return hostToolArgumentsReadyForPreview("read_file", argumentsJson);
 }
 
 /**

@@ -516,9 +516,8 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest>(
       });
     }
     // Early-execution admission must match the argument parsing inside startEarlyToolExecution:
-    // ls/read_file/delete_file may start early once the path is complete, even with unclosed JSON;
-    // if only complete JSON were accepted, their approvals would fall to the formal pass after
-    // streaming ends, and their display order would be overtaken by later tools.
+    // ls/delete_file may start once the path is complete, even with unclosed JSON.
+    // read_file waits for complete JSON so offset/limit cannot change after approval.
     const earlyExecutable =
       resolveEarlyToolCallArguments(event.toolName, event.argumentsJson) !== undefined;
     if (

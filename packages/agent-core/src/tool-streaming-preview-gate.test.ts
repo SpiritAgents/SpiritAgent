@@ -77,13 +77,14 @@ test("resolveStreamingToolPreviewEmit repeats for growing create_plan args", () 
   assert.equal(second.emit, true);
 });
 
-test("buildEarlyExecutableArgumentsJson builds read_file path from partial JSON", () => {
+test("buildEarlyExecutableArgumentsJson waits for complete read_file JSON", () => {
   const partial = '{"path":"Cargo.toml","offset":';
   assert.equal(buildEarlyExecutableArgumentsJson("read_file", partial), undefined);
   assert.equal(readFilePartialAllowsEarlyExecution(partial), false);
 
   const pathOnly = '{"path":"package.json"';
-  assert.equal(buildEarlyExecutableArgumentsJson("read_file", pathOnly), '{"path":"package.json"}');
+  assert.equal(buildEarlyExecutableArgumentsJson("read_file", pathOnly), undefined);
+  assert.equal(readFilePartialAllowsEarlyExecution(pathOnly), false);
   assert.deepEqual(previewRequestFromStreamingArguments("read_file", pathOnly), {
     path: "package.json",
   });
@@ -94,8 +95,9 @@ test("buildEarlyExecutableArgumentsJson builds read_file path from partial JSON"
     offset: 10,
     limit: 41,
   });
+  assert.equal(buildEarlyExecutableArgumentsJson("read_file", withLines), undefined);
   assert.equal(
-    buildEarlyExecutableArgumentsJson("read_file", withLines),
+    buildEarlyExecutableArgumentsJson("read_file", '{"path":"README.md","offset":10,"limit":41}'),
     '{"path":"README.md","offset":10,"limit":41}',
   );
 });
