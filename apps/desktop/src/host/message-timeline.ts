@@ -4,6 +4,8 @@ import type {
   MessageAuxSnapshot,
   ToolBlockSnapshot,
 } from "../types.js";
+import type { ComposerChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
+import { spreadChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
 import { formatTurnErrorRetryProgress } from "../lib/conversation-turn-error-ui.js";
 import { isSubagentStatusSurfaceText } from "../lib/subagent-display.js";
 import {
@@ -41,6 +43,7 @@ export interface DesktopTimelineRowSnapshot {
   pending: boolean;
   canContinue?: boolean;
   localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
   tool?: ToolBlockSnapshot;
   aux?: MessageAuxSnapshot;
 }
@@ -192,6 +195,7 @@ export class DesktopMessageTimeline {
       messageId?: number;
       pending?: boolean;
       localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
+      chipNavigateMeta?: ComposerChipNavigateMeta[];
     } = {},
   ): ConversationMessageSnapshot {
     this.markMutated();
@@ -210,6 +214,7 @@ export class DesktopMessageTimeline {
       ...(input.localFileAttachments?.length
         ? { localFileAttachments: cloneLocalFileAttachments(input.localFileAttachments) }
         : {}),
+      ...spreadChipNavigateMeta(input.chipNavigateMeta),
     });
     turn.userRow = row;
     this.turns.push(turn);
@@ -1068,6 +1073,7 @@ export class DesktopMessageTimeline {
         ...(message.localFileAttachments?.length
           ? { localFileAttachments: message.localFileAttachments }
           : {}),
+        ...spreadChipNavigateMeta(message.chipNavigateMeta),
       });
       return;
     }
@@ -1186,6 +1192,7 @@ export class DesktopMessageTimeline {
       ...(message.localFileAttachments?.length
         ? { localFileAttachments: message.localFileAttachments }
         : {}),
+      ...spreadChipNavigateMeta(message.chipNavigateMeta),
     });
     const physicalInsertAt =
       insertAfterToolIndex >= 0 ? insertAfterToolIndex + 1 : targetSegment.rows.length;
@@ -1268,6 +1275,7 @@ export class DesktopMessageTimeline {
       ...(snapshot.localFileAttachments?.length
         ? { localFileAttachments: cloneLocalFileAttachments(snapshot.localFileAttachments) }
         : {}),
+      ...spreadChipNavigateMeta(snapshot.chipNavigateMeta),
       ...(snapshot.tool ? { tool: cloneTool(snapshot.tool) } : {}),
       ...(snapshot.aux ? { aux: cloneAux(snapshot.aux) } : {}),
     };
@@ -1630,6 +1638,7 @@ export class DesktopMessageTimeline {
     pending: boolean;
     canContinue?: boolean;
     localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
+    chipNavigateMeta?: ComposerChipNavigateMeta[];
     tool?: ToolBlockSnapshot;
     aux?: MessageAuxSnapshot;
     createdOrder?: number;
@@ -1662,6 +1671,7 @@ export class DesktopMessageTimeline {
       ...(input.localFileAttachments?.length
         ? { localFileAttachments: cloneLocalFileAttachments(input.localFileAttachments) }
         : {}),
+      ...spreadChipNavigateMeta(input.chipNavigateMeta),
       ...(input.tool ? { tool: cloneTool(input.tool) } : {}),
       ...(input.aux ? { aux: cloneAux(input.aux) } : {}),
     };
@@ -1984,6 +1994,7 @@ function rowToMessage(row: DesktopTimelineRow): ConversationMessageSnapshot {
       ...(row.localFileAttachments?.length
         ? { localFileAttachments: cloneLocalFileAttachments(row.localFileAttachments) }
         : {}),
+      ...spreadChipNavigateMeta(row.chipNavigateMeta),
       ...(row.canContinue ? { canContinue: true } : {}),
     };
   }
@@ -2014,6 +2025,7 @@ function cloneRow(row: DesktopTimelineRow): DesktopTimelineRowSnapshot {
     ...(row.localFileAttachments?.length
       ? { localFileAttachments: cloneLocalFileAttachments(row.localFileAttachments) }
       : {}),
+    ...spreadChipNavigateMeta(row.chipNavigateMeta),
     ...(row.tool ? { tool: cloneTool(row.tool) } : {}),
     ...(row.aux ? { aux: cloneAux(row.aux) } : {}),
   };

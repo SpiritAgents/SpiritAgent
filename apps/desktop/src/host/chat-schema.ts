@@ -3,6 +3,7 @@ import type {
   MessageAuxSnapshot,
   ToolBlockSnapshot,
 } from "../types.js";
+import { spreadChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
 import {
   DesktopMessageTimeline,
   type DesktopTimelineRowKind,
@@ -127,6 +128,7 @@ function cloneRowForPersistence(
             localFileAttachments: row.localFileAttachments.map((attachment) => ({ ...attachment })),
           }
         : {}),
+      ...spreadChipNavigateMeta(row.chipNavigateMeta),
     };
   }
 
@@ -342,6 +344,7 @@ function hydratePersistedRow(row: PersistedDesktopTimelineRowSnapshot): DesktopT
     ...(row.localFileAttachments?.length
       ? { localFileAttachments: row.localFileAttachments.map((attachment) => ({ ...attachment })) }
       : {}),
+    ...spreadChipNavigateMeta(row.chipNavigateMeta),
     ...(tool ? { tool } : {}),
     ...(aux ? { aux } : {}),
   };

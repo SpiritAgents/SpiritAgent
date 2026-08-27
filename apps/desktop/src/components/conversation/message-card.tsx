@@ -231,6 +231,7 @@ function MessageCardImpl({
   return (
     <div
       id={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
+      data-conversation-message-id={String(message.id)}
       data-spirit-surface="message-row"
       data-spirit-message-role={message.role}
       data-spirit-message-pending={message.pending ? "true" : "false"}

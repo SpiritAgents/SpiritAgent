@@ -8,6 +8,7 @@ import {
   createLeafNode,
   createSinglePaneLayout,
   findLeafByPaneId,
+  findLeafBySessionPath,
   findWorkspaceToolsAnchorPaneId,
   findSessionSidebarAnchorPaneId,
   repositionPane,
@@ -182,6 +183,7 @@ test("repositionPane nests a pane into a target quadrant inside a larger layout"
   assert.equal(countPanes(moved), 4);
   assert.equal(findLeafByPaneId(moved, "d")?.paneId, "d");
   assert.equal(findLeafByPaneId(moved, "a")?.paneId, "a");
+  assert.equal(findLeafBySessionPath(moved, "/sessions/d.json")?.paneId, "d");
 });
 
 test("collectSplitJunctions merges four-pane center into one handle", () => {

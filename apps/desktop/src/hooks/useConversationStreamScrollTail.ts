@@ -33,6 +33,8 @@ export type UseConversationStreamScrollTailResult = {
   pinScrollToTail: (forceStick?: boolean, behavior?: ScrollBehavior) => void;
   /** The user is still following the tail; false means they scrolled up and "back to bottom" can be shown. */
   followingTail: boolean;
+  /** Stop auto-pinning so a programmatic scroll (quote jump) is not pulled back to the tail. */
+  releaseTailFollow: () => void;
 };
 
 function buildStreamContentSig(
@@ -314,5 +316,9 @@ export function useConversationStreamScrollTail({
     return () => observer.disconnect();
   }, [enabled, scrollAreaRef, scrollToTail]);
 
-  return { pinScrollToTail: scrollToTail, followingTail };
+  return {
+    pinScrollToTail: scrollToTail,
+    followingTail,
+    releaseTailFollow: () => setStickToBottom(false),
+  };
 }

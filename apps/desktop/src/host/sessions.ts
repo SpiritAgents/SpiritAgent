@@ -12,6 +12,7 @@ import {
   validateTimelineSnapshotV2,
 } from "./chat-schema.js";
 import type { StoredDesktopSession } from "./contracts.js";
+import { spreadChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
 
 import type {
   ActiveSessionSnapshot,
@@ -304,6 +305,7 @@ export function cloneQueuedUserTurns(queued: readonly QueuedUserTurn[]): QueuedU
     ...(item.localFileAttachments
       ? { localFileAttachments: item.localFileAttachments.map((attachment) => ({ ...attachment })) }
       : {}),
+    ...spreadChipNavigateMeta(item.chipNavigateMeta),
   }));
 }
 

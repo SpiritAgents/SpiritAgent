@@ -57,7 +57,7 @@ export type RichSegment =
   | { kind: "terminalSnippet"; attachment: TerminalSnippetAttachment }
   | { kind: "fileSnippet"; attachment: FileSnippetAttachment }
   | { kind: "messageQuote"; attachment: MessageQuoteAttachment }
-  | { kind: "workspaceFile"; path: string }
+  | { kind: "workspaceFile"; path: string; sourceTabId?: string }
   | { kind: "sessionReference"; path: string; title: string; content?: string }
   | { kind: "loop" }
   | { kind: "plan" }

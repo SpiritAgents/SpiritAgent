@@ -54,6 +54,30 @@ test("writeComposerDraft and readComposerDraft round-trip text attachments and s
   assert.equal(typeof restored.updatedAt, "number");
 });
 
+test("writeComposerDraft preserves host-only chip navigate fields", () => {
+  const storage = createMemoryStorage();
+  const sessionKey = "D:/Spirit/chats/session-nav.json";
+  const segments = [
+    { kind: "text", value: "see " },
+    { kind: "workspaceFile", path: "src/App.tsx", sourceTabId: "tab-files-1" },
+    {
+      kind: "messageQuote",
+      attachment: {
+        id: "quote-1",
+        selectedText: "hello",
+        sessionPath: "/tmp/chats/chat-1.json",
+        messageId: 7,
+        origin: "side-chat",
+      },
+    },
+  ];
+
+  writeComposerDraft(sessionKey, { localFilePaths: [], segments }, storage);
+
+  const restored = readComposerDraft(sessionKey, storage);
+  assert.deepEqual(restored.segments, segments);
+});
+
 test("writeComposerDraft deletes empty drafts", () => {
   const storage = createMemoryStorage();
   const sessionKey = "session-empty";

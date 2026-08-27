@@ -12,6 +12,7 @@ import {
 import type { HostCommandName } from "../src/host/contracts.js";
 
 import i18nHost from "../src/lib/i18n-host.js";
+import { parseChipNavigateMeta } from "../src/lib/composer-chip-navigate-meta.js";
 
 export const DEFAULT_DESKTOP_WEB_HOST = "127.0.0.1";
 export const DEFAULT_DESKTOP_WEB_PORT = 7788;
@@ -771,6 +772,7 @@ async function handleApiRequest({
         ...(Array.isArray(jsonBody?.skillChipAliases)
           ? { skillChipAliases: jsonBody.skillChipAliases }
           : {}),
+        ...optionalChipNavigateMetaFromBody(jsonBody?.chipNavigateMeta),
       }),
     );
     return;
@@ -951,6 +953,7 @@ async function handleApiRequest({
                 ),
               }
             : {}),
+          ...optionalChipNavigateMetaFromBody(jsonBody?.chipNavigateMeta),
         },
       }),
     );
@@ -1771,4 +1774,9 @@ function parseSkillRootKind(value: unknown): "user" | "workspaceSpirit" | "works
     return value;
   }
   return "user";
+}
+
+function optionalChipNavigateMetaFromBody(value: unknown) {
+  const chipNavigateMeta = parseChipNavigateMeta(value);
+  return chipNavigateMeta ? { chipNavigateMeta } : {};
 }

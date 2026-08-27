@@ -36,6 +36,7 @@ export type {
   WorkspaceCapabilityTrustRequest,
 };
 
+import type { ComposerChipNavigateMeta } from "./lib/composer-chip-navigate-meta.js";
 import type { RichSegment } from "./lib/composer-segment-model.js";
 import type { ComposerLocalFileAttachmentView } from "./lib/local-file-attachments.js";
 
@@ -719,6 +720,8 @@ export interface RewindAndSubmitMessageRequest {
   messageId: number;
   text: string;
   localFilePaths?: string[];
+  /** Host-only chip navigation sidecar; never forwarded to the agent. */
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
 }
 
 export interface ForkSessionRequest {
@@ -732,6 +735,8 @@ export interface SubmitUserTurnRequest {
   localFilePaths?: string[];
   referencedWorkspaceFilePaths?: string[];
   skillChipAliases?: string[];
+  /** Host-only chip navigation sidecar; never forwarded to the agent. */
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
   /** Target a loaded split pane session without switching sidebar foreground. */
   sessionPath?: string;
 }
@@ -855,6 +860,8 @@ export interface DesktopSkillListItem {
   scope: DesktopSkillScope;
   rootKind: DesktopSkillRootKind;
   enabled: boolean;
+  /** Absolute SKILL.md path; host-only, used to open the skill file from composer chips. */
+  path: string;
 }
 
 export interface DesktopRuleListItem {
@@ -1580,6 +1587,8 @@ export interface ConversationMessageSnapshot {
   role: "user" | "assistant";
   content: string;
   localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
+  /** Host-only chip navigation sidecar aligned to navigable chips in document order. */
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
   tool?: ToolBlockSnapshot;
   aux?: MessageAuxSnapshot;
   pending: boolean;

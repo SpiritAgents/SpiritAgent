@@ -13,7 +13,7 @@ export type FocusedPaneComposerInsertHandlers = {
   handleGitCommitAddToSession: (attachment: GitCommitAttachment) => void;
   handleTerminalAddToSession: (attachment: TerminalSnippetAttachment) => void;
   handleFileSnippetAddToSession: (attachment: FileSnippetAttachment) => void;
-  handleWorkspaceFileAddToSession: (relativePath: string) => void;
+  handleWorkspaceFileAddToSession: (relativePath: string, sourceTabId?: string) => void;
   handleMessageQuoteAddToSession: (attachment: MessageQuoteAttachment) => void;
 };
 
@@ -45,11 +45,11 @@ export function useFocusedPaneComposerInsertCallbacks(
           getFocusedInsert()?.handleFileSnippetAddToSession ??
           fallback.handleFileSnippetAddToSession
         )(attachment),
-      handleWorkspaceFileAddToSession: (relativePath) =>
+      handleWorkspaceFileAddToSession: (relativePath, sourceTabId) =>
         (
           getFocusedInsert()?.handleWorkspaceFileAddToSession ??
           fallback.handleWorkspaceFileAddToSession
-        )(relativePath),
+        )(relativePath, sourceTabId),
       handleMessageQuoteAddToSession: (attachment) =>
         (
           getFocusedInsert()?.handleMessageQuoteAddToSession ??

@@ -74,13 +74,14 @@ export function ComposerCommandsPlugin({
 
     const unregisterInsertWorkspaceFileAtCaret = editor.registerCommand(
       INSERT_WORKSPACE_FILE_AT_CARET_COMMAND,
-      ({ path }) => {
+      ({ path, sourceTabId }) => {
         editor.focus();
         const current = segmentsRef.current;
         const caret = caretOrEnd();
         const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
           kind: "workspaceFile",
           path: normalizeWorkspaceFilePath(path),
+          ...(sourceTabId ? { sourceTabId } : {}),
         });
         commitSegments(next, nextCaret);
         return true;

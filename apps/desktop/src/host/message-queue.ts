@@ -5,6 +5,8 @@ import type { PendingWorkspaceFile, LlmActiveSkill } from "@spiritagent/agent-co
 
 import i18n from "../lib/i18n-host.js";
 import type { ConversationMessageSnapshot, DesktopSnapshot } from "../types.js";
+import type { ComposerChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
+import { spreadChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
 import { isSessionBundleBusy } from "./direct-media-turn.js";
 import type { SessionBundle } from "./session-bundle.js";
 import type { SessionTurnOrchestratorContext } from "./session-turn-orchestrator.js";
@@ -17,6 +19,7 @@ export interface QueuedUserTurn {
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
   turnSkills?: LlmActiveSkill[];
   localFileAttachments?: ConversationMessageSnapshot["localFileAttachments"];
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
   enqueuedAtUnixMs: number;
 }
 
@@ -57,6 +60,7 @@ export function projectQueuedUserTurnSnapshots(
     ...(item.localFileAttachments?.length
       ? { localFileAttachments: item.localFileAttachments }
       : {}),
+    ...spreadChipNavigateMeta(item.chipNavigateMeta),
   }));
 }
 
@@ -89,6 +93,7 @@ export interface EnqueueUserTurnInput {
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
   turnSkills?: LlmActiveSkill[];
   displayText?: string;
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
 }
 
 export async function enqueueUserTurnCommand(
@@ -125,6 +130,7 @@ export async function enqueueUserTurnCommand(
       ? { explicitWorkspaceFiles: [...explicitWorkspaceFiles], localFileAttachments }
       : {}),
     ...(turnSkills.length > 0 ? { turnSkills: cloneTurnSkills(turnSkills) } : {}),
+    ...spreadChipNavigateMeta(input.chipNavigateMeta),
     enqueuedAtUnixMs: Date.now(),
   };
 

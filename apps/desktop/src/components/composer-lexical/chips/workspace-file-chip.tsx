@@ -1,5 +1,6 @@
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { ChipIcon, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
+import { NavigableChipLabel } from "@/contexts/composer-chip-navigate-context";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import {
   resolveWorkspaceFileChipPresentation,
@@ -10,9 +11,10 @@ import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-size
 
 type WorkspaceFileChipProps = {
   path: string;
+  sourceTabId?: string;
 };
 
-export function WorkspaceFileChip({ path }: WorkspaceFileChipProps) {
+export function WorkspaceFileChip({ path, sourceTabId }: WorkspaceFileChipProps) {
   const normalized = path.replace(/\\/gu, "/");
   const presentation = resolveWorkspaceFileChipPresentation(normalized);
   return (
@@ -30,7 +32,11 @@ export function WorkspaceFileChip({ path }: WorkspaceFileChipProps) {
           colorMode="inherit"
         />
       </ChipIcon>
-      {workspaceFileBasename(normalized)}
+      <NavigableChipLabel
+        target={{ kind: "workspaceFile", path: normalized, ...(sourceTabId ? { sourceTabId } : {}) }}
+      >
+        {workspaceFileBasename(normalized)}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }

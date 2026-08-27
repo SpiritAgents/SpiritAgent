@@ -234,3 +234,37 @@ test("assertChatSchemaVersionV2 and assertNoLegacyConversationFields enforce v2 
   );
   assert.doesNotThrow(() => assertNoLegacyConversationFields({ chatSchemaVersion: 2 }));
 });
+
+test("user row chipNavigateMeta survives persist hydrate and message projection", () => {
+  const chipNavigateMeta = [
+    { kind: "workspaceFile", sourceTabId: "tab-files-1" },
+    {
+      kind: "messageQuote",
+      quoteSessionPath: "/tmp/chats/chat-1.json",
+      quoteMessageId: 7,
+      quoteOrigin: "side-chat",
+    },
+  ];
+  const persisted = normalizeTimelineSnapshotForPersistence([
+    {
+      turnId: 1,
+      createdOrder: 1,
+      userRow: {
+        rowId: "row-user",
+        messageId: 1,
+        turnId: 1,
+        kind: "user",
+        createdOrder: 0,
+        content: "see file",
+        pending: false,
+        chipNavigateMeta,
+      },
+      segments: [],
+    },
+  ]);
+  assert.deepEqual(persisted[0].userRow.chipNavigateMeta, chipNavigateMeta);
+
+  const messages = timelinePersistedSnapshotToMessages(persisted);
+  assert.equal(messages.length, 1);
+  assert.deepEqual(messages[0].chipNavigateMeta, chipNavigateMeta);
+});

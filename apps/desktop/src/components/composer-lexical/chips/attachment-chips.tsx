@@ -7,6 +7,7 @@ import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachmen
 import { MessageCircleMore } from "lucide-react";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { ChipIcon, ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
+import { NavigableChipLabel } from "@/contexts/composer-chip-navigate-context";
 import {
   BROWSER_ELEMENT_CHIP_CLASS,
   BROWSER_ELEMENT_CHIP_ICON_CLASS,
@@ -64,7 +65,15 @@ export function ElementChip({ attachment }: { attachment: BrowserElementAttachme
         <path d="M21.293 8.293a1 1 0 0 1 0 1.414l-1.586 1.586a1 1 0 0 1-1.414 0l-5.586-5.586a1 1 0 0 1 0-1.414l1.586-1.586a1 1 0 0 1 1.414 0z" />
         <circle cx="11" cy="13" r="2" />
       </ChipIconSvg>
-      {`<${attachment.tagName}>`}
+      <NavigableChipLabel
+        target={{
+          kind: "element",
+          pageUrl: attachment.pageUrl,
+          ...(attachment.sourceTabId ? { sourceTabId: attachment.sourceTabId } : {}),
+        }}
+      >
+        {`<${attachment.tagName}>`}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }
@@ -125,7 +134,15 @@ export function PrDiffChip({ attachment }: { attachment: PrDiffAttachment }) {
       <ChipIconSvg className={PR_DIFF_CHIP_ICON_CLASS}>
         {prDiffIconPaths(attachment.status)}
       </ChipIconSvg>
-      {formatPrDiffChipLabel(attachment.filename, attachment.lineStart, attachment.lineEnd)}
+      <NavigableChipLabel
+        target={{
+          kind: "prDiff",
+          prUrl: attachment.prUrl,
+          ...(attachment.sourceTabId ? { sourceTabId: attachment.sourceTabId } : {}),
+        }}
+      >
+        {formatPrDiffChipLabel(attachment.filename, attachment.lineStart, attachment.lineEnd)}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }
@@ -143,7 +160,14 @@ export function GitCommitChip({ attachment }: { attachment: GitCommitAttachment 
         <line x1="1.05" y1="12" x2="7" y2="12" />
         <line x1="17.01" y1="12" x2="22.96" y2="12" />
       </ChipIconSvg>
-      {formatGitCommitChipLabel(attachment.subject)}
+      <NavigableChipLabel
+        target={{
+          kind: "gitCommit",
+          ...(attachment.sourceTabId ? { sourceTabId: attachment.sourceTabId } : {}),
+        }}
+      >
+        {formatGitCommitChipLabel(attachment.subject)}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }
@@ -164,7 +188,14 @@ export function TerminalSnippetChip({ attachment }: { attachment: TerminalSnippe
         <polyline points="4 17 10 11 4 5" />
         <line x1="12" x2="20" y1="19" y2="19" />
       </ChipIconSvg>
-      {formatTerminalChipLabel(attachment.terminalName, attachment.lineStart, attachment.lineEnd)}
+      <NavigableChipLabel
+        target={{
+          kind: "terminalSnippet",
+          ...(attachment.sourceTabId ? { sourceTabId: attachment.sourceTabId } : {}),
+        }}
+      >
+        {formatTerminalChipLabel(attachment.terminalName, attachment.lineStart, attachment.lineEnd)}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }
@@ -189,7 +220,17 @@ export function FileSnippetChip({ attachment }: { attachment: FileSnippetAttachm
           colorMode="inherit"
         />
       </ChipIcon>
-      {formatFileSnippetChipLabel(attachment.filePath, attachment.lineStart, attachment.lineEnd)}
+      <NavigableChipLabel
+        target={{
+          kind: "fileSnippet",
+          filePath: attachment.filePath,
+          lineStart: attachment.lineStart,
+          lineEnd: attachment.lineEnd,
+          ...(attachment.sourceTabId ? { sourceTabId: attachment.sourceTabId } : {}),
+        }}
+      >
+        {formatFileSnippetChipLabel(attachment.filePath, attachment.lineStart, attachment.lineEnd)}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }
@@ -205,7 +246,16 @@ export function MessageQuoteChip({ attachment }: { attachment: MessageQuoteAttac
       <ChipIcon className={MESSAGE_QUOTE_CHIP_ICON_CLASS}>
         <MessageCircleMore className={WORKSPACE_FILE_ICON_CHIP_CLASS} aria-hidden />
       </ChipIcon>
-      {formatMessageQuoteChipLabel(attachment.selectedText)}
+      <NavigableChipLabel
+        target={{
+          kind: "messageQuote",
+          quoteSessionPath: attachment.sessionPath,
+          quoteMessageId: attachment.messageId,
+          quoteOrigin: attachment.origin,
+        }}
+      >
+        {formatMessageQuoteChipLabel(attachment.selectedText)}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }

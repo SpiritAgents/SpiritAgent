@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useRef, type PointerEvent, type MouseEvent, type ReactNode } from "react";
+
+import { pointerMovedBeyondChipNavigateThreshold } from "@/lib/composer-chip-navigation";
 
 import { COMPOSER_CHIP_ICON_SIZE_PX } from "@/lib/composer-inline-chip-styles";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,53 @@ export function ChipShell({
     >
       {children}
       <ChipTrailingSpacer />
+    </span>
+  );
+}
+
+/** Label text only: must stay `inline` (never inline-flex / user-select:none) so chip selection tint stays native. */
+export function ChipLabel({
+  navigable = false,
+  onNavigate,
+  children,
+}: {
+  navigable?: boolean;
+  onNavigate?: () => void;
+  children: ReactNode;
+}) {
+  const pointerOriginRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (event: PointerEvent<HTMLSpanElement>) => {
+    if (!navigable || event.button !== 0) {
+      return;
+    }
+    pointerOriginRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handleClick = (event: MouseEvent<HTMLSpanElement>) => {
+    if (!navigable) {
+      return;
+    }
+    event.stopPropagation();
+    const origin = pointerOriginRef.current;
+    pointerOriginRef.current = null;
+    if (!origin || !onNavigate) {
+      return;
+    }
+    if (pointerMovedBeyondChipNavigateThreshold(origin, { x: event.clientX, y: event.clientY })) {
+      return;
+    }
+    onNavigate();
+  };
+
+  return (
+    <span
+      data-chip-label=""
+      {...(navigable ? { "data-chip-navigable": "" } : {})}
+      onPointerDown={handlePointerDown}
+      onClick={handleClick}
+    >
+      {children}
     </span>
   );
 }

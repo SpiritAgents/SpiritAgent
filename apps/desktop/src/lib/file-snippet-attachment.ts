@@ -7,4 +7,6 @@ export interface FileSnippetAttachment {
   lineEnd: number;
   /** Raw selected file text for the agent. */
   selectedText: string;
+  /** Host-only: workspace tool tab that produced this chip. Never sent to the agent. */
+  sourceTabId?: string;
 }

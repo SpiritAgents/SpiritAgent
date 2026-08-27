@@ -1,6 +1,7 @@
 import { MessageCircle } from "lucide-react";
 
 import { ChipIcon, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
+import { NavigableChipLabel } from "@/contexts/composer-chip-navigate-context";
 import {
   WORKSPACE_FILE_CHIP_CLASS,
   WORKSPACE_FILE_CHIP_ICON_CLASS,
@@ -8,10 +9,11 @@ import {
 import { WORKSPACE_FILE_ICON_CHIP_CLASS } from "@/lib/workspace-file-icon-sizes";
 
 type SessionReferenceChipProps = {
+  path: string;
   title: string;
 };
 
-export function SessionReferenceChip({ title }: SessionReferenceChipProps) {
+export function SessionReferenceChip({ path, title }: SessionReferenceChipProps) {
   const label = title.trim() || "Session";
   return (
     <ChipShell
@@ -23,7 +25,9 @@ export function SessionReferenceChip({ title }: SessionReferenceChipProps) {
       <ChipIcon className={WORKSPACE_FILE_CHIP_ICON_CLASS}>
         <MessageCircle className={WORKSPACE_FILE_ICON_CHIP_CLASS} aria-hidden />
       </ChipIcon>
-      {label}
+      <NavigableChipLabel target={{ kind: "sessionReference", transcriptPath: path }}>
+        {label}
+      </NavigableChipLabel>
     </ChipShell>
   );
 }

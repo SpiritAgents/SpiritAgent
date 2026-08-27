@@ -23,6 +23,7 @@ import {
   createSinglePaneLayout,
   findDuplicateSessionPathLeaves,
   findLeafByPaneId,
+  findLeafBySessionPath,
   findWorkspaceToolsAnchorPaneId,
   findSessionSidebarAnchorPaneId,
   repositionPane,
@@ -44,6 +45,8 @@ import { lookupPaneSessionSlice, resolvePaneDesktopSnapshot } from "@/lib/pane-d
 import { canBeginSideChat } from "@/lib/fork-eligibility";
 import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 
+import { remapComposerDraftQuoteSessionPaths } from "@/lib/composer-draft-store";
+import { recordSessionPathAlias } from "@/lib/session-path-alias";
 import {
   clearSessionSplitBindings,
   persistSessionSplitBinding,
@@ -84,6 +87,12 @@ export type BeginSideChatOptions = {
   messageQuote?: MessageQuoteAttachment;
 };
 
+export type ConversationQuoteScrollHandler = (request: {
+  messageId: number;
+  behavior: ScrollBehavior;
+  nonce: number;
+}) => void;
+
 type ConversationSplitContextValue = {
   layout: SplitLayoutNode | null;
 
@@ -103,6 +112,8 @@ type ConversationSplitContextValue = {
 
   /** Insert a message quote into a Side Chat: prefer reusing the last navigated Side Chat pane that has been left; otherwise create a new one. */
   addMessageQuoteToSideChat: (paneId: string, attachment: MessageQuoteAttachment) => Promise<void>;
+
+  isSideChatPane: (paneId: string) => boolean;
 
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
@@ -158,6 +169,25 @@ type ConversationSplitContextValue = {
 
   completeSidebarSessionDrop: (targetPaneId: string, zone: PaneRepositionZone) => Promise<void>;
 
+  openStoredSessionInSplitPane: (
+    anchorPaneId: string,
+    sessionPath: string,
+    placement?: SplitDirection | PaneRepositionZone,
+    options?: { asSideChat?: boolean },
+  ) => Promise<string | null>;
+
+  registerQuoteScrollHandler: (
+    paneId: string,
+    sessionPath: string,
+    handler: ConversationQuoteScrollHandler | null,
+  ) => void;
+
+  requestQuoteScroll: (input: {
+    sessionPath: string;
+    messageId: number;
+    behavior: ScrollBehavior;
+  }) => void;
+
   layoutNavigationPending: boolean;
 
   registerPaneComposerInsert: (
@@ -183,16 +213,6 @@ function layoutIncludesSessionPath(layout: SplitLayoutNode, sessionPath: string)
   const target = normalizeSessionPathKey(sessionPath);
 
   return collectPaneSessionPaths(layout).some((path) => normalizeSessionPathKey(path) === target);
-}
-
-function findPaneIdBySessionPath(layout: SplitLayoutNode, sessionPath: string): string | null {
-  const target = normalizeSessionPathKey(sessionPath);
-  for (const leaf of collectSplitLayoutLeaves(layout)) {
-    if (normalizeSessionPathKey(leaf.sessionPath) === target) {
-      return leaf.paneId;
-    }
-  }
-  return null;
 }
 
 function splitLayoutHasPromotedSuccessor(
@@ -429,6 +449,17 @@ export function ConversationSplitProvider({
   const sideChatPaneIdsRef = useRef(new Set<string>());
 
   const lastNavigatedSideChatPaneIdRef = useRef<string | null>(null);
+
+  const quoteScrollHandlersRef = useRef(
+    new Map<string, { sessionPath: string; handler: ConversationQuoteScrollHandler }>(),
+  );
+  const pendingQuoteScrollRef = useRef<{
+    sessionPath: string;
+    messageId: number;
+    behavior: ScrollBehavior;
+    nonce: number;
+  } | null>(null);
+  const quoteScrollNonceRef = useRef(0);
 
   const registerPaneComposerInsert = useCallback(
     (paneId: string, handlers: FocusedPaneComposerInsertHandlers | null) => {
@@ -843,14 +874,18 @@ export function ConversationSplitProvider({
 
     for (const repoint of repoints) {
       remapSessionSplitBindingPath(repoint.fromPath, repoint.toPath);
+      recordSessionPathAlias(repoint.fromPath, repoint.toPath);
+      remapComposerDraftQuoteSessionPaths(repoint.fromPath, repoint.toPath);
     }
+
+    runtime.reapplySessionPathAliases();
 
     setLayout(nextLayout);
 
     persistSessionSplitBinding(nextLayout);
 
     void syncVisiblePaths(nextLayout);
-  }, [focusedPaneId, layout, snapshot, syncVisiblePaths]);
+  }, [focusedPaneId, layout, runtime, snapshot, syncVisiblePaths]);
 
   const focusPane = useCallback(
     (paneId: string, sessionPath: string) => {
@@ -1293,6 +1328,107 @@ export function ConversationSplitProvider({
     setPaneDropTarget(null);
   }, [setPaneDropTarget]);
 
+  const flushPendingQuoteScroll = useCallback((paneId: string, sessionPath: string) => {
+    const pending = pendingQuoteScrollRef.current;
+    if (!pending) {
+      return;
+    }
+    if (normalizeSessionPathKey(pending.sessionPath) !== normalizeSessionPathKey(sessionPath)) {
+      return;
+    }
+    const registered = quoteScrollHandlersRef.current.get(paneId);
+    if (!registered) {
+      return;
+    }
+    pendingQuoteScrollRef.current = null;
+    registered.handler({
+      messageId: pending.messageId,
+      behavior: pending.behavior,
+      nonce: pending.nonce,
+    });
+  }, []);
+
+  const registerQuoteScrollHandler = useCallback(
+    (paneId: string, sessionPath: string, handler: ConversationQuoteScrollHandler | null) => {
+      if (!handler) {
+        quoteScrollHandlersRef.current.delete(paneId);
+        return;
+      }
+      quoteScrollHandlersRef.current.set(paneId, { sessionPath, handler });
+      flushPendingQuoteScroll(paneId, sessionPath);
+    },
+    [flushPendingQuoteScroll],
+  );
+
+  const requestQuoteScroll = useCallback(
+    (input: { sessionPath: string; messageId: number; behavior: ScrollBehavior }) => {
+      const nonce = quoteScrollNonceRef.current + 1;
+      quoteScrollNonceRef.current = nonce;
+      pendingQuoteScrollRef.current = { ...input, nonce };
+      const leaf = layoutRef.current
+        ? findLeafBySessionPath(layoutRef.current, input.sessionPath)
+        : undefined;
+      if (!leaf) {
+        return;
+      }
+      flushPendingQuoteScroll(leaf.paneId, leaf.sessionPath);
+    },
+    [flushPendingQuoteScroll],
+  );
+
+  const openStoredSessionInSplitPane = useCallback(
+    async (
+      anchorPaneId: string,
+      sessionPath: string,
+      placement: SplitDirection | PaneRepositionZone = "horizontal",
+      options?: { asSideChat?: boolean },
+    ): Promise<string | null> => {
+      const layoutBefore = layoutRef.current;
+      if (!layoutBefore || !runtime.apiReady) {
+        return null;
+      }
+      if (!findLeafByPaneId(layoutBefore, anchorPaneId)) {
+        return null;
+      }
+
+      const existingLeaf = findLeafBySessionPath(layoutBefore, sessionPath);
+      if (existingLeaf) {
+        focusPane(existingLeaf.paneId, existingLeaf.sessionPath);
+        return existingLeaf.paneId;
+      }
+
+      onEnsureConversationSurface?.();
+      layoutNavigationLockRef.current = true;
+      setLayoutNavigationPending(true);
+      try {
+        const newPaneId = createPaneId();
+        const layoutForSplit = layoutRef.current;
+        if (!layoutForSplit || !findLeafByPaneId(layoutForSplit, anchorPaneId)) {
+          return null;
+        }
+        const newLeaf = createLeafNode(newPaneId, sessionPath);
+        const nextLayout =
+          placement === "horizontal" || placement === "vertical"
+            ? splitPaneAt(layoutForSplit, anchorPaneId, placement, newLeaf)
+            : splitPaneAtZone(layoutForSplit, anchorPaneId, placement, newLeaf);
+        const paths = collectPaneSessionPaths(nextLayout);
+        visiblePathsSyncedRef.current = paths.join("\0");
+        await runtime.syncSplitPaneSessions(paths, sessionPath);
+        if (options?.asSideChat) {
+          sideChatPaneIdsRef.current.add(newPaneId);
+        }
+        setLayout(nextLayout);
+        setFocusedPaneId(newPaneId);
+        persistSessionSplitBinding(nextLayout);
+        return newPaneId;
+      } finally {
+        layoutNavigationLockRef.current = false;
+        setLayoutNavigationPending(false);
+      }
+    },
+    [focusPane, onEnsureConversationSurface, runtime],
+  );
+
   const completeSidebarSessionDrop = useCallback(
     async (targetPaneId: string, zone: PaneRepositionZone) => {
       const payload = sidebarSessionDragPayload;
@@ -1309,11 +1445,8 @@ export function ConversationSplitProvider({
       onEnsureConversationSurface?.();
 
       if (payload.kind === "stored") {
-        const existingPaneId = findPaneIdBySessionPath(layoutBeforeDrop, payload.sessionPath);
-        if (existingPaneId) {
-          focusPane(existingPaneId, payload.sessionPath);
-          return;
-        }
+        await openStoredSessionInSplitPane(targetPaneId, payload.sessionPath, zone);
+        return;
       }
 
       layoutNavigationLockRef.current = true;
@@ -1321,30 +1454,24 @@ export function ConversationSplitProvider({
 
       try {
         const newPaneId = createPaneId();
-        let newSessionPath: string;
-
-        if (payload.kind === "stored") {
-          newSessionPath = payload.sessionPath;
-        } else {
-          if (payload.kind === "new-in-workspace") {
-            const trimmed = payload.workspaceRoot.trim();
-            if (trimmed) {
-              const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
-              const needsSwitch =
-                snapshot?.workspaceBinding !== "project" ||
-                !currentRoot ||
-                !sameWorkspacePath(currentRoot, trimmed);
-              if (needsSwitch) {
-                const switched = await runtime.switchWorkspaceRoot(trimmed);
-                if (!switched) {
-                  return;
-                }
+        if (payload.kind === "new-in-workspace") {
+          const trimmed = payload.workspaceRoot.trim();
+          if (trimmed) {
+            const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
+            const needsSwitch =
+              snapshot?.workspaceBinding !== "project" ||
+              !currentRoot ||
+              !sameWorkspacePath(currentRoot, trimmed);
+            if (needsSwitch) {
+              const switched = await runtime.switchWorkspaceRoot(trimmed);
+              if (!switched) {
+                return;
               }
             }
           }
-          const response = await runtime.beginSplitPaneSession(newPaneId, { deferSnapshot: true });
-          newSessionPath = response.sessionPath;
         }
+        const response = await runtime.beginSplitPaneSession(newPaneId, { deferSnapshot: true });
+        const newSessionPath = response.sessionPath;
 
         const layoutForSplit = layoutRef.current;
         if (!layoutForSplit || !findLeafByPaneId(layoutForSplit, targetPaneId)) {
@@ -1367,8 +1494,8 @@ export function ConversationSplitProvider({
     },
     [
       clearSidebarSessionDrag,
-      focusPane,
       onEnsureConversationSurface,
+      openStoredSessionInSplitPane,
       runtime,
       sidebarSessionDragPayload,
       snapshot?.workspaceBinding,
@@ -1378,6 +1505,10 @@ export function ConversationSplitProvider({
 
   const paneCount = layout ? countPanes(layout) : 0;
   useDarwinConversationSplitChrome(paneCount);
+
+  const isSideChatPane = useCallback((paneId: string) => {
+    return sideChatPaneIdsRef.current.has(paneId);
+  }, []);
 
   const value = useMemo<ConversationSplitContextValue>(
     () => ({
@@ -1398,6 +1529,8 @@ export function ConversationSplitProvider({
       beginSideChat,
 
       addMessageQuoteToSideChat,
+
+      isSideChatPane,
 
       closePaneById,
 
@@ -1443,6 +1576,12 @@ export function ConversationSplitProvider({
 
       completeSidebarSessionDrop,
 
+      openStoredSessionInSplitPane,
+
+      registerQuoteScrollHandler,
+
+      requestQuoteScroll,
+
       layoutNavigationPending,
 
       registerPaneComposerInsert,
@@ -1468,6 +1607,12 @@ export function ConversationSplitProvider({
       completePaneDrop,
 
       completeSidebarSessionDrop,
+
+      openStoredSessionInSplitPane,
+
+      registerQuoteScrollHandler,
+
+      requestQuoteScroll,
 
       focusPane,
 
@@ -1496,6 +1641,8 @@ export function ConversationSplitProvider({
       beginSideChat,
 
       addMessageQuoteToSideChat,
+
+      isSideChatPane,
 
       startPaneDrag,
 

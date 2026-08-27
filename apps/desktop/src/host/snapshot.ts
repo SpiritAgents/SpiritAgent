@@ -147,6 +147,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
       scope: entry.source.scope,
       rootKind: entry.source.rootKind,
       enabled: entry.enabled,
+      path: entry.source.path,
     })),
     extensionsList: input.extensionsList.map((item) => ({ ...item })),
     extensionCss: input.extensionCss.map((entry) => ({ ...entry })),

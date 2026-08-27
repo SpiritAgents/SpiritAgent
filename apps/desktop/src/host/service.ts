@@ -1867,18 +1867,20 @@ class DesktopHostService {
             text: hydratedText,
             explicitWorkspaceFiles,
             turnSkills,
+            chipNavigateMeta: request.chipNavigateMeta,
           });
         } else if (bundle.messages.length === 0 && bundle.workLocation === "worktree") {
           snapshot = await startWorktreeBootstrapTurnCommand(
             this.sessionTurnContext(),
             this.worktreeBootstrapHost(),
             hydratedText,
-            { explicitWorkspaceFiles, turnSkills },
+            { explicitWorkspaceFiles, turnSkills, chipNavigateMeta: request.chipNavigateMeta },
           );
         } else {
           snapshot = await this.submitUserTurnAfterInitialized(hydratedText, {
             explicitWorkspaceFiles,
             turnSkills,
+            chipNavigateMeta: request.chipNavigateMeta,
           });
         }
 
@@ -2102,6 +2104,7 @@ class DesktopHostService {
         explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(
           request.localFilePaths,
         ),
+        chipNavigateMeta: request.chipNavigateMeta,
       });
     });
   }

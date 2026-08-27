@@ -128,6 +128,29 @@ test("cloneQueuedUserTurns deep-copies queue payload", () => {
   assert.equal(source[0].explicitWorkspaceFiles[0].path, "/tmp/a.png");
 });
 
+test("queued user turns clone and project chipNavigateMeta", () => {
+  const chipNavigateMeta = [
+    { kind: "terminalSnippet", sourceTabId: "tab-term-1" },
+    { kind: "messageQuote", quoteMessageId: 3, quoteOrigin: "session" },
+  ];
+  const source = [
+    {
+      ...queuedItem("a", 1, "one"),
+      chipNavigateMeta,
+    },
+  ];
+  const cloned = cloneQueuedUserTurns(source);
+  assert.notEqual(cloned[0].chipNavigateMeta, source[0].chipNavigateMeta);
+  cloned[0].chipNavigateMeta[0].sourceTabId = "mutated";
+  assert.equal(source[0].chipNavigateMeta[0].sourceTabId, "tab-term-1");
+
+  const snapshots = projectQueuedUserTurnSnapshots(cloned);
+  assert.deepEqual(snapshots[0].chipNavigateMeta, [
+    { kind: "terminalSnippet", sourceTabId: "mutated" },
+    { kind: "messageQuote", quoteMessageId: 3, quoteOrigin: "session" },
+  ]);
+});
+
 test("shift then unshift restores queue head after failed dequeue", () => {
   const bundle = createBundle({
     queuedUserTurns: [queuedItem("a", 1, "one"), queuedItem("b", 2, "two")],

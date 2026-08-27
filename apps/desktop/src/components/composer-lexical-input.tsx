@@ -386,7 +386,7 @@ export type ComposerRichInputHandle = {
     query: ActiveWorkspaceFileReferenceQuery,
     finalize?: boolean,
   ): void;
-  insertWorkspaceFileAtCaret(path: string): void;
+  insertWorkspaceFileAtCaret(path: string, sourceTabId?: string): void;
   insertLoopChip(options?: InsertLoopChipOptions): void;
   removeLoopChip(): void;
   insertPlanChip(options?: InsertAgentModeChipOptions): void;
@@ -751,8 +751,8 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     );
 
     const insertWorkspaceFileAtCaret = useCallback(
-      (path: string) => {
-        editor.dispatchCommand(INSERT_WORKSPACE_FILE_AT_CARET_COMMAND, { path });
+      (path: string, sourceTabId?: string) => {
+        editor.dispatchCommand(INSERT_WORKSPACE_FILE_AT_CARET_COMMAND, { path, sourceTabId });
       },
       [editor],
     );

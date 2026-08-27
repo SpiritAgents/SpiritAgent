@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
   CSSProperties,
@@ -30,6 +30,7 @@ import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
+import { isSideChatPaneProvisionalSessionPath } from "@/lib/session-path-kind";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
@@ -312,6 +313,12 @@ export function ConversationView({
     },
     [paneId, split],
   );
+  const quoteSessionPath = composerDock.paneSessionPath ?? snapshot?.activeSession?.filePath;
+  const quoteOrigin =
+    (paneId && split.isSideChatPane(paneId)) ||
+    (quoteSessionPath ? isSideChatPaneProvisionalSessionPath(quoteSessionPath) : false)
+      ? "side-chat"
+      : "session";
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   // translucency: ScrollArea stays full height; the shape mask clips to the input/Changes/TODO
@@ -340,7 +347,7 @@ export function ConversationView({
     streaming: snapshot?.conversation.isBusy === true,
   });
 
-  const { pinScrollToTail, followingTail } = useConversationStreamScrollTail({
+  const { pinScrollToTail, followingTail, releaseTailFollow } = useConversationStreamScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
     messages: list.messages,
     pendingAuxState: list.conversationPendingAuxState,
@@ -348,6 +355,20 @@ export function ConversationView({
     scrollBedPaddingPx: conversationScrollBedPaddingPx,
     enabled: conversationMessagesVisible,
   });
+  const [quoteScrollRequest, setQuoteScrollRequest] = useState<{
+    messageId: number;
+    behavior: ScrollBehavior;
+    nonce: number;
+  } | null>(null);
+  const quoteSessionPathForScroll =
+    composerDock.paneSessionPath ?? snapshot?.activeSession?.filePath ?? "";
+  useEffect(() => {
+    if (!paneId) {
+      return;
+    }
+    split.registerQuoteScrollHandler(paneId, quoteSessionPathForScroll, setQuoteScrollRequest);
+    return () => split.registerQuoteScrollHandler(paneId, quoteSessionPathForScroll, null);
+  }, [paneId, quoteSessionPathForScroll, split]);
 
   const dropOverlayActive = Boolean(
     paneId && paneDropOverlayActive && (onPaneDrop || onSidebarSessionDrop),
@@ -622,6 +643,9 @@ export function ConversationView({
                     conversationRenderItems={list.conversationRenderItems}
                     getScrollElement={getConversationScrollElement}
                     pinScrollToTail={pinScrollToTail}
+                    releaseTailFollow={releaseTailFollow}
+                    quoteScrollRequest={quoteScrollRequest}
+                    onQuoteScrollHandled={() => setQuoteScrollRequest(null)}
                     subagentViewActive={subagentViewActive}
                     composerSessionKey={list.composerSessionKey}
                     conversationListScopeKey={list.conversationListScopeKey}
@@ -664,6 +688,8 @@ export function ConversationView({
 
             <ConversationMessageSelectionMenu
               rootRef={conversationScrollBodyRef}
+              quoteSessionPath={quoteSessionPath}
+              quoteOrigin={quoteOrigin}
               onMessageQuoteAddToSession={composerDock.onMessageQuoteAddToSession}
               onMessageQuoteAddToSideChat={
                 showSideChat && paneId ? handleMessageQuoteAddToSideChat : undefined
