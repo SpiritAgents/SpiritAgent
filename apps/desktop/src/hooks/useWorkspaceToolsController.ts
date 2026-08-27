@@ -350,6 +350,9 @@ export function useWorkspaceToolsController({
         if (tab?.kind === "pr") {
           setWorkspaceToolsOpen(true);
           setActiveWorkspaceToolTabId(preferTabId);
+          setWorkspacePrRevealTargetId(preferTabId);
+          setWorkspacePrRevealRequest(request);
+          setWorkspacePrRevealNonce((value) => value + 1);
           return;
         }
       }
