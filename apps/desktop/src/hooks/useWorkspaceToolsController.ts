@@ -315,6 +315,11 @@ export function useWorkspaceToolsController({
         const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, preferTabId);
         if (tab?.kind === "browser") {
           setWorkspaceToolsOpen(true);
+          setWorkspaceToolTabs(
+            workspaceToolTabsRef.current.map((item) =>
+              item.id === preferTabId ? { ...item, browserUrl: url } : item,
+            ),
+          );
           setActiveWorkspaceToolTabId(preferTabId);
           return;
         }
