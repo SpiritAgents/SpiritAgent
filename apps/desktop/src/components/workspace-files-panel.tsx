@@ -36,6 +36,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHostApi } from "@/hooks/useHostApi";
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
+import { prefersReducedMotion } from "@/lib/reduce-motion";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import {
   collapseWorkspaceExplorerDirChain,
@@ -1090,7 +1091,7 @@ export function WorkspaceFilesPanel({
     if (open) {
       createTooltipOpenKindsRef.current.add(kind);
       setCreateTooltipAnchorLocked(true);
-    } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    } else if (prefersReducedMotion()) {
       createTooltipOpenKindsRef.current.delete(kind);
       if (createTooltipOpenKindsRef.current.size === 0) {
         setCreateTooltipAnchorLocked(false);

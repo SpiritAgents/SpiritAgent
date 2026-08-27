@@ -17,6 +17,11 @@ import {
 import { applyDesktopNativeChromeToDocument } from "./lib/desktop-shell";
 import { applyFontToDocument, getStoredFont } from "./lib/font";
 import { applyFontSmoothingToDocument, getStoredFontSmoothing } from "./lib/font-smoothing";
+import {
+  applyReduceMotionToDocument,
+  getStoredReduceMotion,
+  startReduceMotionSystemListener,
+} from "./lib/reduce-motion";
 import { applyThemeToDocument, getStoredTheme } from "./lib/theme";
 import {
   DEFAULT_UI_LAYOUT_SCALE,
@@ -34,6 +39,8 @@ if (typeof document !== "undefined") {
   applyFontToDocument(getStoredFont());
   applyFontSmoothingToDocument(getStoredFontSmoothing());
   applyClickablePointerCursorToDocument(getStoredClickablePointerCursor());
+  applyReduceMotionToDocument(getStoredReduceMotion());
+  startReduceMotionSystemListener();
   const initialUiLayoutScale = getStoredUiLayoutScale();
   if (initialUiLayoutScale !== DEFAULT_UI_LAYOUT_SCALE) {
     document.documentElement.style.setProperty(

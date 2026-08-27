@@ -80,6 +80,7 @@ import { applyWorkspaceGroupOrder, workspaceGroupIdsInOrder } from "@/lib/worksp
 import { useWorkspaceGroupReorder } from "@/hooks/use-workspace-group-reorder";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
+import { prefersReducedMotion } from "@/lib/reduce-motion";
 import { isViteDev } from "@/lib/vite-dev";
 import { cn } from "@/lib/utils";
 import { SettingsShortcutKbd } from "@/components/layout/desktop-shortcut-kbds";
@@ -522,7 +523,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
               onOpenChange={(open) => {
                 if (open) {
                   setPlusTooltipAnchorLocked(true);
-                } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                } else if (prefersReducedMotion()) {
                   setPlusTooltipAnchorLocked(false);
                 }
               }}

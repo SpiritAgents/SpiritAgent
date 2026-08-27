@@ -14,6 +14,7 @@ import {
   workspaceToolsShellWidthExpression,
   workspaceToolsShellWidthWhenOpen,
 } from "@/lib/layout-prefs";
+import { prefersReducedMotion } from "@/lib/reduce-motion";
 
 /** Matches the SessionSidebarShell / legacy right-panel open/close animation */
 const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION = "width 300ms cubic-bezier(0.22, 1, 0.36, 1)";
@@ -60,7 +61,7 @@ function applyWorkspaceToolsShellWidthImmediate(nextOpen: boolean): void {
   }
 
   // Only open/close uses the width transition; when viewport scaling changes the ratio, the React side keeps no transition to avoid lagging behind window dragging.
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduceMotion = prefersReducedMotion();
   shell.style.transition = reduceMotion ? "none" : WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION;
   shell.style.width = workspaceToolsShellWidthWhenOpen(nextOpen, widthPx);
   const split = shell.querySelector("[data-workspace-tools-split]");
