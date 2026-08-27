@@ -79,9 +79,11 @@ test("AgentsSettingsPanel includes LSP section label and Attribution rows", asyn
   assert.match(source, /settings-pr-attribution/);
 });
 
-test("AppearanceSettingsPanel groups Theme and Typography without UI locale", async () => {
+test("AppearanceSettingsPanel groups Theme, Motion, and Typography without UI locale", async () => {
   const source = await readFile(join(srcRoot, "panels/appearance-settings-panel.tsx"), "utf8");
   assert.doesNotMatch(source, /settings\.themeSection/);
+  assert.match(source, /settings\.motionSection/);
+  assert.match(source, /settings\.reduceMotion/);
   assert.match(source, /settings\.typographySection/);
   assert.match(source, /settings\.clickablePointerCursor/);
   assert.match(source, /settings\.fontSmoothing/);
