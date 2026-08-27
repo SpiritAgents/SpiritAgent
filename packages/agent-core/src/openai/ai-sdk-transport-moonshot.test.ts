@@ -3,12 +3,6 @@ import { test } from "vitest";
 
 import { setLlmFetchTransportOverrideForTests } from "../llm-fetch.js";
 import { applyCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
-import {
-  clearMoonshotChatCompletionMessages,
-  openAiMessagesContainVideoUrl,
-  peekMoonshotChatCompletionMessages,
-  stashMoonshotChatCompletionMessages,
-} from "./moonshot-chat-completion-messages.js";
 import { AiSdkOpenAiCompatibleTransport } from "./ai-sdk-transport.js";
 
 test("Moonshot official provider fetch sends kimi-k3 reasoning_effort without thinking", async () => {
@@ -50,20 +44,7 @@ test("Moonshot official provider fetch sends kimi-k3 reasoning_effort without th
   }
 });
 
-test("Moonshot official provider fetch restores stashed video messages and reasoning_effort", async () => {
-  const requestMessages = [
-    {
-      role: "user",
-      content: [
-        { type: "text", text: "describe the video" },
-        { type: "video_url", video_url: { url: "ms://file-abc" } },
-      ],
-    },
-  ];
-  assert.equal(openAiMessagesContainVideoUrl(requestMessages), true);
-  stashMoonshotChatCompletionMessages(requestMessages);
-  assert.ok(peekMoonshotChatCompletionMessages());
-
+test("Moonshot official provider fetch sends native video_url and reasoning_effort", async () => {
   const capturedBodies: Record<string, unknown>[] = [];
   setLlmFetchTransportOverrideForTests(async (_input, init) => {
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -87,8 +68,20 @@ test("Moonshot official provider fetch restores stashed video messages and reaso
         llmVendor: "moonshot-ai",
         reasoningEffort: "low",
         workspaceRoot: process.cwd(),
+        modelCapabilities: { videoInput: true },
       },
-      { messages: [{ role: "user", content: "describe the video" }], steps: 0 },
+      {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "describe the video" },
+              { type: "video_url", video_url: { url: "ms://file-abc" } },
+            ],
+          },
+        ],
+        steps: 0,
+      },
       [],
     );
 
@@ -98,10 +91,15 @@ test("Moonshot official provider fetch restores stashed video messages and reaso
     );
     assert.ok(chatCompletionBody);
     assert.equal(chatCompletionBody.reasoning_effort, "low");
-    assert.deepEqual(chatCompletionBody.messages, requestMessages);
+    const messages = chatCompletionBody.messages as Array<{
+      content: Array<{ type: string; video_url?: { url: string } }>;
+    }>;
+    const videoPart = messages
+      .flatMap((message) => (Array.isArray(message.content) ? message.content : []))
+      .find((part) => part.type === "video_url");
+    assert.equal(videoPart?.video_url?.url, "ms://file-abc");
   } finally {
     setLlmFetchTransportOverrideForTests(undefined);
-    clearMoonshotChatCompletionMessages();
   }
 });
 
