@@ -39,7 +39,7 @@
   "devDependencies": {
     "oxfmt": "^0.62.0",
     "oxlint": "^1.77.0",
-    "turbo": "2.10.11"
+    "turbo": "2.10.12"
   },
   "engines": {
     "node": ">=24"
