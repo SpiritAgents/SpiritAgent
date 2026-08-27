@@ -22,11 +22,11 @@ import {
 export function llmHistoryToOpenAiMessages(
   history: LlmMessage[],
   assetRoot = process.cwd(),
-): JsonValue[] {
+): JsonObject[] {
   return history.map((message) => llmMessageToOpenAiMessage(message, assetRoot));
 }
 
-export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonValue {
+export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonObject {
   if (
     message.role === "assistant" &&
     Array.isArray(message.toolCalls) &&
