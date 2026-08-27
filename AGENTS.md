@@ -5,6 +5,20 @@
 - Capability and host boundary: `.github/instructions/agent-core-host-boundary.instructions.md`
 - Rust CLI: `.github/instructions/cli-rust.instructions.md`
 
+## Branch Names
+
+- When the change is scoped to a **single** app or package, the branch name **must** be `{type}/{scope}/{description}` (three slash-separated segments).
+- Do **not** write `{type}/{scope}-{description}` (hyphen joining scope and description).
+- `type`: Conventional Commits type (`feat`, `fix`, `refactor`, `style`, `chore`, `ci`, …).
+- `scope`: the app or package (`desktop`, `cli`, `site`, `agent-core`, …), matching commit `scope`.
+- `description`: short kebab-case summary.
+
+✅ `fix/desktop/align-message-bubble-chips`
+
+❌ `fix/desktop-align-message-bubble-chips`
+
+Cross-cutting changes that touch multiple apps or packages omit the scope segment: `{type}/{description}`.
+
 ## Commit Messages
 
 - Conventional Commits: `type` and optional `scope` are in English; **subject and body must be in English** (except code identifiers, paths, API names, etc.).

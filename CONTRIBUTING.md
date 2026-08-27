@@ -71,6 +71,20 @@ See [README.md — Development](README.md#development) and each app/package READ
 3. Aim for cross-platform compatibility (Windows, macOS, Linux), including conditional compilation where needed
 4. Spirit is in active early development — when changing config or persistence formats, prefer direct, evolvable structures over heavy compatibility shims; if a change is breaking, explain the rationale and migration path in your PR
 
+## Branch names
+
+When the change is scoped to a **single** app or package, use `{type}/{scope}/{description}` (three slash-separated segments). Do **not** write `{type}/{scope}-{description}`.
+
+- `type`: Conventional Commits type (`feat`, `fix`, `refactor`, `style`, `chore`, `ci`, …)
+- `scope`: the app or package (`desktop`, `cli`, `site`, `agent-core`, …), matching commit `scope`
+- `description`: short kebab-case summary
+
+✅ `fix/desktop/align-message-bubble-chips`
+
+❌ `fix/desktop-align-message-bubble-chips`
+
+Cross-cutting changes that touch multiple apps or packages omit the scope segment: `{type}/{description}`.
+
 ## Commit messages
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/):
