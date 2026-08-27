@@ -1,5 +1,6 @@
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import {
+  COMPOSER_CHIP_ICON_SIZE_PX,
   COMPOSER_INLINE_CHIP_CLASS,
   COMPOSER_INLINE_CHIP_ICON_CLASS,
 } from "@/lib/composer-inline-chip-styles";
@@ -20,8 +21,8 @@ export function makeChipNode(a: BrowserElementAttachment, doc: Document): HTMLEl
   span.className = BROWSER_ELEMENT_CHIP_CLASS;
   const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
   icon.setAttribute("viewBox", "0 0 24 24");
-  icon.setAttribute("width", "10");
-  icon.setAttribute("height", "10");
+  icon.setAttribute("width", String(COMPOSER_CHIP_ICON_SIZE_PX));
+  icon.setAttribute("height", String(COMPOSER_CHIP_ICON_SIZE_PX));
   icon.setAttribute("fill", "none");
   icon.setAttribute("stroke", "currentColor");
   icon.setAttribute("stroke-width", "2");

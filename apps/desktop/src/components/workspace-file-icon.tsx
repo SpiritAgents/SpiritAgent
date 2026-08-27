@@ -2,6 +2,7 @@ import { workspaceFileBasename } from "@/lib/file-picker-path";
 import { workspaceDirectoryIconClassName } from "@/lib/workspace-directory-icon";
 import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 import {
+  WORKSPACE_FILE_ICON_CHIP_CLASS,
   WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
   WORKSPACE_FILE_ICON_LIST_CLASS,
   type WorkspaceFileIconColorMode,
@@ -25,7 +26,7 @@ export function workspaceFileIconClassName(
   className?: string,
 ): string {
   if (colorMode === "inherit") {
-    return cn("size-[10px] shrink-0", className);
+    return cn(WORKSPACE_FILE_ICON_CHIP_CLASS, className);
   }
   return cn(WORKSPACE_FILE_ICON_LIST_CLASS, className);
 }

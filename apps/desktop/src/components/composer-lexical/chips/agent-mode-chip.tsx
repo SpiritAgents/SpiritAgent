@@ -1,6 +1,7 @@
 import { Bug, MessageCircleQuestionMark } from "lucide-react";
 
 import { ASK_CHIP_CLASS } from "@/lib/ask-chip-styles";
+import { COMPOSER_PILL_CHIP_ICON_SIZE_PX } from "@/lib/composer-inline-chip-styles";
 import { DEBUG_CHIP_CLASS } from "@/lib/debug-chip-styles";
 import { PLAN_CHIP_CLASS } from "@/lib/plan-chip-styles";
 import { ChipIcon, ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
@@ -24,7 +25,7 @@ const DEFAULT_LABEL = {
 
 function PlanIcon() {
   return (
-    <ChipIconSvg>
+    <ChipIconSvg size={COMPOSER_PILL_CHIP_ICON_SIZE_PX}>
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
       <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z" />
       <path d="M8 12h8" />
@@ -37,7 +38,7 @@ function PlanIcon() {
 function AskIcon() {
   return (
     <ChipIcon>
-      <MessageCircleQuestionMark size={10} aria-hidden />
+      <MessageCircleQuestionMark size={COMPOSER_PILL_CHIP_ICON_SIZE_PX} aria-hidden />
     </ChipIcon>
   );
 }
@@ -45,7 +46,7 @@ function AskIcon() {
 function DebugIcon() {
   return (
     <ChipIcon>
-      <Bug size={10} aria-hidden />
+      <Bug size={COMPOSER_PILL_CHIP_ICON_SIZE_PX} aria-hidden />
     </ChipIcon>
   );
 }

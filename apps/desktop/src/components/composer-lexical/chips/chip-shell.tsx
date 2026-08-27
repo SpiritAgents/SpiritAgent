@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { COMPOSER_CHIP_ICON_SIZE_PX } from "@/lib/composer-inline-chip-styles";
 import { cn } from "@/lib/utils";
 
 type ChipShellProps = {
@@ -158,13 +159,21 @@ export function ChipIcon({ className, children }: { className?: string; children
   );
 }
 
-export function ChipIconSvg({ className, children }: { className?: string; children: ReactNode }) {
+export function ChipIconSvg({
+  className,
+  children,
+  size = COMPOSER_CHIP_ICON_SIZE_PX,
+}: {
+  className?: string;
+  children: ReactNode;
+  size?: number;
+}) {
   return (
     <ChipIcon className={className}>
       <svg
         viewBox="0 0 24 24"
-        width={10}
-        height={10}
+        width={size}
+        height={size}
         fill="none"
         stroke="currentColor"
         strokeWidth={2}

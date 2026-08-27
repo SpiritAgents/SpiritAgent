@@ -64,7 +64,10 @@ import {
 } from "@/lib/workspace-file-chip-styles";
 import { SKILL_CHIP_CLASS } from "@/lib/skill-chip-styles";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
-import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
+import {
+  WORKSPACE_FILE_ICON_CHIP_CLASS,
+  WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
+} from "@/lib/workspace-file-icon-sizes";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
@@ -72,7 +75,7 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
   return (
     <span title={url} className={MESSAGE_BUBBLE_CHIP_CLASS}>
       <PenTool
-        className={cn("size-[10px] shrink-0", BROWSER_ELEMENT_CHIP_ICON_CLASS)}
+        className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, BROWSER_ELEMENT_CHIP_ICON_CLASS)}
         aria-hidden
       />
       {`<${tagName}>`}
@@ -102,7 +105,7 @@ function SessionReferenceCard({ path, title }: { path: string; title: string }) 
   return (
     <span title={path} className={MESSAGE_BUBBLE_CHIP_CLASS} aria-label={label}>
       <MessageCircle
-        className={cn("size-3.5 shrink-0", WORKSPACE_FILE_CHIP_ICON_CLASS)}
+        className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, WORKSPACE_FILE_CHIP_ICON_CLASS)}
         aria-hidden
       />
       {label}
@@ -147,7 +150,7 @@ function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDif
       })}
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
-      <Icon className={cn("size-[10px] shrink-0", PR_DIFF_CHIP_ICON_CLASS)} aria-hidden />
+      <Icon className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, PR_DIFF_CHIP_ICON_CLASS)} aria-hidden />
       {formatPrDiffChipLabel(part.filename, part.lineStart, part.lineEnd)}
     </span>
   );
@@ -169,7 +172,10 @@ function TerminalCard({
       })}
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
-      <Terminal className={cn("size-[10px] shrink-0", TERMINAL_CHIP_ICON_CLASS)} aria-hidden />
+      <Terminal
+        className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, TERMINAL_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
       {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
     </span>
   );
@@ -187,7 +193,10 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
       })}
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
-      <FileText className={cn("size-[10px] shrink-0", FILE_SNIPPET_CHIP_ICON_CLASS)} aria-hidden />
+      <FileText
+        className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, FILE_SNIPPET_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
       {formatFileSnippetChipLabel(part.filePath, part.lineStart, part.lineEnd)}
     </span>
   );
@@ -204,7 +213,7 @@ function MessageQuoteCard({
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <MessageCircleMore
-        className={cn("size-[10px] shrink-0", MESSAGE_QUOTE_CHIP_ICON_CLASS)}
+        className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, MESSAGE_QUOTE_CHIP_ICON_CLASS)}
         aria-hidden
       />
       {formatMessageQuoteChipLabel(part.selectedText)}
@@ -225,7 +234,10 @@ function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gi
       })}
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
-      <GitCommit className={cn("size-[10px] shrink-0", GIT_COMMIT_CHIP_ICON_CLASS)} aria-hidden />
+      <GitCommit
+        className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, GIT_COMMIT_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
       {formatGitCommitChipLabel(part.subject)}
     </span>
   );

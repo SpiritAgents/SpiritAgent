@@ -1,3 +1,4 @@
+import { COMPOSER_PILL_CHIP_ICON_SIZE_PX } from "@/lib/composer-inline-chip-styles";
 import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 
 // Translucent background: blends with the Composer frosted surface, avoiding opaque blocks mismatching the background tone
@@ -16,8 +17,8 @@ export function makePlanChipNode(doc: Document, label = "Plan"): HTMLElement {
 
   const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
   icon.setAttribute("viewBox", "0 0 24 24");
-  icon.setAttribute("width", "10");
-  icon.setAttribute("height", "10");
+  icon.setAttribute("width", String(COMPOSER_PILL_CHIP_ICON_SIZE_PX));
+  icon.setAttribute("height", String(COMPOSER_PILL_CHIP_ICON_SIZE_PX));
   icon.setAttribute("fill", "none");
   icon.setAttribute("stroke", "currentColor");
   icon.setAttribute("stroke-width", "2");

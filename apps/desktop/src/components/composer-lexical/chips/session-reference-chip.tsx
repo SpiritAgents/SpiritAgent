@@ -5,6 +5,7 @@ import {
   WORKSPACE_FILE_CHIP_CLASS,
   WORKSPACE_FILE_CHIP_ICON_CLASS,
 } from "@/lib/workspace-file-chip-styles";
+import { WORKSPACE_FILE_ICON_CHIP_CLASS } from "@/lib/workspace-file-icon-sizes";
 
 type SessionReferenceChipProps = {
   title: string;
@@ -20,7 +21,7 @@ export function SessionReferenceChip({ title }: SessionReferenceChipProps) {
       aria-label={label}
     >
       <ChipIcon className={WORKSPACE_FILE_CHIP_ICON_CLASS}>
-        <MessageCircle className="size-3.5" aria-hidden />
+        <MessageCircle className={WORKSPACE_FILE_ICON_CHIP_CLASS} aria-hidden />
       </ChipIcon>
       {label}
     </ChipShell>

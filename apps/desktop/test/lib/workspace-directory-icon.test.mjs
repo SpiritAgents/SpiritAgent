@@ -10,8 +10,9 @@ test("workspaceDirectoryIconClassName matches slash menu list density", () => {
 });
 
 test("workspaceDirectoryIconClassName inherit uses chip size", () => {
-  assert.match(workspaceDirectoryIconClassName("inherit"), /size-\[10px\]/u);
+  assert.match(workspaceDirectoryIconClassName("inherit"), /size-3(?:\s|$)/u);
   assert.match(workspaceDirectoryIconClassName("inherit", "text-blue-600"), /text-blue-600/u);
   assert.doesNotMatch(workspaceDirectoryIconClassName("inherit", "text-blue-600"), /opacity-70/u);
+  assert.doesNotMatch(workspaceDirectoryIconClassName("inherit"), /opacity-70/u);
   assert.doesNotMatch(workspaceDirectoryIconClassName("inherit"), /size-3\.5/u);
 });

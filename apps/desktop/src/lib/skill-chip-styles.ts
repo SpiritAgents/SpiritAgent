@@ -6,7 +6,7 @@ import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 // Must be inline (not inline-flex): only then can the label text merge into the outer line box, giving the selection band the same height and color as plain text
 // --chip-pad must equal the root px and --chip-mx the root mx: lets the leading/trailing spacers extend over
 // the selection band covering padding and margin (see chip-shell.tsx)
-export const SKILL_CHIP_CLASS = `inline whitespace-nowrap px-0.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none text-yellow-600 mx-0.5 [--chip-pad:2px] [--chip-mx:2px] dark:text-amber-400`;
+export const SKILL_CHIP_CLASS = `inline whitespace-nowrap px-0.5 py-0.5 text-sm ${FONT_WEIGHT_NORMAL} leading-none text-yellow-600 mx-0.5 [--chip-pad:2px] [--chip-mx:2px] dark:text-amber-400`;
 
 export function makeSkillChipNode(alias: string, doc: Document): HTMLElement {
   const span = doc.createElement("span");

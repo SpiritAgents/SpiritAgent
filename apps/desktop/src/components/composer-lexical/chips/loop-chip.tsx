@@ -1,4 +1,5 @@
 import { LOOP_CHIP_CLASS } from "@/lib/loop-chip-styles";
+import { COMPOSER_PILL_CHIP_ICON_SIZE_PX } from "@/lib/composer-inline-chip-styles";
 import { ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
 
 type LoopChipProps = {
@@ -8,7 +9,7 @@ type LoopChipProps = {
 export function LoopChip({ label = "Loop" }: LoopChipProps) {
   return (
     <ChipShell data-chip-kind="loop" className={LOOP_CHIP_CLASS} aria-label={label}>
-      <ChipIconSvg>
+      <ChipIconSvg size={COMPOSER_PILL_CHIP_ICON_SIZE_PX}>
         <path d="m17 2 4 4-4 4" />
         <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
         <path d="m7 22-4-4 4-4" />
