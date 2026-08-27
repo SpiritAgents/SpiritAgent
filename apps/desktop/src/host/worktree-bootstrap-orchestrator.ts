@@ -8,6 +8,7 @@ import { cloneActiveSkills } from "./runtime.js";
 
 import i18n from "../lib/i18n-host.js";
 import type { ConversationMessageSnapshot, DesktopSnapshot } from "../types.js";
+import { spreadChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
 import type { DesktopRewindCheckpointSnapshot } from "./rewind.js";
 import type { SessionBundle } from "./session-bundle.js";
 import {
@@ -107,11 +108,13 @@ export async function startWorktreeBootstrapTurnCommand(
     content: displayText,
     pending: false,
     ...(localFileAttachments ? { localFileAttachments } : {}),
+    ...spreadChipNavigateMeta(options.chipNavigateMeta),
   };
   bundle.messages.push(userMessage);
   bundle.messageTimeline.beginUserTurn(userMessage.content, {
     messageId: userMessage.id,
     ...(localFileAttachments ? { localFileAttachments } : {}),
+    ...spreadChipNavigateMeta(options.chipNavigateMeta),
   });
   ctx.resetStreamingPlacementState(false);
 

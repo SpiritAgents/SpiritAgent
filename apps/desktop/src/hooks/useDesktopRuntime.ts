@@ -2580,6 +2580,9 @@ export function useDesktopRuntime() {
           ...(hasLocalFiles ? { localFilePaths } : {}),
           ...(hasReferencedPaths ? { referencedWorkspaceFilePaths } : {}),
           ...(skillChipAliases.length > 0 ? { skillChipAliases } : {}),
+          ...(request.chipNavigateMeta?.length
+            ? { chipNavigateMeta: request.chipNavigateMeta }
+            : {}),
           ...(targetSessionPath ? { sessionPath: targetSessionPath } : {}),
         });
         if (isRemoteWebHostClient(api.kind)) {

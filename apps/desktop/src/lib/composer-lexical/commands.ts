@@ -48,8 +48,10 @@ export type ReplaceSessionReferenceCommandPayload = {
 export const INSERT_ATTACHMENT_CHIP_COMMAND: LexicalCommand<ComposerAttachmentChipPayload> =
   createCommand("SPIRIT_INSERT_ATTACHMENT_CHIP");
 
-export const INSERT_WORKSPACE_FILE_AT_CARET_COMMAND: LexicalCommand<{ path: string }> =
-  createCommand("SPIRIT_INSERT_WORKSPACE_FILE_AT_CARET");
+export const INSERT_WORKSPACE_FILE_AT_CARET_COMMAND: LexicalCommand<{
+  path: string;
+  sourceTabId?: string;
+}> = createCommand("SPIRIT_INSERT_WORKSPACE_FILE_AT_CARET");
 
 export const INSERT_WORKSPACE_FILE_REFERENCE_COMMAND: LexicalCommand<ReplaceWorkspaceFileReferenceCommandPayload> =
   createCommand("SPIRIT_INSERT_WORKSPACE_FILE_REFERENCE");

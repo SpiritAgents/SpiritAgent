@@ -7,12 +7,32 @@ import {
   TextSelectionActionMenuSegmentedItems,
 } from "@/components/text-selection-action-menu";
 import { useTextSelectionActionMenu } from "@/hooks/use-text-selection-action-menu";
-import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
+import type { MessageQuoteAttachment, QuoteChipOrigin } from "@/lib/message-quote-attachment";
 
-function makeMessageQuoteAttachment(selectedText: string): MessageQuoteAttachment {
+function quotedMessageIdFromSelection(selection: Selection | null): number | undefined {
+  const node = selection?.anchorNode;
+  const element = node instanceof Element ? node : (node?.parentElement ?? null);
+  const row = element?.closest("[data-conversation-message-id]");
+  if (!(row instanceof HTMLElement)) {
+    return undefined;
+  }
+  const parsed = Number(row.dataset.conversationMessageId);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function makeMessageQuoteAttachment(
+  selectedText: string,
+  selection: Selection | null,
+  sessionPath: string | undefined,
+  origin: QuoteChipOrigin | undefined,
+): MessageQuoteAttachment {
+  const messageId = quotedMessageIdFromSelection(selection);
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     selectedText,
+    ...(sessionPath ? { sessionPath } : {}),
+    ...(messageId !== undefined ? { messageId } : {}),
+    ...(origin ? { origin } : {}),
   };
 }
 
@@ -29,10 +49,14 @@ function isSelectionOutsideEditable(selection: Selection): boolean {
 
 export function ConversationMessageSelectionMenu({
   rootRef,
+  quoteSessionPath,
+  quoteOrigin,
   onMessageQuoteAddToSession,
   onMessageQuoteAddToSideChat,
 }: {
   rootRef: RefObject<HTMLElement | null>;
+  quoteSessionPath?: string;
+  quoteOrigin?: QuoteChipOrigin;
   onMessageQuoteAddToSession?: (attachment: MessageQuoteAttachment) => void;
   onMessageQuoteAddToSideChat?: (attachment: MessageQuoteAttachment) => void;
 }) {
@@ -53,11 +77,11 @@ export function ConversationMessageSelectionMenu({
         return;
       }
 
-      onAdd(makeMessageQuoteAttachment(selectedText));
+      onAdd(makeMessageQuoteAttachment(selectedText, selection, quoteSessionPath, quoteOrigin));
       dismiss();
       selection?.removeAllRanges();
     },
-    [dismiss, selectionText],
+    [dismiss, quoteOrigin, quoteSessionPath, selectionText],
   );
 
   const handleAddToSession = useCallback(() => {

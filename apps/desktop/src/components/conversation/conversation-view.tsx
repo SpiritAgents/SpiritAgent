@@ -30,6 +30,7 @@ import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
+import { isSideChatPaneProvisionalSessionPath } from "@/lib/session-path-kind";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
@@ -312,6 +313,12 @@ export function ConversationView({
     },
     [paneId, split],
   );
+  const quoteSessionPath = composerDock.paneSessionPath ?? snapshot?.activeSession?.filePath;
+  const quoteOrigin =
+    (paneId && split.isSideChatPane(paneId)) ||
+    (quoteSessionPath ? isSideChatPaneProvisionalSessionPath(quoteSessionPath) : false)
+      ? "side-chat"
+      : "session";
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   // translucency: ScrollArea stays full height; the shape mask clips to the input/Changes/TODO
@@ -664,6 +671,8 @@ export function ConversationView({
 
             <ConversationMessageSelectionMenu
               rootRef={conversationScrollBodyRef}
+              quoteSessionPath={quoteSessionPath}
+              quoteOrigin={quoteOrigin}
               onMessageQuoteAddToSession={composerDock.onMessageQuoteAddToSession}
               onMessageQuoteAddToSideChat={
                 showSideChat && paneId ? handleMessageQuoteAddToSideChat : undefined

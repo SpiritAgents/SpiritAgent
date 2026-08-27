@@ -19,6 +19,7 @@ import {
   hasInlineAttachmentChipSegments,
   normalizeComposerPlain,
 } from "@/lib/composer-segment-model";
+import { extractChipNavigateMeta } from "@/lib/composer-chip-navigate-meta";
 import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segments";
 import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
 import { currentAgentModeSegment, isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
@@ -202,6 +203,9 @@ export function useComposerController({
   const pendingComposerSendRef = useRef<{
     text: string;
     localFilePaths?: string[];
+    referencedWorkspaceFilePaths?: string[];
+    skillChipAliases?: string[];
+    chipNavigateMeta?: import("@/lib/composer-chip-navigate-meta").ComposerChipNavigateMeta[];
   } | null>(null);
   const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
 
@@ -1024,9 +1028,9 @@ export function useComposerController({
   }, []);
 
   const handleWorkspaceFileAddToSession = useCallback(
-    (relativePath: string) => {
+    (relativePath: string, sourceTabId?: string) => {
       ensureConversationSurface();
-      composerRichInputRef.current?.insertWorkspaceFileAtCaret(relativePath);
+      composerRichInputRef.current?.insertWorkspaceFileAtCaret(relativePath, sourceTabId);
       composerRichInputRef.current?.focus();
     },
     [ensureConversationSurface],
@@ -1129,6 +1133,7 @@ export function useComposerController({
       return;
     }
     const chipMetadata = extractComposerChipMetadata(composerSegments);
+    const chipNavigateMeta = extractChipNavigateMeta(composerSegments);
     const payload = {
       text: fullText,
       ...(composerLocalFileAttachments.length > 0
@@ -1142,6 +1147,7 @@ export function useComposerController({
       ...(chipMetadata.skillChipAliases.length > 0
         ? { skillChipAliases: chipMetadata.skillChipAliases }
         : {}),
+      ...(chipNavigateMeta.length > 0 ? { chipNavigateMeta } : {}),
     };
 
     if (shouldPromptGitBranchCheckoutBeforeSend({ isEmptySession, git: snapshot?.git })) {

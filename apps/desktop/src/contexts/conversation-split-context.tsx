@@ -104,6 +104,8 @@ type ConversationSplitContextValue = {
   /** Insert a message quote into a Side Chat: prefer reusing the last navigated Side Chat pane that has been left; otherwise create a new one. */
   addMessageQuoteToSideChat: (paneId: string, attachment: MessageQuoteAttachment) => Promise<void>;
 
+  isSideChatPane: (paneId: string) => boolean;
+
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
   collapsePaneLayoutById: (paneId: string) => Promise<void>;
@@ -1379,6 +1381,10 @@ export function ConversationSplitProvider({
   const paneCount = layout ? countPanes(layout) : 0;
   useDarwinConversationSplitChrome(paneCount);
 
+  const isSideChatPane = useCallback((paneId: string) => {
+    return sideChatPaneIdsRef.current.has(paneId);
+  }, []);
+
   const value = useMemo<ConversationSplitContextValue>(
     () => ({
       layout,
@@ -1398,6 +1404,8 @@ export function ConversationSplitProvider({
       beginSideChat,
 
       addMessageQuoteToSideChat,
+
+      isSideChatPane,
 
       closePaneById,
 
@@ -1496,6 +1504,8 @@ export function ConversationSplitProvider({
       beginSideChat,
 
       addMessageQuoteToSideChat,
+
+      isSideChatPane,
 
       startPaneDrag,
 

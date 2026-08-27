@@ -14,6 +14,7 @@ import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPr
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { messageContentToRichSegments } from "@/lib/composer-segment-model";
+import { applyChipNavigateMeta, extractChipNavigateMeta } from "@/lib/composer-chip-navigate-meta";
 import {
   composerAttachmentViewFromPath,
   isAttachmentOnlyDisplayText,
@@ -101,7 +102,10 @@ export function useMessageRewind({
       )
         ? ""
         : message.content;
-      const segments = messageContentToRichSegments(rewindContent, String(message.id));
+      const segments = applyChipNavigateMeta(
+        messageContentToRichSegments(rewindContent, String(message.id)),
+        message.chipNavigateMeta,
+      );
       setRewindDraft({
         messageId: message.id,
         listIndex,
@@ -117,6 +121,7 @@ export function useMessageRewind({
       return;
     }
     const wireText = segmentsToMessageText(rewindDraft.segments);
+    const chipNavigateMeta = extractChipNavigateMeta(rewindDraft.segments);
     void runtime
       .rewindAndSubmitMessage({
         messageId: rewindDraft.messageId,
@@ -124,6 +129,7 @@ export function useMessageRewind({
         ...(rewindDraft.localFileAttachments.length > 0
           ? { localFilePaths: rewindDraft.localFileAttachments.map((item) => item.path) }
           : {}),
+        ...(chipNavigateMeta.length > 0 ? { chipNavigateMeta } : {}),
       })
       .then((ok) => {
         if (ok) {

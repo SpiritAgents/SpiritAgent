@@ -6,6 +6,8 @@ export interface BrowserElementAttachment {
   outerHtml: string;
   screenshotDataUrl: string;
   pageUrl: string;
+  /** Host-only: workspace tool tab that produced this chip. Never sent to the agent. */
+  sourceTabId?: string;
 }
 
 export function truncateOuterHtml(html: string): string {

@@ -4,6 +4,7 @@ import { test } from "vitest";
 import { normalizeTimelineSnapshotForPersistence } from "../../dist-electron/src/host/chat-schema.js";
 import { DesktopMessageTimeline } from "../../dist-electron/src/host/message-timeline.js";
 import {
+  buildArchiveMessagesFromConversation,
   buildStoredDesktopSession,
   restoreStoredSessionState,
   sessionListActivityFromBundle,
@@ -110,4 +111,32 @@ test("normalizeTimelineSnapshotForPersistence omits empty assistant content on d
   assert.equal("content" in thinkingRow, false);
   assert.equal(textRow.content, "visible answer");
   assert.equal(buildV2TimelineFromUserMessage("hello")[0].userRow.content, "hello");
+});
+
+test("beginUserTurn chipNavigateMeta survives snapshot restore", () => {
+  const chipNavigateMeta = [{ kind: "workspaceFile", sourceTabId: "tab-files-1" }];
+  let nextMessageId = 1;
+  const timeline = new DesktopMessageTimeline({
+    allocateMessageId: () => nextMessageId++,
+  });
+  timeline.beginUserTurn("see file", { chipNavigateMeta });
+  const persisted = normalizeTimelineSnapshotForPersistence(timeline.snapshot());
+  const restored = restoreStoredSessionState({
+    filePath: "D:/Spirit/test-session.json",
+    loaded: buildV2StoredSession({ desktopMessageTimeline: persisted }),
+  });
+  assert.deepEqual(restored.messages[0].chipNavigateMeta, chipNavigateMeta);
+});
+
+test("archive projection omits chipNavigateMeta", () => {
+  const archive = buildArchiveMessagesFromConversation([
+    {
+      id: 1,
+      role: "user",
+      content: "hello",
+      pending: false,
+      chipNavigateMeta: [{ kind: "workspaceFile", sourceTabId: "tab-a" }],
+    },
+  ]);
+  assert.deepEqual(archive, [{ role: "user", content: "hello" }]);
 });

@@ -18,6 +18,8 @@ import type {
 import type { DesktopToolRequest } from "./contracts.js";
 import type { DesktopHostRuntime } from "./runtime.js";
 import type { SessionBundle } from "./session-bundle.js";
+import { spreadChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
+import type { ComposerChipNavigateMeta } from "../lib/composer-chip-navigate-meta.js";
 import { toolMessageKey } from "./message-ordering.js";
 import {
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
@@ -76,6 +78,7 @@ export interface SubmitUserTurnAfterInitializedOptions {
   preallocatedMessageId?: number;
   /** Target bundle; defaults to the foreground active one. Queue drains must pass the queue's owning bundle to prevent cross-session leakage. */
   bundle?: SessionBundle;
+  chipNavigateMeta?: ComposerChipNavigateMeta[];
 }
 
 export interface SessionTurnOrchestratorContext {
@@ -194,11 +197,13 @@ export async function submitUserTurnAfterInitializedCommand(
     content: displayText,
     pending: false,
     ...(localFileAttachments ? { localFileAttachments } : {}),
+    ...spreadChipNavigateMeta(options.chipNavigateMeta),
   };
   bundle.messages.push(userMessage);
   bundle.messageTimeline.beginUserTurn(userMessage.content, {
     messageId: userMessage.id,
     ...(localFileAttachments ? { localFileAttachments } : {}),
+    ...spreadChipNavigateMeta(options.chipNavigateMeta),
   });
   ctx.resetStreamingPlacementState(false, bundle);
   const todoSessionKeyBeforePersist = ctx.resolveTodoSessionKeyForBundle(bundle);
@@ -307,6 +312,7 @@ export async function sendQueuedUserTurnNowCommand(
       preallocatedMessageId: item.messageId,
       explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(item),
       turnSkills: turnSkillsFromQueuedItem(item),
+      chipNavigateMeta: item.chipNavigateMeta,
       bundle,
     });
   } catch (error) {
@@ -333,6 +339,7 @@ export async function drainQueuedUserTurnIfIdle(
       preallocatedMessageId: next.messageId,
       explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(next),
       turnSkills: turnSkillsFromQueuedItem(next),
+      chipNavigateMeta: next.chipNavigateMeta,
       // Draining also happens when a background bundle goes busy→idle: must commit to the queue's owning bundle, not the foreground active one
       bundle,
     });

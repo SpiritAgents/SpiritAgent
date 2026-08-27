@@ -170,7 +170,7 @@ export type WorkspaceToolsDockProps = {
   onFileSnippetAddToSession?: (
     attachment: import("@/lib/file-snippet-attachment").FileSnippetAttachment,
   ) => void;
-  onWorkspaceFileAddToSession?: (relativePath: string) => void;
+  onWorkspaceFileAddToSession?: (relativePath: string, sourceTabId?: string) => void;
   onGitCommitAddToSession?: (
     attachment: import("@/lib/git-commit-attachment").GitCommitAttachment,
   ) => void;
@@ -968,8 +968,17 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     onFilesWorkspacePathChange={(path) =>
                       handleTabFilesWorkspacePathChange(item.id, path)
                     }
-                    onFileSnippetAddToSession={onFileSnippetAddToSession}
-                    onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
+                    onFileSnippetAddToSession={
+                      onFileSnippetAddToSession
+                        ? (attachment) =>
+                            onFileSnippetAddToSession({ ...attachment, sourceTabId: item.id })
+                        : undefined
+                    }
+                    onWorkspaceFileAddToSession={
+                      onWorkspaceFileAddToSession
+                        ? (relativePath) => onWorkspaceFileAddToSession(relativePath, item.id)
+                        : undefined
+                    }
                     useTranslucency={useTranslucency}
                     codeCompletionEnabled={codeCompletionEnabled}
                   />
@@ -982,7 +991,12 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                       useTranslucency={useTranslucency}
                       onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       terminalDisplayName={workspaceTerminalChipDisplayName(item, tabs, t)}
-                      onTerminalAddToSession={onTerminalAddToSession}
+                      onTerminalAddToSession={
+                        onTerminalAddToSession
+                          ? (attachment) =>
+                              onTerminalAddToSession({ ...attachment, sourceTabId: item.id })
+                          : undefined
+                      }
                       suspendTerminalResize={isResizing}
                     />
                   </div>
@@ -998,7 +1012,12 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
                     onOpenUrlInNewTab={onBrowserOpenInNewTab}
                     onTitleChange={(title) => handleTabTitleChange(item.id, title)}
-                    onElementPicked={onBrowserElementPicked}
+                    onElementPicked={
+                      onBrowserElementPicked
+                        ? (attachment) =>
+                            onBrowserElementPicked({ ...attachment, sourceTabId: item.id })
+                        : undefined
+                    }
                   />
                 </div>
               ) : item.kind === "pr" ? (
@@ -1022,7 +1041,12 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     prRevealEnabled={prRevealEnabled}
                     prRevealNonce={prRevealEnabled ? prRevealNonce : 0}
                     prRevealRequest={prRevealEnabled ? prRevealRequest : null}
-                    onPrDiffAddToSession={onPrDiffAddToSession}
+                    onPrDiffAddToSession={
+                      onPrDiffAddToSession
+                        ? (attachment) =>
+                            onPrDiffAddToSession({ ...attachment, sourceTabId: item.id })
+                        : undefined
+                    }
                     onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                     onPrStatusChange={(status) => handleTabPrStatusChange(item.id, status)}
                   />
@@ -1037,7 +1061,12 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     readGitHistory={readGitHistory}
                     readGitCommitMessage={readGitCommitMessage}
                     submitGitChip={submitGitChip}
-                    onGitCommitAddToSession={onGitCommitAddToSession}
+                    onGitCommitAddToSession={
+                      onGitCommitAddToSession
+                        ? (attachment) =>
+                            onGitCommitAddToSession({ ...attachment, sourceTabId: item.id })
+                        : undefined
+                    }
                     onOpenChangedFile={onOpenWorkspaceFile}
                   />
                 </div>

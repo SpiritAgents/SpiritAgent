@@ -11,6 +11,8 @@ export interface PrDiffAttachment {
   diffText: string;
   /** Frozen at insert time; drives chip colors only. */
   status: PullRequestChipStatus;
+  /** Host-only: workspace tool tab that produced this chip. Never sent to the agent. */
+  sourceTabId?: string;
 }
 
 export function resolvePullRequestChipStatus(detail: {
