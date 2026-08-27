@@ -1,5 +1,6 @@
 import {
   GITHUB_OAUTH_ACCESS_TOKEN_URL,
+  GITHUB_OAUTH_CLIENT_ID,
   GITHUB_OAUTH_DEVICE_CODE_URL,
   GITHUB_OAUTH_SCOPES,
 } from "./oauth-config.js";
@@ -14,7 +15,7 @@ import {
   sleepUntilGitHubOAuthRetryDeadline,
   throwIfGitHubFetchAborted,
 } from "./oauth-fetch-retry.js";
-import { GitHubOAuthError, requireGitHubOAuthClientId } from "./oauth.js";
+import { GitHubOAuthError } from "./oauth.js";
 import type { GitHubDeviceAuthChallenge, GitHubOAuthTokenResponse } from "./types.js";
 
 const DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
@@ -37,7 +38,7 @@ export async function requestGitHubDeviceCode(input?: {
   scopes?: readonly string[];
 }): Promise<GitHubDeviceAuthChallenge & { deviceCode: string }> {
   const body = new URLSearchParams({
-    client_id: input?.clientId ?? requireGitHubOAuthClientId(),
+    client_id: input?.clientId ?? GITHUB_OAUTH_CLIENT_ID,
     scope: (input?.scopes ?? GITHUB_OAUTH_SCOPES).join(" "),
   });
 
@@ -111,7 +112,7 @@ export async function pollGitHubDeviceToken(input: {
 
     try {
       const body = new URLSearchParams({
-        client_id: input.clientId ?? requireGitHubOAuthClientId(),
+        client_id: input.clientId ?? GITHUB_OAUTH_CLIENT_ID,
         device_code: input.deviceCode,
         grant_type: DEVICE_GRANT_TYPE,
       });

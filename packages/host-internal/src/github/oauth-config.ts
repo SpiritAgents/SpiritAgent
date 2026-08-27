@@ -1,6 +1,5 @@
-export function resolveGitHubOAuthClientId(): string {
-  return process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID?.trim() ?? "";
-}
+/** Public GitHub OAuth App identifier for Desktop Device Flow. Not a secret. */
+export const GITHUB_OAUTH_CLIENT_ID = "Ov23liKCwRR3gYhfH3wC";
 
 export const GITHUB_OAUTH_SCOPES = ["repo", "read:user"] as const;
 

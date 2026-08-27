@@ -1,4 +1,4 @@
-import { GITHUB_API_BASE_URL, resolveGitHubOAuthClientId } from "./oauth-config.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
 import { githubFetch } from "./github-fetch.js";
 import {
   GITHUB_OAUTH_USER_LOOKUP_INTERVAL_MS,
@@ -16,16 +16,6 @@ export class GitHubOAuthError extends Error {
     super(message);
     this.name = "GitHubOAuthError";
   }
-}
-
-export function requireGitHubOAuthClientId(): string {
-  const clientId = resolveGitHubOAuthClientId();
-  if (!clientId) {
-    throw new GitHubOAuthError(
-      "GitHub OAuth Client ID is not configured. Set SPIRIT_GITHUB_OAUTH_CLIENT_ID in apps/desktop/.env (see .env.example).",
-    );
-  }
-  return clientId;
 }
 
 export async function fetchGitHubUserLogin(accessToken: string): Promise<string> {

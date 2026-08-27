@@ -16,8 +16,6 @@ jobs:
   build:
     name: Build packages and apps
     runs-on: ubuntu-latest
-    env:
-      SPIRIT_GITHUB_OAUTH_CLIENT_ID: ${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,13 +49,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-
-      - name: Require Desktop GitHub OAuth Client ID secret
-        run: |
-          if [ -z "${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}" ]; then
-            echo "::error::Repository secret SPIRIT_GITHUB_OAUTH_CLIENT_ID is required for Desktop build."
-            exit 1
-          fi
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

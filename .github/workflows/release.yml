@@ -38,13 +38,6 @@ jobs:
           node-version-file: ".nvmrc"
           registry-url: https://registry.npmjs.org/
 
-      - name: Require Desktop GitHub OAuth Client ID secret
-        run: |
-          if [ -z "${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}" ]; then
-            echo "::error::Repository secret SPIRIT_GITHUB_OAUTH_CLIENT_ID is required for Desktop release."
-            exit 1
-          fi
-
       - name: Verify versions
         run: pnpm run release:verify-version -- --version "$RELEASE_VERSION"
 
@@ -213,11 +206,10 @@ jobs:
     name: Desktop ${{ matrix.package_target }}
     needs: verify
     runs-on: ${{ matrix.os }}
-    # Same as the CLI job: the signing secrets are scoped to the macOS legs. The OAuth client id
-    # below is a repository secret, so the other legs still resolve it without any environment.
+    # Only the macOS legs sign, so only they get the signing secrets; an empty name means no
+    # environment at all, which also keeps the Windows and Linux legs out of the deployment log.
     environment: ${{ matrix.platform == 'mac' && 'signing' || '' }}
     env:
-      SPIRIT_GITHUB_OAUTH_CLIENT_ID: ${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}
       npm_config_registry: https://registry.npmjs.org/
       npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
       npm_config_electron_builder_binaries_mirror: https://github.com/electron-userland/electron-builder-binaries/releases/download/

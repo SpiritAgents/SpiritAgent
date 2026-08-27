@@ -8,7 +8,6 @@ directories:
 beforeBuild: scripts/electron-builder-before-build.mjs
 files:
   - package.json
-  - .env
   - dist/**/*
   - dist-electron/**/*
   - build/tray/**/*
