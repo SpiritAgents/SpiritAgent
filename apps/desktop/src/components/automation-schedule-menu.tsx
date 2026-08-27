@@ -17,7 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_GHOST_MENU_TRIGGER,
+  DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
+} from "@/lib/desktop-chrome";
 import {
   formatDesktopAutomationScheduleLabel,
   type DesktopAutomationSchedule,
@@ -125,7 +128,8 @@ export function AutomationScheduleMenu({
           type="button"
           disabled={disabled}
           className={cn(
-            "inline-flex h-7 max-w-full items-center gap-1 rounded-md border-0 bg-transparent px-1 text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
+            DESKTOP_GHOST_MENU_TRIGGER,
+            "text-muted-foreground",
             DESKTOP_MENU_TRIGGER_TEXT_CLASS,
           )}
         >

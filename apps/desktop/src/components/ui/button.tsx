@@ -4,9 +4,11 @@ import { Slot } from "radix-ui";
 
 import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import {
-  DESKTOP_CONTROL_BORDER,
-  DESKTOP_CONTROL_BORDER_FOCUSED,
-  DESKTOP_CONTROL_BORDER_HOVER,
+  DESKTOP_OUTLINE_BORDER,
+  DESKTOP_OUTLINE_BUTTON_EXPANDED,
+  DESKTOP_OUTLINE_BUTTON_FOCUSED,
+  DESKTOP_OUTLINE_BUTTON_HOVER,
+  instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 
@@ -17,16 +19,18 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         outline: cn(
-          "bg-background transition-none hover:text-sidebar-foreground aria-expanded:text-sidebar-foreground",
-          DESKTOP_CONTROL_BORDER,
-          DESKTOP_CONTROL_BORDER_HOVER,
-          DESKTOP_CONTROL_BORDER_FOCUSED,
-          "aria-expanded:border-border aria-expanded:bg-muted/30",
+          "bg-background transition-none",
+          DESKTOP_OUTLINE_BORDER,
+          DESKTOP_OUTLINE_BUTTON_HOVER,
+          DESKTOP_OUTLINE_BUTTON_FOCUSED,
+          DESKTOP_OUTLINE_BUTTON_EXPANDED,
         ),
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-sidebar-foreground aria-expanded:bg-muted aria-expanded:text-sidebar-foreground dark:hover:bg-muted/50",
+        ghost: cn(
+          "hover:bg-canvas-hover hover:text-sidebar-foreground aria-expanded:bg-canvas-hover aria-expanded:text-sidebar-foreground",
+          instantHoverMotionClass,
+        ),
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-foreground underline-offset-4 hover:underline",

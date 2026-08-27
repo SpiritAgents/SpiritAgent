@@ -1185,15 +1185,13 @@ const sidebarItemActiveTextClass = "!text-sidebar-foreground";
 
 /** Sidebar menu/session row hover: a unified semi-transparent wash, so nested buttons no longer stack a solid accent */
 const sidebarMenuHoverClass = cn(
-  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
-  "dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
+  "hover:!bg-canvas-hover focus-visible:!bg-canvas-hover",
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
 
 /** Sidebar menu/session row selected: the same semi-transparent wash as hover, not deepened by selection */
 const sidebarMenuSelectedClass = cn(
-  "!bg-foreground/[0.06] hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
-  "dark:!bg-white/[0.06] dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
+  "!bg-canvas-hover hover:!bg-canvas-hover focus-visible:!bg-canvas-hover",
   sidebarItemActiveTextClass,
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
@@ -1248,7 +1246,7 @@ function sessionRowHoverClass(_translucency?: boolean) {
 
 /** Rename editing state: the same semi-transparent wash as hover, shown permanently */
 function sessionRowRenamingClass(_translucency?: boolean) {
-  return cn("!bg-foreground/[0.06]", "dark:!bg-white/[0.06]");
+  return "!bg-canvas-hover";
 }
 
 function SessionSidebarInner({

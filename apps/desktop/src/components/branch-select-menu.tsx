@@ -18,6 +18,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTruncatedElement } from "@/hooks/use-truncated-element";
 import {
+  DESKTOP_GHOST_INLINE_TRIGGER,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
   DESKTOP_OVERLAY_LIST_WIDTH,
   DESKTOP_OVERLAY_SHORT_LIST_PADDING,
 } from "@/lib/desktop-chrome";
@@ -50,7 +52,7 @@ function BranchSelectMenuItem({
         className={cn(
           "min-w-0",
           DESKTOP_MENU_TRIGGER_TEXT_CLASS,
-          activeBranch === branch && "bg-accent/40",
+          activeBranch === branch && DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
         )}
       >
         <span ref={labelRef} className="min-w-0 truncate">
@@ -101,7 +103,8 @@ export function BranchSelectMenu({
               aria-label={t("composer.selectBranch")}
               disabled={triggerDisabled}
               className={cn(
-                "inline-flex h-7 min-w-0 max-w-[min(12rem,28vw)] items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                DESKTOP_GHOST_INLINE_TRIGGER,
+                "max-w-[min(12rem,28vw)]",
                 DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                 "text-muted-foreground",
               )}

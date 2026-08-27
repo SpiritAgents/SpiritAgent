@@ -35,7 +35,7 @@ function DropdownMenuSubTrigger({
     <DropdownMenuPrimitive.SubTrigger
       data-slot="dropdown-menu-sub-trigger"
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-overlay-hover focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
       )}
       {...props}
@@ -140,7 +140,9 @@ function DropdownMenuItem({
         variant === "destructive" &&
           "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 [&_svg]:text-destructive",
         className,
-        tooltipMenuHighlight && variant !== "destructive" && "!bg-accent text-accent-foreground",
+        tooltipMenuHighlight &&
+          variant !== "destructive" &&
+          "!bg-overlay-hover text-accent-foreground",
       )}
       {...props}
     />
@@ -182,7 +184,7 @@ function DropdownMenuCheckboxItem({
       checked={checked}
       className={cn(
         "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-xs outline-none",
-        "focus:bg-accent focus:text-accent-foreground",
+        "focus:bg-overlay-hover focus:text-accent-foreground",
         "data-disabled:pointer-events-none data-disabled:opacity-50",
         className,
       )}

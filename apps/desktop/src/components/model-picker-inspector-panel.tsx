@@ -25,7 +25,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { DESKTOP_OVERLAY_LIST_DETAIL_LABEL } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_GHOST_SELECT_TRIGGER,
+  DESKTOP_OVERLAY_LIST_DETAIL_LABEL,
+} from "@/lib/desktop-chrome";
+import { cn } from "@/lib/utils";
 import type {
   DesktopModelReasoningEffort,
   DesktopModelReasoningMode,
@@ -124,9 +128,7 @@ export function ModelPickerInspectorPanel({
       ? "app.modelPickerEffort"
       : "app.modelPickerReasoningEffort";
   const labelClass = isList ? DESKTOP_OVERLAY_LIST_DETAIL_LABEL : "text-xs text-muted-foreground";
-  const selectTriggerClass = isList
-    ? "h-7 w-auto border-0 bg-transparent px-0 text-xs shadow-none [&_span]:justify-end"
-    : "h-8 w-auto border-0 bg-transparent px-0 text-xs shadow-none [&_span]:justify-end";
+  const selectTriggerClass = cn(isList ? "h-7" : "h-8", DESKTOP_GHOST_SELECT_TRIGGER);
 
   const modelControls =
     supportsThinkingSwitch || effortOptions.length > 1 || showReasoningMode ? (

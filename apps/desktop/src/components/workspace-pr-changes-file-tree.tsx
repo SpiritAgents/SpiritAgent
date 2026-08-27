@@ -7,8 +7,7 @@ import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { cn } from "@/lib/utils";
 import type { PrChangedFilesTreeNode } from "@/lib/pr-changed-files-tree";
 
-const TREE_ROW_HOVER_CLASS =
-  "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10";
+const TREE_ROW_HOVER_CLASS = "text-foreground/90 hover:bg-canvas-hover";
 
 export type WorkspacePrChangesFileTreeProps = {
   nodes: PrChangedFilesTreeNode[];

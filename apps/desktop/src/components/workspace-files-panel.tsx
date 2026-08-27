@@ -125,7 +125,7 @@ export { joinExplorerRel } from "@/lib/workspace-explorer-dir-collapse";
 
 const EXPLORER_ROW_TRIGGER_CLASS = cn(
   "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left",
-  "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+  "text-foreground/90 hover:bg-canvas-hover",
 );
 const EXPLORER_ROW_ICON_CLASS = "shrink-0";
 const EXPLORER_DIR_CHEVRON_CLASS = "size-3.5 shrink-0 opacity-70";
@@ -156,7 +156,7 @@ type CreatingEntryState = {
 
 const EXPLORER_ROOT_CREATE_BUTTON_CLASS = cn(
   "inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground",
-  "hover:bg-foreground/[0.08] hover:text-sidebar-foreground dark:hover:bg-foreground/12",
+  "hover:bg-canvas-hover hover:text-sidebar-foreground",
 );
 
 export type WorkspaceFilesPanelProps = {
@@ -264,7 +264,7 @@ function ExplorerRow({
 
   const rowClassName = cn(
     EXPLORER_ROW_TRIGGER_CLASS,
-    selected && "bg-foreground/[0.08] dark:bg-foreground/12",
+    selected && "bg-canvas-hover",
     dropHighlight && "bg-primary/15",
   );
   const labelClassName = cn("min-w-0 truncate", ignored && "text-foreground/60");
@@ -394,7 +394,7 @@ function ExplorerCreateRow({
   return (
     <li className="min-w-0">
       <div
-        className={cn(EXPLORER_ROW_TRIGGER_CLASS, "bg-foreground/[0.08] dark:bg-foreground/12")}
+        className={cn(EXPLORER_ROW_TRIGGER_CLASS, "bg-canvas-hover")}
         style={rowStyle}
         role="treeitem"
       >
@@ -1124,11 +1124,9 @@ export function WorkspaceFilesPanel({
           type="button"
           className={cn(
             "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left",
-            "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+            "text-foreground/90 hover:bg-canvas-hover",
             onOpenPlan && "cursor-pointer",
-            selectedEntryKey === "plan" &&
-              focusedDirectoryRel === null &&
-              "bg-foreground/[0.08] dark:bg-foreground/12",
+            selectedEntryKey === "plan" && focusedDirectoryRel === null && "bg-canvas-hover",
           )}
           style={{ paddingLeft: "4px" }}
           aria-current={
@@ -1384,8 +1382,8 @@ export function WorkspaceFilesPanel({
                 <div
                   className={cn(
                     "relative flex min-w-0 items-center rounded text-foreground/90",
-                    "hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
-                    focusedDirectoryRel === "" && "bg-foreground/[0.08] dark:bg-foreground/12",
+                    "hover:bg-canvas-hover",
+                    focusedDirectoryRel === "" && "bg-canvas-hover",
                   )}
                 >
                   <button

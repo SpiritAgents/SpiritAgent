@@ -15,11 +15,12 @@ import {
   useOptionalTooltipStableActions,
 } from "@/components/ui/tooltip";
 import {
+  DESKTOP_GHOST_INLINE_TRIGGER,
   DESKTOP_OVERLAY_LIST_ACTION_ITEM,
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
-  instantHoverMotionClass,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
 } from "@/lib/desktop-chrome";
 import { useTruncatedElement } from "@/hooks/use-truncated-element";
 import { resolveWorkspaceSelectorLabel, sameWorkspacePath } from "@/lib/workspace-display-label";
@@ -77,7 +78,7 @@ function WorkspaceSelectorMenuItem({
           "items-start",
           DESKTOP_MENU_TRIGGER_TEXT_CLASS,
           DESKTOP_OVERLAY_LIST_ITEM,
-          selected && "bg-accent/40",
+          selected && DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
         )}
       >
         <div className="min-w-0 flex-1">
@@ -157,9 +158,9 @@ export function WorkspaceSelectorMenu({
                 disabled={disabled}
                 aria-label={t("app.selectWorkspace")}
                 className={cn(
-                  "inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-md border-0 bg-transparent px-1 text-left text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                  DESKTOP_GHOST_INLINE_TRIGGER,
                   DESKTOP_MENU_TRIGGER_TEXT_CLASS,
-                  instantHoverMotionClass,
+                  "text-muted-foreground",
                   triggerClassName,
                 )}
               >
@@ -193,7 +194,7 @@ export function WorkspaceSelectorMenu({
                 className={cn(
                   "gap-1.5",
                   DESKTOP_OVERLAY_LIST_ACTION_ITEM,
-                  workspaceBinding === "none" && "bg-accent/40",
+                  workspaceBinding === "none" && DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
                 )}
               >
                 <MessageCircle className="size-3 shrink-0 text-muted-foreground" aria-hidden />

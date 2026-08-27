@@ -185,7 +185,7 @@ function BrowserNewTabPage({ onNavigate }: { onNavigate(url: string): void }) {
                   type="button"
                   className={cn(
                     "electron-no-drag w-full rounded-md border border-border/50 px-2.5 py-2 text-left",
-                    "hover:bg-foreground/[0.04] dark:hover:bg-foreground/10",
+                    "hover:bg-canvas-hover",
                   )}
                   onClick={() => onNavigate(url)}
                 >

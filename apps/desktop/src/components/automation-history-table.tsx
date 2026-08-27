@@ -15,7 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DESKTOP_INSTANT_HOVER_OVERLAY } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OUTLINE_BORDER,
+  DESKTOP_OUTLINE_FILL_HOVER,
+  instantHoverMotionClass,
+} from "@/lib/desktop-chrome";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { cn } from "@/lib/utils";
 import type { DesktopAutomationRun, DesktopAutomationRunStatus } from "@/types";
@@ -72,8 +76,9 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border border-border/40",
-        "[&_[data-slot=table-row]]:border-border/40",
+        "overflow-hidden rounded-lg",
+        DESKTOP_OUTLINE_BORDER,
+        "[&_[data-slot=table-row]]:border-outline-border",
       )}
     >
       <Table>
@@ -100,10 +105,7 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
           {table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
-              className={cn(
-                "cursor-pointer transition-none hover:bg-transparent",
-                DESKTOP_INSTANT_HOVER_OVERLAY,
-              )}
+              className={cn("cursor-pointer", DESKTOP_OUTLINE_FILL_HOVER, instantHoverMotionClass)}
               onClick={() => onOpenSession(row.original.sessionPath)}
               title={t("automations.openSession")}
             >

@@ -8,7 +8,11 @@ import {
   FilteredOverlayMenu,
   FilteredOverlayMenuTrigger,
 } from "@/components/ui/filtered-overlay-menu";
-import { DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, DESKTOP_SELECT_TRIGGER } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
+  DESKTOP_SELECT_TRIGGER,
+} from "@/lib/desktop-chrome";
 import {
   DEFAULT_FONT_ID,
   DEFAULT_FONT_LABEL,
@@ -201,7 +205,7 @@ export function FontSelect({
             return (
               <DropdownMenuItem
                 key={option.id}
-                className={cn(selected && "bg-accent/40")}
+                className={cn(selected && DESKTOP_OVERLAY_LIST_ITEM_SELECTED)}
                 style={option.fontFamily ? { fontFamily: option.fontFamily } : undefined}
                 onSelect={() => selectValue(option.id)}
               >

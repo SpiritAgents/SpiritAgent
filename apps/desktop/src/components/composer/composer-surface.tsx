@@ -32,7 +32,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import { DESKTOP_ELEVATION_SHADOW_SM, instantHoverMotionClass } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_COMPOSER_GHOST_HOVER,
+  DESKTOP_ELEVATION_SHADOW_SM,
+  instantHoverMotionClass,
+} from "@/lib/desktop-chrome";
 import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
@@ -278,7 +282,7 @@ export function ComposerSurface({
               onModelReasoningEffortSelect={onModelReasoningEffortSelect}
               onModelReasoningModeSelect={onModelReasoningModeSelect}
               onModelThinkingEnabledSelect={onModelThinkingEnabledSelect}
-              triggerClassName="max-w-[min(12rem,100%)] pr-0.5 pl-1"
+              triggerClassName={cn("max-w-[min(12rem,100%)]", DESKTOP_COMPOSER_GHOST_HOVER)}
               menuContentClassName="z-[100]"
             />
           </div>

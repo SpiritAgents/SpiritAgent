@@ -35,8 +35,8 @@ function pathBasename(rel: string): string {
 }
 
 const SEARCH_OPTION_TOGGLE_BTN = cn(
-  "electron-no-drag size-7 shrink-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground",
-  "aria-pressed:bg-muted/35 aria-pressed:text-foreground aria-pressed:hover:bg-muted/50",
+  "electron-no-drag size-7 shrink-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-canvas-hover hover:text-sidebar-foreground",
+  "aria-pressed:bg-canvas-hover aria-pressed:text-foreground aria-pressed:hover:bg-canvas-hover",
   "[&_svg]:size-3.5",
   instantHoverMotionClass,
 );
@@ -339,7 +339,7 @@ export function WorkspaceFilesSearchPanel({
                   >
                     <button
                       type="button"
-                      className="flex w-full min-w-0 items-center gap-1 rounded-md px-2 py-1 text-left text-xs hover:bg-accent"
+                      className="flex w-full min-w-0 items-center gap-1 rounded-md px-2 py-1 text-left text-xs hover:bg-canvas-hover"
                       onClick={() => toggleExpanded(row.normalizedPath)}
                     >
                       {expandedPaths.has(row.normalizedPath) ? (
@@ -398,7 +398,7 @@ const WorkspaceSearchMatchRow = memo(function WorkspaceSearchMatchRow({
         type="button"
         className={cn(
           "flex w-full min-w-0 items-center rounded py-1 pl-7 pr-2 text-left text-xs",
-          "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+          "text-foreground/90 hover:bg-canvas-hover",
         )}
         onClick={() => onOpen(match)}
       >

@@ -48,7 +48,7 @@ export function ProviderPickerRowButton({
   return (
     <button
       type="button"
-      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm hover:bg-overlay-hover focus-visible:bg-overlay-hover focus-visible:outline-none"
       onClick={() => onSelect(row.id)}
     >
       <ProviderIcon providerId={row.id} />

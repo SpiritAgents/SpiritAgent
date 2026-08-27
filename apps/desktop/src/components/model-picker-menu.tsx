@@ -21,9 +21,10 @@ import {
   useOptionalTooltipStableActions,
 } from "@/components/ui/tooltip";
 import {
+  DESKTOP_GHOST_MENU_TRIGGER,
   DESKTOP_OVERLAY_LIST_GROUP_LABEL,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
-  instantHoverMotionClass,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
 } from "@/lib/desktop-chrome";
 import { isMacDesktopPlatform, modSlashShortcutKbdKeys } from "@/lib/desktop-shell";
 import {
@@ -118,7 +119,7 @@ const ModelPickerRow = memo(function ModelPickerRow({
   return (
     <TooltipItem item={model}>
       <DropdownMenuItem
-        className={cn(isActive && "bg-accent/40")}
+        className={cn(isActive && DESKTOP_OVERLAY_LIST_ITEM_SELECTED)}
         onSelect={() => {
           onSelectModel(modelRef);
         }}
@@ -305,9 +306,9 @@ export function ModelPickerMenu({
                   disabled={disabled}
                   onFocus={handleTriggerFocus}
                   className={cn(
-                    "inline-flex h-7 min-w-0 max-w-full items-center gap-0.5 rounded-md border-0 bg-transparent px-1 text-left text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                    DESKTOP_GHOST_MENU_TRIGGER,
                     DESKTOP_MENU_TRIGGER_TEXT_CLASS,
-                    instantHoverMotionClass,
+                    "text-muted-foreground",
                     triggerClassName,
                   )}
                 >

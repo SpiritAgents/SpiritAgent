@@ -11,7 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DESKTOP_OVERLAY_SHORT_LIST_PADDING } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_GHOST_INLINE_TRIGGER,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
+  DESKTOP_OVERLAY_SHORT_LIST_PADDING,
+} from "@/lib/desktop-chrome";
 import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +59,7 @@ export function WorkLocationMenu({
               aria-label={t("composer.selectWorkLocation")}
               disabled={disabled}
               className={cn(
-                "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                DESKTOP_GHOST_INLINE_TRIGGER,
                 DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                 "text-muted-foreground",
               )}
@@ -78,7 +82,10 @@ export function WorkLocationMenu({
               <DropdownMenuItem
                 key={option}
                 onSelect={() => onWorkLocationChange(option)}
-                className={cn("flex items-center gap-2", workLocation === option && "bg-accent/40")}
+                className={cn(
+                  "flex items-center gap-2",
+                  workLocation === option && DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
+                )}
               >
                 <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="min-w-0 truncate">{workLocationLabel(option)}</span>

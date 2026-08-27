@@ -9,6 +9,7 @@ import { Tooltip as TooltipPrimitive } from "radix-ui";
 import {
   isTooltipAnchorSlot,
   isTooltipItemHighlighted,
+  isTooltipPointerHighlightSlot,
   subscribeTooltipItemInteraction,
 } from "@/hooks/tooltip-item-interaction-store";
 import { useGlobalTooltipSwitch } from "@/hooks/use-global-tooltip-switch";
@@ -735,6 +736,16 @@ function TooltipTrigger({
     [autoId, itemProp],
   );
   const triggerElementRef = React.useRef<HTMLElement | null>(null);
+  const pointerRegistrationId = registration?.registrationId ?? "";
+  const pointerItemId = registration ? registration.getItemId(switchItem) : "";
+  const isPointerHover = useSyncExternalStore(
+    subscribeTooltipItemInteraction,
+    () =>
+      pointerRegistrationId !== "" && pointerItemId !== ""
+        ? isTooltipPointerHighlightSlot(pointerRegistrationId, pointerItemId)
+        : false,
+    () => false,
+  );
 
   React.useLayoutEffect(() => {
     if (!global || !registration) {
@@ -776,6 +787,7 @@ function TooltipTrigger({
 
   const attachTriggerPointerHandlers = (child: React.ReactElement<Record<string, unknown>>) =>
     React.cloneElement(child, {
+      ...(isPointerHover ? { "data-pointer-hover": "" } : {}),
       ref: (node: HTMLElement | null) => {
         triggerElementRef.current = node;
         if (node?.isConnected) {

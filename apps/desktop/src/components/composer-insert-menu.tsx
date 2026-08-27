@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  DESKTOP_COMPOSER_GHOST_HOVER,
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_LIST_GAP,
@@ -98,8 +99,9 @@ export function ComposerInsertMenu({
               aria-label={t("composer.openInsertPanel")}
               disabled={disabled}
               className={cn(
-                "size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground",
-                "aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50",
+                DESKTOP_COMPOSER_GHOST_HOVER,
+                "size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none",
+                "hover:text-sidebar-foreground aria-expanded:text-sidebar-foreground",
                 instantHoverMotionClass,
               )}
             >

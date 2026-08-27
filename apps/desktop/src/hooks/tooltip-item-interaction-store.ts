@@ -75,10 +75,16 @@ export function isTooltipAnchorSlot(registrationId: string, itemId: string): boo
   return anchorSlot?.registrationId === registrationId && anchorSlot?.itemId === itemId;
 }
 
+export function isTooltipPointerHighlightSlot(registrationId: string, itemId: string): boolean {
+  return (
+    pointerHighlightSlot?.registrationId === registrationId &&
+    pointerHighlightSlot.itemId === itemId
+  );
+}
+
 export function isTooltipItemHighlighted(registrationId: string, itemId: string): boolean {
   return (
-    (pointerHighlightSlot?.registrationId === registrationId &&
-      pointerHighlightSlot.itemId === itemId) ||
+    isTooltipPointerHighlightSlot(registrationId, itemId) ||
     (activeHighlightSlot?.registrationId === registrationId &&
       activeHighlightSlot.itemId === itemId)
   );

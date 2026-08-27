@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  DESKTOP_GHOST_INLINE_TRIGGER,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
   DESKTOP_OVERLAY_SHORT_LIST_PADDING,
   DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
 } from "@/lib/desktop-chrome";
@@ -95,7 +97,7 @@ export function ApprovalLevelMenu({
               aria-label={t("composer.selectApprovalLevel")}
               disabled={disabled}
               className={cn(
-                "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                DESKTOP_GHOST_INLINE_TRIGGER,
                 DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                 approvalLevelTriggerTextClass(approvalLevel),
               )}
@@ -128,7 +130,10 @@ export function ApprovalLevelMenu({
               <DropdownMenuItem
                 key={option.value}
                 onSelect={() => onApprovalLevelChange(option.value)}
-                className={cn("gap-2", approvalLevel === option.value && "bg-accent/40")}
+                className={cn(
+                  "gap-2",
+                  approvalLevel === option.value && DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
+                )}
               >
                 <OptionIcon className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
                 {option.label}

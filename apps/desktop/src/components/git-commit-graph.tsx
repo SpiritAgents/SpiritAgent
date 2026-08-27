@@ -522,7 +522,7 @@ function CommitGraphRowWithHover({
       type="button"
       className={cn(
         "flex w-full min-w-0 items-center py-1 pr-2 text-left",
-        isHighlighted ? "bg-muted/30" : "hover:bg-muted/30",
+        isHighlighted ? "bg-canvas-hover" : "hover:bg-canvas-hover",
       )}
       data-commit-oid={row.commit.oid}
       onPointerEnter={onPointerEnter}

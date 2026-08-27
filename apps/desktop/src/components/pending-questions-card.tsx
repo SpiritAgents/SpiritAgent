@@ -16,8 +16,13 @@ import type { PendingQuestionsSnapshot } from "@/types";
 
 const questionRowBleedClass = "-mx-2 box-border w-[calc(100%+1rem)] px-2";
 
-const questionOptionSurfaceClass =
-  "rounded-lg border-0 bg-transparent py-1.5 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10";
+const questionOverlayHoverClass =
+  "hover:bg-overlay-hover focus-visible:bg-overlay-hover aria-expanded:bg-overlay-hover aria-expanded:hover:bg-overlay-hover";
+
+const questionOptionSurfaceClass = cn(
+  "rounded-lg border-0 bg-transparent py-1.5",
+  questionOverlayHoverClass,
+);
 
 const questionRowIndexClass = "text-muted-foreground [font-variant-numeric:lining-nums]";
 
@@ -139,7 +144,11 @@ export function PendingQuestionsCard({
               type="button"
               variant="ghost"
               size="icon-sm"
-              className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, "text-muted-foreground")}
+              className={cn(
+                DESKTOP_CHROME_TOGGLE_ICON_BTN,
+                "text-muted-foreground",
+                questionOverlayHoverClass,
+              )}
               disabled={questionsBusy || currentIndex <= 0}
               onClick={() => setCurrentIndex((index) => Math.max(index - 1, 0))}
             >
@@ -150,7 +159,11 @@ export function PendingQuestionsCard({
               type="button"
               variant="ghost"
               size="icon-sm"
-              className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, "text-muted-foreground")}
+              className={cn(
+                DESKTOP_CHROME_TOGGLE_ICON_BTN,
+                "text-muted-foreground",
+                questionOverlayHoverClass,
+              )}
               disabled={questionsBusy || currentIndex >= questions.length - 1}
               onClick={() => setCurrentIndex((index) => Math.min(index + 1, questions.length - 1))}
             >
@@ -171,7 +184,7 @@ export function PendingQuestionsCard({
                 <button
                   key={option.id}
                   type="button"
-                  className={cn(questionOptionClass, selected && "bg-primary/8")}
+                  className={cn(questionOptionClass, selected && "bg-overlay-hover")}
                   disabled={questionsBusy}
                   onClick={() =>
                     question.allowMultiple
@@ -217,7 +230,8 @@ export function PendingQuestionsCard({
             variant="ghost"
             size="sm"
             className={cn(
-              "px-2 text-muted-foreground hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+              "px-2 text-muted-foreground",
+              questionOverlayHoverClass,
               instantHoverMotionClass,
               "active:!translate-y-0",
             )}

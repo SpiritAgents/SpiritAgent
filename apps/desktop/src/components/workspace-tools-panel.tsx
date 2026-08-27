@@ -769,7 +769,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                               )
                             : "border-b-background bg-background",
                         )
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                      : "text-muted-foreground hover:bg-canvas-hover hover:text-sidebar-foreground",
                   )}
                 >
                   {displayTitle ? (
@@ -787,7 +787,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                       type="button"
                       className={cn(
                         "absolute inset-y-0 right-0 hidden w-8 items-center justify-end rounded-tr-md pr-1 outline-none group-hover/tab:flex",
-                        selected ? "bg-background" : "bg-accent",
+                        selected ? "bg-background" : "bg-canvas-hover",
                       )}
                       style={maskFadeHorizontalEnd}
                       aria-label={t("workspace.closeTab", { label })}
@@ -815,8 +815,8 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                   data-workspace-new-tool-tab=""
                   aria-label={t("workspace.newToolTab")}
                   className={cn(
-                    "mb-1 size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground",
-                    "aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50",
+                    "mb-1 size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-canvas-hover hover:text-sidebar-foreground",
+                    "aria-expanded:bg-canvas-hover aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-canvas-hover",
                     instantHoverMotionClass,
                   )}
                 >

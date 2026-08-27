@@ -10,6 +10,11 @@ import {
 import { LoaderCircle, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import {
+  DESKTOP_ITEM_CARD_HOVER_BORDER,
+  DESKTOP_ITEM_CARD_SURFACE,
+  DESKTOP_OUTLINE_FILL_HOVER,
+} from "@/lib/desktop-chrome";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 import { Button } from "@/components/ui/button";
 import {
@@ -147,7 +152,13 @@ export function AutomationsView({
             onContextMenuOpenChange={handleContextMenuOpenChange}
             onRequestDelete={handleContextMenuDelete}
           >
-            <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
+            <div
+              className={cn(
+                DESKTOP_ITEM_CARD_SURFACE,
+                "divide-y divide-border/35 overflow-hidden",
+                DESKTOP_ITEM_CARD_HOVER_BORDER,
+              )}
+            >
               {items.length === 0 ? (
                 <p className="px-4 py-10 text-center text-sm text-muted-foreground">
                   {t("automations.empty")}
@@ -298,7 +309,8 @@ function AutomationListRow({
       onClick={onOpen}
       className={cn(
         "flex w-full flex-col gap-1 px-4 py-4 text-left",
-        "hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        DESKTOP_OUTLINE_FILL_HOVER,
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
       )}
     >
       <div className="flex flex-wrap items-center gap-2">

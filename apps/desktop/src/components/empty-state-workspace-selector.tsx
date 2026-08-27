@@ -32,7 +32,7 @@ export function EmptyStateWorkspaceSelector({
         onSelectNoWorkspace={onSelectNoWorkspace}
         onAddWorkspace={onAddWorkspace}
         showNoWorkspaceOption
-        triggerClassName={cn("h-8 max-w-[min(24rem,100%)] pr-0.5 pl-1 hover:bg-muted/40")}
+        triggerClassName={cn("h-8 max-w-[min(24rem,100%)]")}
       />
     </div>
   );

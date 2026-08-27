@@ -1,7 +1,10 @@
 import type { ComponentProps, ReactNode } from "react";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { DESKTOP_OVERLAY_LIST_ITEM } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OVERLAY_LIST_ITEM,
+  DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
+} from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 
 type ComposerSuggestionMenuItemProps = {
@@ -29,7 +32,7 @@ export function ComposerSuggestionMenuItem({
       className={cn(
         "items-start",
         DESKTOP_OVERLAY_LIST_ITEM,
-        selected && "bg-accent text-accent-foreground",
+        selected && DESKTOP_OVERLAY_LIST_ITEM_SELECTED,
         className,
       )}
       onSelect={(event) => {

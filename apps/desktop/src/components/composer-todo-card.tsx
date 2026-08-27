@@ -88,7 +88,7 @@ export function ComposerTodoCard({
       <button
         type="button"
         onClick={toggleExpanded}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-foreground/5"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-canvas-hover"
         aria-expanded={expanded}
       >
         <StatusIcon

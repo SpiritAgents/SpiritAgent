@@ -69,7 +69,7 @@ function ChangeRow({
         disabled={!clickable}
         className={cn(
           "flex w-full min-w-0 items-center gap-1.5 px-2 py-1 text-left text-xs",
-          clickable && "cursor-pointer hover:bg-muted/30",
+          clickable && "cursor-pointer hover:bg-canvas-hover",
         )}
         title={change.path}
         onClick={() => onOpen?.(change.path)}

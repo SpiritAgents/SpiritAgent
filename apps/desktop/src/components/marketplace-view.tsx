@@ -27,6 +27,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  DESKTOP_ITEM_CARD_HOVER_BORDER,
+  DESKTOP_ITEM_CARD_SURFACE,
+  DESKTOP_OUTLINE_FILL_UNDERLAY,
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
@@ -508,8 +511,10 @@ export function MarketplaceView({
                       type="button"
                       onClick={() => openDetail(item.extensionId)}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5 text-left",
-                        "hover:border-border hover:bg-muted/30",
+                        DESKTOP_ITEM_CARD_SURFACE,
+                        "relative isolate flex w-full items-center gap-3 overflow-hidden px-3 py-2.5 text-left",
+                        DESKTOP_OUTLINE_FILL_UNDERLAY,
+                        DESKTOP_ITEM_CARD_HOVER_BORDER,
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
                       )}
                     >
@@ -667,7 +672,7 @@ export function MarketplaceView({
                           "rounded-md px-3 py-2 text-sm",
                           activeTab === tabId
                             ? "font-normal text-foreground underline decoration-foreground/80 underline-offset-[10px]"
-                            : "text-muted-foreground hover:bg-muted/60 hover:text-sidebar-foreground",
+                            : "text-muted-foreground hover:bg-canvas-hover hover:text-sidebar-foreground",
                         )}
                         onClick={() => setActiveTab(tabId)}
                       >

@@ -1,5 +1,6 @@
 import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
 
+import { DESKTOP_ITEM_HIGHLIGHT } from "@/lib/desktop-chrome";
 import type { ToolBlockSnapshot } from "@/types";
 
 /** Secondary text of short tool cards (shell reason, file name, LSP summary, etc.). */
@@ -16,8 +17,7 @@ export const toolCardFileNameDetailClass = "text-muted-foreground/42 dark:text-m
 export const toolCardFailedStatusClass = "text-muted-foreground/30 dark:text-muted-foreground/32";
 
 /** Clickable short tool card trigger: the whole card summary brightens uniformly while keeping the grayscale hierarchy. */
-export const clickableToolCardTriggerClass =
-  "transition-[filter] duration-150 hover:brightness-[1.12] focus-visible:brightness-[1.12] motion-reduce:transition-none";
+export const clickableToolCardTriggerClass = DESKTOP_ITEM_HIGHLIGHT;
 
 export function lspDiagnosticsCounts(diagnostics: LspWriteDiagnosticsUi): {
   errorCount: number;

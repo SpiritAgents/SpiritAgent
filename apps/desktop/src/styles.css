@@ -42,8 +42,17 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  /* Default form control border: equivalent to border-border/60, aligned with low-contrast blocks such as extension cards */
-  --control-border: color-mix(in oklab, var(--border) 60%, transparent);
+  /* Outline rest border: Input / Outline button / item cards (same `--border` mix) */
+  --outline-border: color-mix(in oklab, var(--border) 60%, transparent);
+  /* Light: full `--border` is already soft on white */
+  --outline-border-hover: var(--border);
+  /* Outline wash: Input / Outline button hover, item-card and history-row hover */
+  --outline-fill: color-mix(in oklab, var(--muted) 30%, transparent);
+  --control-border: var(--outline-border);
+  /* Canvas hover: 6% wash on normal page/sidebar surfaces; not for overlays */
+  --canvas-hover: color-mix(in oklab, var(--foreground) 6%, transparent);
+  /* Overlay hover: light uses a lighter mix so the wash does not read dirty on white */
+  --overlay-hover: color-mix(in oklab, var(--foreground) 3%, var(--popover));
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -117,7 +126,13 @@ html.dark,
   --destructive: oklch(0.704 0.191 22.216);
   --border: #272727;
   --input: #272727;
-  --control-border: color-mix(in oklab, var(--border) 60%, transparent);
+  --outline-border: color-mix(in oklab, var(--border) 60%, transparent);
+  /* Solid `--border` (#272727) is too hard on black; step up from rest, not full */
+  --outline-border-hover: color-mix(in oklab, var(--border) 80%, transparent);
+  --outline-fill: color-mix(in oklab, var(--muted) 30%, transparent);
+  --control-border: var(--outline-border);
+  --canvas-hover: color-mix(in oklab, white 6%, transparent);
+  --overlay-hover: color-mix(in oklab, var(--foreground) 6%, var(--popover));
   --ring: #3f3f3f;
   --chart-1: #e4e4e4;
   --chart-2: #a1a1a1;
@@ -433,7 +448,12 @@ html.spirit-launch-splash-exiting
   --color-dialog-panel-border: var(--dialog-panel-border);
   --color-git-action-split: var(--git-action-split);
   --color-ring: var(--ring);
+  --color-outline-border: var(--outline-border);
+  --color-outline-border-hover: var(--outline-border-hover);
+  --color-outline-fill: var(--outline-fill);
   --color-control-border: var(--control-border);
+  --color-canvas-hover: var(--canvas-hover);
+  --color-overlay-hover: var(--overlay-hover);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
