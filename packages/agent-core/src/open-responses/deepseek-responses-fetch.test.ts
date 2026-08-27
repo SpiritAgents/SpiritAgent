@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import {
+  collectDeepSeekBuiltInInputInsertions,
   createDeepSeekResponsesAwareFetch,
+  injectDeepSeekBuiltInInputItems,
   resolveDeepSeekResponsesReasoningEffort,
+  runWithDeepSeekBuiltInInputContext,
 } from "./deepseek-responses-fetch.js";
 import type { OpenResponsesTransportConfig } from "./responses-compat.js";
 
@@ -131,5 +134,84 @@ test("resolveDeepSeekResponsesReasoningEffort maps vendorExtendedThinking false 
       reasoningEffort: "max",
     }),
     "max",
+  );
+});
+
+test("injectDeepSeekBuiltInInputItems inserts web_search_call before the matching assistant", () => {
+  const insertions = new Map([
+    [
+      0,
+      [
+        {
+          type: "web_search_call",
+          id: "ws_1",
+          status: "completed",
+        },
+      ],
+    ],
+  ]);
+  const injected = injectDeepSeekBuiltInInputItems(
+    [
+      { role: "user", type: "message", content: [{ type: "input_text", text: "q1" }] },
+      { role: "assistant", type: "message", content: [{ type: "output_text", text: "a1" }] },
+      { role: "user", type: "message", content: [{ type: "input_text", text: "q2" }] },
+    ],
+    insertions,
+  );
+
+  assert.deepEqual(
+    injected.map((item) =>
+      typeof item === "object" && item !== null && "type" in item ? item.type : undefined,
+    ),
+    ["message", "web_search_call", "message", "message"],
+  );
+  assert.equal(
+    typeof injected[1] === "object" && injected[1] !== null && "id" in injected[1]
+      ? injected[1].id
+      : undefined,
+    "ws_1",
+  );
+});
+
+test("deepseek responses fetch injects stored web_search_call items into input", async () => {
+  let capturedBody: Record<string, unknown> | undefined;
+  const baseFetch: typeof fetch = async (_input, init) => {
+    capturedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    return new Response("{}", { status: 200 });
+  };
+
+  const fetchImpl = createDeepSeekResponsesAwareFetch(deepseekResponsesConfig, baseFetch);
+  const insertions = collectDeepSeekBuiltInInputInsertions([
+    { role: "user", content: "q1" },
+    {
+      role: "assistant",
+      content: "a1",
+      providerState: {
+        openResponses: {
+          builtInOutputItems: [{ type: "web_search_call", id: "ws_hist", status: "completed" }],
+        },
+      },
+    },
+    { role: "user", content: "q2" },
+  ]);
+
+  await runWithDeepSeekBuiltInInputContext(insertions, () =>
+    fetchImpl("https://api.deepseek.com/responses", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "deepseek-v4-flash",
+        input: [
+          { role: "user", type: "message", content: [{ type: "input_text", text: "q1" }] },
+          { role: "assistant", type: "message", content: [{ type: "output_text", text: "a1" }] },
+          { role: "user", type: "message", content: [{ type: "input_text", text: "q2" }] },
+        ],
+      }),
+    }),
+  );
+
+  const input = capturedBody?.input as Array<{ type?: string; id?: string }> | undefined;
+  assert.equal(
+    input?.some((item) => item.type === "web_search_call" && item.id === "ws_hist"),
+    true,
   );
 });

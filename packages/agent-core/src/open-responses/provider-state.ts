@@ -81,6 +81,39 @@ export function readResponseIdFromProviderState(message: JsonObject): string | u
   return undefined;
 }
 
+const BUILT_IN_OUTPUT_ITEMS_KEY = "builtInOutputItems";
+
+function openResponsesProviderKey(
+  config: Pick<OpenResponsesTransportConfig, "llmVendor" | "responsesProvider" | "model">,
+): (typeof RESPONSE_ID_PROVIDER_KEYS)[number] {
+  return resolveOpenResponsesSdkProvider(config) === "openai" ? "openAiResponses" : "openResponses";
+}
+
+function mergeOpenResponsesProviderBucket(
+  message: JsonObject,
+  providerKey: (typeof RESPONSE_ID_PROVIDER_KEYS)[number],
+  patch: JsonObject,
+): JsonValue {
+  const existingProviderState: JsonObject = isJsonObject(message.providerState)
+    ? (cloneJsonValue(message.providerState) as JsonObject)
+    : {};
+  const existingBucketValue = existingProviderState[providerKey];
+  const existingBucket = isJsonObject(existingBucketValue)
+    ? (cloneJsonValue(existingBucketValue) as JsonObject)
+    : {};
+
+  return {
+    ...message,
+    providerState: {
+      ...existingProviderState,
+      [providerKey]: {
+        ...existingBucket,
+        ...patch,
+      },
+    },
+  };
+}
+
 export function attachResponseIdToAssistantMessage(
   config: OpenResponsesTransportConfig,
   message: JsonValue,
@@ -90,21 +123,44 @@ export function attachResponseIdToAssistantMessage(
     return message;
   }
 
-  const providerKey =
-    resolveOpenResponsesSdkProvider(config) === "openai" ? "openAiResponses" : "openResponses";
-  const existingProviderState: JsonObject = isJsonObject(message.providerState)
-    ? (cloneJsonValue(message.providerState) as JsonObject)
-    : {};
+  return mergeOpenResponsesProviderBucket(message, openResponsesProviderKey(config), {
+    responseId,
+  });
+}
 
-  return {
-    ...message,
-    providerState: {
-      ...existingProviderState,
-      [providerKey]: {
-        responseId,
-      },
-    },
-  };
+export function attachBuiltInOutputItemsToAssistantMessage(
+  config: OpenResponsesTransportConfig,
+  message: JsonValue,
+  items: readonly JsonObject[],
+): JsonValue {
+  if (items.length === 0 || !isJsonObject(message)) {
+    return message;
+  }
+
+  return mergeOpenResponsesProviderBucket(message, openResponsesProviderKey(config), {
+    [BUILT_IN_OUTPUT_ITEMS_KEY]: items.map((item) => cloneJsonValue(item)),
+  });
+}
+
+export function readBuiltInOutputItemsFromMessage(message: JsonObject): JsonObject[] {
+  const buckets: unknown[] = [];
+  if (isJsonObject(message.providerState)) {
+    buckets.push(message.providerState.openResponses, message.providerState.openAiResponses);
+  }
+  buckets.push(message.openResponses, message.openAiResponses);
+
+  for (const bucket of buckets) {
+    if (!isJsonObject(bucket as JsonValue)) {
+      continue;
+    }
+    const items = (bucket as JsonObject)[BUILT_IN_OUTPUT_ITEMS_KEY];
+    if (!Array.isArray(items)) {
+      continue;
+    }
+    return items.filter((item): item is JsonObject => isJsonObject(item as JsonValue));
+  }
+
+  return [];
 }
 
 export function extractResponseIdFromGenerateTextResult(result: {

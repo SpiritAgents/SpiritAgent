@@ -82,6 +82,97 @@ test("responses streaming uses only the first reasoning-delta item id", async ()
   assert.deepEqual(chunks, ["Plan."]);
 });
 
+test("responses streaming accepts a new reasoning-delta id after a built-in tool", async () => {
+  async function* stream(): AsyncGenerator<TextStreamPart<any>> {
+    yield { type: "reasoning-delta", id: "rs_before", text: "Need sources." };
+    yield {
+      type: "raw",
+      rawValue: {
+        type: "response.output_item.done",
+        item: {
+          type: "web_search_call",
+          id: "ws_1",
+          status: "completed",
+          action: { type: "search", queries: ["SpaceXAI"] },
+        },
+      },
+    };
+    yield { type: "reasoning-delta", id: "rs_after", text: " Search finished." };
+    yield { type: "text-delta", id: "t3", text: "Done" };
+    yield {
+      type: "raw",
+      rawValue: {
+        type: "response.completed",
+        response: { id: "resp-after-builtin" },
+      },
+    };
+  }
+
+  const chunks = await collectThinkingChunks(stream());
+  assert.deepEqual(chunks, ["Need sources.", " Search finished."]);
+});
+
+test("responses streaming persists web_search_call items on the assistant message", async () => {
+  const deepseekConfig: OpenResponsesTransportConfig = {
+    transportKind: "open-responses",
+    apiKey: "test",
+    model: "deepseek-v4-flash",
+    llmVendor: "deepseek",
+    responsesProvider: "open-responses-compatible",
+  };
+
+  async function* stream(): AsyncGenerator<TextStreamPart<any>> {
+    yield {
+      type: "raw",
+      rawValue: {
+        type: "response.output_item.done",
+        item: {
+          type: "web_search_call",
+          id: "ws_persist",
+          status: "completed",
+          action: { type: "search", queries: ["xAI"] },
+        },
+      },
+    };
+    yield { type: "text-delta", id: "t4", text: "Answer" };
+    yield {
+      type: "raw",
+      rawValue: {
+        type: "response.completed",
+        response: { id: "resp-persist" },
+      },
+    };
+  }
+
+  const state: ToolAgentState = { messages: [], steps: 0 };
+  const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
+  for await (const _event of responsesEventStreamToRuntimeEvents(
+    deepseekConfig,
+    stream(),
+    {},
+    state,
+    [],
+    completion,
+  )) {
+    // drain
+  }
+  await completion.promise;
+
+  const assistant = state.messages.at(-1);
+  assert.ok(assistant && typeof assistant === "object" && !Array.isArray(assistant));
+  const providerState = (
+    assistant as { providerState?: { openResponses?: { builtInOutputItems?: unknown } } }
+  ).providerState;
+  assert.deepEqual(providerState?.openResponses?.builtInOutputItems, [
+    {
+      type: "web_search_call",
+      id: "ws_persist",
+      status: "completed",
+      action: { type: "search", queries: ["xAI"] },
+    },
+  ]);
+});
+
 test("responses streaming falls back to raw reasoning when reasoning-delta is absent", async () => {
   const volcengineConfig: OpenResponsesTransportConfig = {
     transportKind: "open-responses",
