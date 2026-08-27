@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
+import { ComposerChipNavigateProvider } from "@/contexts/composer-chip-navigate-context";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
 import { isSideChatPaneProvisionalSessionPath } from "@/lib/session-path-kind";
 import { canBeginSideChat } from "@/lib/fork-eligibility";
@@ -172,61 +173,67 @@ export function ConversationPaneHost({
   const isSideChatPane = isSideChatPaneSessionPath(sessionPath);
 
   return (
-    <ConversationView
-      useTranslucency={useTranslucency}
+    <ComposerChipNavigateProvider
+      runtime={controllerInput.runtime}
       snapshot={pane.paneSnapshot}
-      isEmptySession={pane.paneIsEmptySession}
-      hideStaleConversationMessages={pane.hideStaleConversationMessages}
-      showComposerDock
-      showSessionSidebarToggle={splitPaneCount <= 1 || isSessionSidebarAnchorPane}
-      showWorkspaceToggle={isAnchorPane}
-      showSplitMenu
-      showSideChat={showSideChat}
-      sessionTitleSuffix={isSideChatPane ? controllerInput.t("app.sideChat") : null}
-      showClosePane={showClosePane}
-      onSideChat={onSideChat}
-      onSplit={onSplit}
-      onSplitVertical={onSplitVertical}
-      onClosePane={onClosePane}
-      paneId={paneId}
-      onPaneFocus={onFocusPane}
-      onPaneDragStart={paneReorderEnabled ? onPaneDragStart : undefined}
-      onPaneDragLeave={paneReorderEnabled ? onPaneDragLeave : undefined}
-      onPaneDrop={paneReorderEnabled ? onPaneDrop : undefined}
-      onSidebarSessionDrop={onSidebarSessionDrop}
-      paneDropOverlayActive={paneDropOverlayActive}
-      paneDragSourcePaneId={paneDragSourcePaneId}
-      sidebarSessionDragActive={sidebarSessionDragActive}
-      subagentViewActive={pane.subagentViewActive}
-      onExitSubagentViewer={pane.onExitSubagentViewer}
-      onNewSession={controllerInput.onNewSession}
-      newSessionBusy={controllerInput.newSessionBusy}
-      showDeleteSession={!pane.paneIsEmptySession && Boolean(controllerInput.onDeleteSession)}
-      deleteSessionPath={sessionPath}
-      deleteSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
-      deleteSessionBusy={controllerInput.deleteSessionBusy}
-      conversationBusy={pane.paneSnapshot?.conversation.isBusy === true}
-      onDeleteSession={handleDeleteSession}
-      onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
-      showRenameSession={
-        !isSideChatPane && !pane.paneIsEmptySession && Boolean(controllerInput.onRenameSession)
-      }
-      renameSessionPath={sessionPath}
-      renameSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
-      renameSessionBusy={controllerInput.renameSessionBusy}
-      onRenameSession={handleRenameSession}
-      compactionDemoActive={pane.compactionDemoActive}
-      onCompactionDemoStop={controllerInput.onCompactionDemoStop}
-      longConversationListDemoActive={pane.longConversationListDemoActive}
-      onLongConversationListDemoStop={controllerInput.onLongConversationListDemoStop}
-      longConversationListDemoStats={controllerInput.longConversationListDemo.stats}
-      rewindDraft={pane.rewindDraft}
-      onRewindDraftClear={pane.onRewindDraftClear}
-      conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
-      conversationScrollOccludeMaskStyle={pane.conversationScrollOccludeMaskStyle}
-      list={pane.list}
-      composerDock={pane.composerDock}
-      branchCheckout={pane.branchCheckout}
-    />
+      workspaceTools={controllerInput.workspaceTools}
+    >
+      <ConversationView
+        useTranslucency={useTranslucency}
+        snapshot={pane.paneSnapshot}
+        isEmptySession={pane.paneIsEmptySession}
+        hideStaleConversationMessages={pane.hideStaleConversationMessages}
+        showComposerDock
+        showSessionSidebarToggle={splitPaneCount <= 1 || isSessionSidebarAnchorPane}
+        showWorkspaceToggle={isAnchorPane}
+        showSplitMenu
+        showSideChat={showSideChat}
+        sessionTitleSuffix={isSideChatPane ? controllerInput.t("app.sideChat") : null}
+        showClosePane={showClosePane}
+        onSideChat={onSideChat}
+        onSplit={onSplit}
+        onSplitVertical={onSplitVertical}
+        onClosePane={onClosePane}
+        paneId={paneId}
+        onPaneFocus={onFocusPane}
+        onPaneDragStart={paneReorderEnabled ? onPaneDragStart : undefined}
+        onPaneDragLeave={paneReorderEnabled ? onPaneDragLeave : undefined}
+        onPaneDrop={paneReorderEnabled ? onPaneDrop : undefined}
+        onSidebarSessionDrop={onSidebarSessionDrop}
+        paneDropOverlayActive={paneDropOverlayActive}
+        paneDragSourcePaneId={paneDragSourcePaneId}
+        sidebarSessionDragActive={sidebarSessionDragActive}
+        subagentViewActive={pane.subagentViewActive}
+        onExitSubagentViewer={pane.onExitSubagentViewer}
+        onNewSession={controllerInput.onNewSession}
+        newSessionBusy={controllerInput.newSessionBusy}
+        showDeleteSession={!pane.paneIsEmptySession && Boolean(controllerInput.onDeleteSession)}
+        deleteSessionPath={sessionPath}
+        deleteSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
+        deleteSessionBusy={controllerInput.deleteSessionBusy}
+        conversationBusy={pane.paneSnapshot?.conversation.isBusy === true}
+        onDeleteSession={handleDeleteSession}
+        onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
+        showRenameSession={
+          !isSideChatPane && !pane.paneIsEmptySession && Boolean(controllerInput.onRenameSession)
+        }
+        renameSessionPath={sessionPath}
+        renameSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
+        renameSessionBusy={controllerInput.renameSessionBusy}
+        onRenameSession={handleRenameSession}
+        compactionDemoActive={pane.compactionDemoActive}
+        onCompactionDemoStop={controllerInput.onCompactionDemoStop}
+        longConversationListDemoActive={pane.longConversationListDemoActive}
+        onLongConversationListDemoStop={controllerInput.onLongConversationListDemoStop}
+        longConversationListDemoStats={controllerInput.longConversationListDemo.stats}
+        rewindDraft={pane.rewindDraft}
+        onRewindDraftClear={pane.onRewindDraftClear}
+        conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
+        conversationScrollOccludeMaskStyle={pane.conversationScrollOccludeMaskStyle}
+        list={pane.list}
+        composerDock={pane.composerDock}
+        branchCheckout={pane.branchCheckout}
+      />
+    </ComposerChipNavigateProvider>
   );
 }

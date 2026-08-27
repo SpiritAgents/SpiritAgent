@@ -70,6 +70,7 @@ import {
 } from "@/lib/workspace-file-icon-sizes";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
+import { NavigableChipLabel } from "@/contexts/composer-chip-navigate-context";
 
 function ElementCard({ tagName, url }: { tagName: string; url: string }) {
   return (
@@ -78,7 +79,9 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, BROWSER_ELEMENT_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      {`<${tagName}>`}
+      <NavigableChipLabel
+        target={{ kind: "element", pageUrl: url }}
+      >{`<${tagName}>`}</NavigableChipLabel>
     </span>
   );
 }
@@ -95,7 +98,9 @@ function WorkspaceFileCard({ path }: { path: string }) {
         colorMode="inherit"
         className={cn("shrink-0", presentation.iconClass)}
       />
-      {workspaceFileBasename(normalized)}
+      <NavigableChipLabel target={{ kind: "workspaceFile", path: normalized }}>
+        {workspaceFileBasename(normalized)}
+      </NavigableChipLabel>
     </span>
   );
 }
@@ -108,7 +113,9 @@ function SessionReferenceCard({ path, title }: { path: string; title: string }) 
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, WORKSPACE_FILE_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      {label}
+      <NavigableChipLabel target={{ kind: "sessionReference", transcriptPath: path }}>
+        {label}
+      </NavigableChipLabel>
     </span>
   );
 }
@@ -116,7 +123,7 @@ function SessionReferenceCard({ path, title }: { path: string; title: string }) 
 function SkillCard({ alias }: { alias: string }) {
   return (
     <span title={alias} className={SKILL_CHIP_CLASS} aria-label={alias}>
-      {alias}
+      <NavigableChipLabel target={{ kind: "skill", alias }}>{alias}</NavigableChipLabel>
     </span>
   );
 }
@@ -151,7 +158,9 @@ function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDif
       className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <Icon className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, PR_DIFF_CHIP_ICON_CLASS)} aria-hidden />
-      {formatPrDiffChipLabel(part.filename, part.lineStart, part.lineEnd)}
+      <NavigableChipLabel target={{ kind: "prDiff", prUrl: part.prUrl }}>
+        {formatPrDiffChipLabel(part.filename, part.lineStart, part.lineEnd)}
+      </NavigableChipLabel>
     </span>
   );
 }
@@ -176,7 +185,9 @@ function TerminalCard({
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, TERMINAL_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
+      <NavigableChipLabel target={{ kind: "terminalSnippet" }}>
+        {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
+      </NavigableChipLabel>
     </span>
   );
 }
@@ -197,7 +208,16 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, FILE_SNIPPET_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      {formatFileSnippetChipLabel(part.filePath, part.lineStart, part.lineEnd)}
+      <NavigableChipLabel
+        target={{
+          kind: "fileSnippet",
+          filePath: part.filePath,
+          lineStart: part.lineStart,
+          lineEnd: part.lineEnd,
+        }}
+      >
+        {formatFileSnippetChipLabel(part.filePath, part.lineStart, part.lineEnd)}
+      </NavigableChipLabel>
     </span>
   );
 }
@@ -216,7 +236,9 @@ function MessageQuoteCard({
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, MESSAGE_QUOTE_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      {formatMessageQuoteChipLabel(part.selectedText)}
+      <NavigableChipLabel target={{ kind: "messageQuote" }}>
+        {formatMessageQuoteChipLabel(part.selectedText)}
+      </NavigableChipLabel>
     </span>
   );
 }
@@ -238,7 +260,9 @@ function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gi
         className={cn(WORKSPACE_FILE_ICON_CHIP_CLASS, GIT_COMMIT_CHIP_ICON_CLASS)}
         aria-hidden
       />
-      {formatGitCommitChipLabel(part.subject)}
+      <NavigableChipLabel target={{ kind: "gitCommit" }}>
+        {formatGitCommitChipLabel(part.subject)}
+      </NavigableChipLabel>
     </span>
   );
 }

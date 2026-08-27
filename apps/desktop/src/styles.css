@@ -527,8 +527,13 @@ html.spirit-launch-splash-exiting
   html.spirit-clickable-pointer [role="combobox"]:not([aria-disabled="true"]),
   html.spirit-clickable-pointer label[for],
   html.spirit-clickable-pointer summary,
-  html.spirit-clickable-pointer a[href] {
+  html.spirit-clickable-pointer a[href],
+  html.spirit-clickable-pointer [data-chip-label][data-chip-navigable] {
     cursor: pointer;
+  }
+
+  [data-chip-label][data-chip-navigable]:hover {
+    text-decoration: underline;
   }
 
   /* Workspace group drag reordering: independent of the "pointer cursor" setting, always grab/grabbing */

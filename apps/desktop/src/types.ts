@@ -860,6 +860,8 @@ export interface DesktopSkillListItem {
   scope: DesktopSkillScope;
   rootKind: DesktopSkillRootKind;
   enabled: boolean;
+  /** Absolute SKILL.md path; host-only, used to open the skill file from composer chips. */
+  path: string;
 }
 
 export interface DesktopRuleListItem {

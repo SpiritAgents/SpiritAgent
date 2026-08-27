@@ -229,10 +229,124 @@ export function useWorkspaceToolsController({
     setWorkspaceFileRevealNonce((value) => value + 1);
   }, []);
 
-  const openPullRequestInPrTab = useCallback(
-    (request: GitHubPullRequestRevealRequest) => {
+  const openGitTab = useCallback((preferTabId?: string) => {
+    if (preferTabId) {
+      const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, preferTabId);
+      if (tab?.kind === "git") {
+        setWorkspaceToolsOpen(true);
+        setActiveWorkspaceToolTabId(preferTabId);
+        return;
+      }
+    }
+    const navigation = resolveWorkspaceGitTab(
+      workspaceToolTabsRef.current,
+      activeWorkspaceToolTabIdRef.current,
+    );
+    setWorkspaceToolsOpen(true);
+    setWorkspaceToolTabs(navigation.tabs);
+    setActiveWorkspaceToolTabId(navigation.activeTabId);
+  }, []);
+
+  const focusWorkspaceToolTab = useCallback((tabId: string) => {
+    const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, tabId);
+    if (!tab) {
+      return false;
+    }
+    setWorkspaceToolsOpen(true);
+    setActiveWorkspaceToolTabId(tabId);
+    return true;
+  }, []);
+
+  const openWorkspaceFileOnTab = useCallback(
+    (
+      tabId: string,
+      relativePath: string,
+      options?: {
+        viewMode?: WorkspaceEditorViewMode;
+        reveal?: import("@/lib/workspace-editor-navigation").EditorFileRevealLocation;
+      },
+    ) => {
+      const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, tabId);
+      if (tab?.kind !== "files") {
+        openWorkspaceFile(relativePath, options);
+        return;
+      }
+      revealEditorFile({
+        tabs: [...workspaceToolTabsRef.current],
+        activeTabId: tabId,
+        filesTabId: tabId,
+        reveal: {
+          scope: "workspace",
+          relativePath,
+          viewMode: options?.viewMode ?? "edit",
+          reveal: options?.reveal,
+        },
+      });
+    },
+    [openWorkspaceFile, revealEditorFile],
+  );
+
+  const revealWorkspaceDirectoryOnTab = useCallback((tabId: string, relativePath: string) => {
+    const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, tabId);
+    if (tab?.kind !== "files") {
+      revealWorkspaceDirectory(relativePath);
+      return;
+    }
+    setWorkspaceToolsOpen(true);
+    setActiveWorkspaceToolTabId(tabId);
+    setWorkspaceFileRevealTargetId(tabId);
+    setWorkspaceFileRevealScope("workspace");
+    setWorkspaceFileRevealDirectoryOnly(true);
+    setWorkspaceFileRevealPath(relativePath.replace(/\/+$/u, ""));
+    setWorkspaceFileRevealAbsolutePath("");
+    setWorkspaceFileRevealNonce((value) => value + 1);
+  }, []);
+
+  const focusOrOpenBrowserUrl = useCallback(
+    (rawUrl: string, preferTabId?: string) => {
       if (runtime.hostKind !== "electron") {
         return;
+      }
+      const url = normalizeBrowserUrl(rawUrl);
+      if (!url) {
+        return;
+      }
+      if (preferTabId) {
+        const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, preferTabId);
+        if (tab?.kind === "browser") {
+          setWorkspaceToolsOpen(true);
+          setActiveWorkspaceToolTabId(preferTabId);
+          return;
+        }
+      }
+      const tabs = workspaceToolTabsRef.current;
+      const vacant = tabs.find((tab) => tab.kind === "browser" && !tab.tabTitle?.trim());
+      const existing = vacant ?? tabs.find((tab) => tab.kind === "browser");
+      if (existing) {
+        setWorkspaceToolsOpen(true);
+        setWorkspaceToolTabs(
+          tabs.map((tab) => (tab.id === existing.id ? { ...tab, browserUrl: url } : tab)),
+        );
+        setActiveWorkspaceToolTabId(existing.id);
+        return;
+      }
+      openBrowserUrlInNewTab(url);
+    },
+    [openBrowserUrlInNewTab, runtime.hostKind],
+  );
+
+  const openPullRequestInPrTab = useCallback(
+    (request: GitHubPullRequestRevealRequest, preferTabId?: string) => {
+      if (runtime.hostKind !== "electron") {
+        return;
+      }
+      if (preferTabId) {
+        const tab = findWorkspaceToolTab(workspaceToolTabsRef.current, preferTabId);
+        if (tab?.kind === "pr") {
+          setWorkspaceToolsOpen(true);
+          setActiveWorkspaceToolTabId(preferTabId);
+          return;
+        }
       }
       const navigation = buildOpenPullRequestNavigation({
         tabs: workspaceToolTabsRef.current,
@@ -248,16 +362,6 @@ export function useWorkspaceToolsController({
     },
     [runtime.hostKind],
   );
-
-  const openGitTab = useCallback(() => {
-    const navigation = resolveWorkspaceGitTab(
-      workspaceToolTabsRef.current,
-      activeWorkspaceToolTabIdRef.current,
-    );
-    setWorkspaceToolsOpen(true);
-    setWorkspaceToolTabs(navigation.tabs);
-    setActiveWorkspaceToolTabId(navigation.activeTabId);
-  }, []);
 
   const openWorkspacePlan = useCallback(() => {
     setWorkspaceToolsOpen(true);
@@ -383,10 +487,14 @@ export function useWorkspaceToolsController({
     workspaceFileRevealLine,
     workspaceFileRevealColumn,
     openBrowserUrlInNewTab,
+    focusOrOpenBrowserUrl,
     openEditorFile,
     openWorkspaceFile,
     openWorkspaceFileInNewTab,
+    openWorkspaceFileOnTab,
     revealWorkspaceDirectory,
+    revealWorkspaceDirectoryOnTab,
+    focusWorkspaceToolTab,
     openPullRequestInPrTab,
     openGitTab,
     openWorkspacePlan,

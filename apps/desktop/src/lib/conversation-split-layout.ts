@@ -90,6 +90,19 @@ export function findLeafByPaneId(
   return findLeafByPaneId(node.first, paneId) ?? findLeafByPaneId(node.second, paneId);
 }
 
+export function findLeafBySessionPath(
+  node: SplitLayoutNode,
+  sessionPath: string,
+): SplitLayoutLeafNode | undefined {
+  const target = normalizeSessionPathKey(sessionPath);
+  for (const leaf of collectSplitLayoutLeaves(node)) {
+    if (normalizeSessionPathKey(leaf.sessionPath) === target) {
+      return leaf;
+    }
+  }
+  return undefined;
+}
+
 export function findWorkspaceToolsAnchorPaneId(node: SplitLayoutNode): string {
   if (node.kind === "leaf") {
     return node.paneId;
