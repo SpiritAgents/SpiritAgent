@@ -28,6 +28,7 @@ import {
 } from "ai";
 
 import { buildAiSdkUserImageFilePartFromUrl } from "../ai-sdk-image-url-part.js";
+import { buildAiSdkUserVideoFilePartFromUrl } from "../ai-sdk-video-url-part.js";
 import {
   resolveStreamingToolPreviewEmit,
   shouldEmitStreamingToolNamePreview,
@@ -348,7 +349,7 @@ export class AiSdkOpenAiCompatibleTransport
     try {
       const result = await generateObject({
         model: createAiSdkLanguageModel(config),
-        messages: openAiMessagesToAiSdkMessages(messages) as any,
+        messages: openAiMessagesToAiSdkMessages(config, messages) as any,
         allowSystemInMessages: true,
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
@@ -395,7 +396,7 @@ export class AiSdkOpenAiCompatibleTransport
     try {
       const result: any = await generateText({
         model: createAiSdkLanguageModel(config),
-        messages: openAiMessagesToAiSdkMessages(requestMessages) as any,
+        messages: openAiMessagesToAiSdkMessages(config, requestMessages) as any,
         allowSystemInMessages: true,
         include: { responseBody: true },
         ...(normalizedTools.length === 0
@@ -495,12 +496,12 @@ export class AiSdkOpenAiCompatibleTransport
 
     const abortController = new AbortController();
 
-    // Moonshot video: the stash must be cleaned up only after streamText has asynchronously issued the HTTP request, not in a synchronous finally.
+    // Xiaomi/DeepInfra video: the stash must be cleaned up only after streamText has asynchronously issued the HTTP request, not in a synchronous finally.
     prepareMoonshotChatCompletionRequest(config, requestMessages);
     try {
       const result: any = streamText({
         model: createAiSdkLanguageModel(config),
-        messages: openAiMessagesToAiSdkMessages(requestMessages) as any,
+        messages: openAiMessagesToAiSdkMessages(config, requestMessages) as any,
         allowSystemInMessages: true,
         ...(normalizedTools.length === 0
           ? {}
@@ -570,6 +571,7 @@ export class AiSdkOpenAiCompatibleTransport
     }
 
     const promptMessages = openAiMessagesToAiSdkMessages(
+      config,
       llmHistoryToOpenAiMessages(
         buildCompactHistoryPromptMessages(
           history,
@@ -893,17 +895,11 @@ function createAiSdkMoonshotProvider(config: OpenAiTransportConfig) {
       return formulaAwareFetch(input, init);
     }
 
-    const requestUrl =
-      typeof input === "string" ? input : input instanceof URL ? input.toString() : "request";
-    const moonshotMessages = requestUrl.includes("/chat/completions")
-      ? takeMoonshotChatCompletionMessages()
-      : undefined;
     return formulaAwareFetch(input, {
       ...init,
       body: JSON.stringify({
         ...body,
         ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
-        ...(moonshotMessages ? { messages: moonshotMessages } : {}),
       }),
     });
   };
@@ -1435,8 +1431,12 @@ function buildAiSdkTools(
   );
 }
 
-function openAiMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<string, unknown>> {
+function openAiMessagesToAiSdkMessages(
+  config: Pick<OpenAiTransportConfig, "llmVendor">,
+  messages: JsonValue[],
+): Array<Record<string, unknown>> {
   const toolCallNames = buildToolCallNameIndex(messages);
+  const includeVideoFileParts = isMoonshotOfficialAiSdkProvider(config);
 
   return messages.flatMap((message) => {
     if (!isJsonObject(message) || typeof message.role !== "string") {
@@ -1450,7 +1450,7 @@ function openAiMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<stri
           : [];
       }
       case "user": {
-        const content = openAiUserContentToAiSdkContent(message.content);
+        const content = openAiUserContentToAiSdkContent(message.content, includeVideoFileParts);
         return content === undefined ? [] : [{ role: "user", content }];
       }
       case "assistant": {
@@ -1469,6 +1469,7 @@ function openAiMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<stri
 
 function openAiUserContentToAiSdkContent(
   content: JsonValue | undefined,
+  includeVideoFileParts: boolean,
 ): string | Array<Record<string, unknown>> | undefined {
   if (typeof content === "string") {
     return content;
@@ -1496,7 +1497,13 @@ function openAiUserContentToAiSdkContent(
         }
         break;
       case "video_url":
-        // Moonshot AI video: the AI SDK drops video_url; the fetch wrapper writes the full messages back (see moonshot-chat-completion-messages.ts).
+        if (
+          includeVideoFileParts &&
+          isJsonObject(part.video_url) &&
+          typeof part.video_url.url === "string"
+        ) {
+          parts.push(buildAiSdkUserVideoFilePartFromUrl(part.video_url.url));
+        }
         break;
       default:
         break;
@@ -2069,7 +2076,7 @@ function clearMoonshotChatCompletionRequest(config: OpenAiTransportConfig): void
 function usesOpenAiCompatibleVideoMessageStash(
   vendor: OpenAiTransportConfig["llmVendor"],
 ): boolean {
-  return vendor === "moonshot-ai" || vendor === "xiaomi" || vendor === "deepinfra";
+  return vendor === "xiaomi" || vendor === "deepinfra";
 }
 
 function normalizeMessagesForRequest(
@@ -2117,7 +2124,9 @@ function isXaiOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === "xai";
 }
 
-function isMoonshotOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+function isMoonshotOfficialAiSdkProvider(
+  config: Pick<OpenAiTransportConfig, "llmVendor">,
+): boolean {
   return config.llmVendor === "moonshot-ai";
 }
 
