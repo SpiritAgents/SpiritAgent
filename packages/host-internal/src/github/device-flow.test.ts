@@ -5,6 +5,7 @@ import { pollGitHubDeviceToken, requestGitHubDeviceCode } from "./device-flow.js
 import { GitHubOAuthError } from "./oauth.js";
 
 const originalFetch = globalThis.fetch;
+const TEST_CLIENT_ID = "test-client-id";
 
 function mockFetch(
   handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -17,12 +18,9 @@ function restoreFetch(): void {
 }
 
 test("requestGitHubDeviceCode maps GitHub device code response", async () => {
-  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
-
   mockFetch(async (_input, init) => {
     const body = new URLSearchParams(String(init?.body));
-    assert.equal(body.get("client_id"), "test-client-id");
+    assert.equal(body.get("client_id"), TEST_CLIENT_ID);
     assert.equal(body.get("scope"), "repo read:user");
     return Response.json({
       device_code: "device-code-1",
@@ -34,7 +32,7 @@ test("requestGitHubDeviceCode maps GitHub device code response", async () => {
   });
 
   try {
-    const challenge = await requestGitHubDeviceCode();
+    const challenge = await requestGitHubDeviceCode({ clientId: TEST_CLIENT_ID });
     assert.equal(challenge.deviceCode, "device-code-1");
     assert.equal(challenge.userCode, "ABCD-1234");
     assert.equal(challenge.verificationUri, "https://github.com/login/device");
@@ -42,18 +40,10 @@ test("requestGitHubDeviceCode maps GitHub device code response", async () => {
     assert.equal(challenge.intervalSeconds, 5);
   } finally {
     restoreFetch();
-    if (previousClientId === undefined) {
-      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-    } else {
-      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
-    }
   }
 });
 
 test("requestGitHubDeviceCode retries fetch failures until device code is returned", async () => {
-  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
-
   let requestCount = 0;
   mockFetch(async () => {
     requestCount += 1;
@@ -70,23 +60,15 @@ test("requestGitHubDeviceCode retries fetch failures until device code is return
   });
 
   try {
-    const challenge = await requestGitHubDeviceCode();
+    const challenge = await requestGitHubDeviceCode({ clientId: TEST_CLIENT_ID });
     assert.equal(challenge.deviceCode, "device-code-1");
     assert.equal(requestCount, 2);
   } finally {
     restoreFetch();
-    if (previousClientId === undefined) {
-      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-    } else {
-      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
-    }
   }
 });
 
 test("pollGitHubDeviceToken waits for authorization_pending then returns token", async () => {
-  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
-
   let pollCount = 0;
   mockFetch(async () => {
     pollCount += 1;
@@ -105,23 +87,16 @@ test("pollGitHubDeviceToken waits for authorization_pending then returns token",
       deviceCode: "device-code-1",
       intervalSeconds: 0,
       expiresIn: 5,
+      clientId: TEST_CLIENT_ID,
     });
     assert.equal(token.access_token, "gho_test_token");
     assert.equal(pollCount, 2);
   } finally {
     restoreFetch();
-    if (previousClientId === undefined) {
-      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-    } else {
-      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
-    }
   }
 });
 
 test("pollGitHubDeviceToken honors abort signal", async () => {
-  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
-
   const abort = new AbortController();
   mockFetch(async () => {
     abort.abort();
@@ -135,6 +110,7 @@ test("pollGitHubDeviceToken honors abort signal", async () => {
           deviceCode: "device-code-1",
           intervalSeconds: 0,
           expiresIn: 5,
+          clientId: TEST_CLIENT_ID,
           signal: abort.signal,
         }),
       (error: unknown) => {
@@ -145,18 +121,10 @@ test("pollGitHubDeviceToken honors abort signal", async () => {
     );
   } finally {
     restoreFetch();
-    if (previousClientId === undefined) {
-      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-    } else {
-      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
-    }
   }
 });
 
 test("pollGitHubDeviceToken retries fetch failures until token is returned", async () => {
-  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
-
   let pollCount = 0;
   mockFetch(async () => {
     pollCount += 1;
@@ -174,23 +142,16 @@ test("pollGitHubDeviceToken retries fetch failures until token is returned", asy
       deviceCode: "device-code-1",
       intervalSeconds: 0,
       expiresIn: 5,
+      clientId: TEST_CLIENT_ID,
     });
     assert.equal(token.access_token, "gho_test_token");
     assert.equal(pollCount, 2);
   } finally {
     restoreFetch();
-    if (previousClientId === undefined) {
-      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-    } else {
-      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
-    }
   }
 });
 
 test("pollGitHubDeviceToken maps access_denied to GitHubOAuthError", async () => {
-  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
-
   mockFetch(async () => Response.json({ error: "access_denied" }));
 
   try {
@@ -200,6 +161,7 @@ test("pollGitHubDeviceToken maps access_denied to GitHubOAuthError", async () =>
           deviceCode: "device-code-1",
           intervalSeconds: 0,
           expiresIn: 5,
+          clientId: TEST_CLIENT_ID,
         }),
       (error: unknown) => {
         assert.ok(error instanceof GitHubOAuthError);
@@ -209,10 +171,5 @@ test("pollGitHubDeviceToken maps access_denied to GitHubOAuthError", async () =>
     );
   } finally {
     restoreFetch();
-    if (previousClientId === undefined) {
-      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-    } else {
-      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
-    }
   }
 });
