@@ -45,7 +45,7 @@ export type StructuredOutputResponseFormat =
 export function buildJsonSchemaCompletionMessages(
   config: { model: string; llmVendor?: string; workspaceRoot?: string },
   request: OpenAiJsonSchemaCompletionRequest,
-): JsonValue[] {
+): JsonObject[] {
   const structuredOutputSystemSection = buildStructuredOutputSystemSection(config, request);
   const sections = [...(request.systemSections ?? []), structuredOutputSystemSection]
     .filter(
@@ -67,7 +67,7 @@ export function buildJsonSchemaCompletionMessages(
 function buildJsonSchemaCompletionUserMessage(
   workspaceRoot: string | undefined,
   request: OpenAiJsonSchemaCompletionRequest,
-): JsonValue {
+): JsonObject {
   const imagePaths = request.imagePaths ?? [];
   const videoPaths = request.videoPaths ?? [];
   if (imagePaths.length === 0 && videoPaths.length === 0) {
