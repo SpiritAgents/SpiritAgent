@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-translucency-surface";
 import type { ShellOverlayPhase } from "@/lib/desktop-shell";
+import { prefersReducedMotion } from "@/lib/reduce-motion";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import type {
@@ -343,7 +344,7 @@ function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
     if (!el) {
       return;
     }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (prefersReducedMotion()) {
       setShimmerActive(false);
       return;
     }

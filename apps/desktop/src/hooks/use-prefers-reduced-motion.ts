@@ -1,24 +1,21 @@
 import { useEffect, useState } from "react";
 
-const QUERY = "(prefers-reduced-motion: reduce)";
+import {
+  prefersReducedMotion as readPrefersReducedMotion,
+  subscribePrefersReducedMotion,
+} from "@/lib/reduce-motion";
 
 export function usePrefersReducedMotion(): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.matchMedia(QUERY).matches;
-  });
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    readPrefersReducedMotion(),
+  );
 
   useEffect(() => {
-    const media = window.matchMedia(QUERY);
-    const onChange = (): void => {
-      setPrefersReducedMotion(media.matches);
+    const sync = (): void => {
+      setPrefersReducedMotion(readPrefersReducedMotion());
     };
-    media.addEventListener("change", onChange);
-    return () => {
-      media.removeEventListener("change", onChange);
-    };
+    sync();
+    return subscribePrefersReducedMotion(sync);
   }, []);
 
   return prefersReducedMotion;

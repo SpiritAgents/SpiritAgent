@@ -1,6 +1,7 @@
 import type { ComponentRef } from "react";
 
 import type { ScrollArea } from "@/components/ui/scroll-area";
+import { prefersReducedMotion } from "@/lib/reduce-motion";
 
 export function scrollAreaViewport(
   root: ComponentRef<typeof ScrollArea> | null,
@@ -10,11 +11,7 @@ export function scrollAreaViewport(
 
 export function scrollAreaToBottom(viewport: HTMLElement, behavior: ScrollBehavior = "auto"): void {
   const top = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-  const useSmooth =
-    behavior === "smooth" &&
-    !(
-      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
+  const useSmooth = behavior === "smooth" && !prefersReducedMotion();
   if (useSmooth) {
     viewport.scrollTo({ top, behavior: "smooth" });
     return;
@@ -31,8 +28,7 @@ export function scrollAreaAnimateToLiveBottom(
   viewport: HTMLElement,
   options?: { onDone?: () => void },
 ): () => void {
-  const reducedMotion =
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = prefersReducedMotion();
   if (reducedMotion) {
     const top = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
     viewport.scrollTop = top;

@@ -5,10 +5,19 @@ import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { ThemePreviewPicker } from "@/components/theme-preview-picker";
 import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 import { isMacDesktopPlatform, isNativeTranslucencySupported } from "@/lib/desktop-shell";
+import type { ReduceMotionPreference } from "@/lib/reduce-motion";
 import type { ThemePreference } from "@/lib/theme";
 
 const appearanceSelectTriggerClassName = "w-full sm:w-fit sm:max-w-full";
+
+const REDUCE_MOTION_OPTIONS = [
+  ["system", "settings.reduceMotionSystem"],
+  ["on", "settings.reduceMotionOn"],
+  ["off", "settings.reduceMotionOff"],
+] as const satisfies ReadonlyArray<readonly [ReduceMotionPreference, string]>;
 
 export function AppearanceSettingsPanel({
   theme,
@@ -36,6 +45,7 @@ export function AppearanceSettingsPanel({
   onThemeChange: (value: ThemePreference) => void;
 }) {
   const { t } = useTranslation();
+  const { reduceMotion, setReduceMotion } = useReduceMotion();
   return (
     <div className="space-y-6">
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
@@ -84,6 +94,41 @@ export function AppearanceSettingsPanel({
             />
           </div>
         </SettingsRow>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">{t("settings.motionSection")}</p>
+        <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+          <SettingsRow
+            label={t("settings.reduceMotion")}
+            description={t("settings.reduceMotionDescription")}
+          >
+            <div
+              className="flex justify-end gap-1"
+              role="radiogroup"
+              aria-label={t("settings.reduceMotion")}
+            >
+              {REDUCE_MOTION_OPTIONS.map(([value, labelKey]) => {
+                const label = t(labelKey);
+                return (
+                  <Toggle
+                    key={value}
+                    variant="default"
+                    pressed={reduceMotion === value}
+                    onPressedChange={(pressed) => {
+                      if (pressed) {
+                        setReduceMotion(value);
+                      }
+                    }}
+                    aria-label={label}
+                  >
+                    {label}
+                  </Toggle>
+                );
+              })}
+            </div>
+          </SettingsRow>
+        </div>
       </div>
 
       <div className="space-y-3">

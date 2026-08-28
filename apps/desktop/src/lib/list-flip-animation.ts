@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from "@/lib/reduce-motion";
+
 export const SIDEBAR_REORDER_FLIP_DURATION_MS = 280;
 
 export const SIDEBAR_REORDER_FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -7,10 +9,7 @@ export const SIDEBAR_REORDER_DRAGGED_FLIP_DURATION_MS = 160;
 export const SIDEBAR_REORDER_DRAGGED_FLIP_EASING = "linear";
 
 export function prefersReducedSidebarReorderMotion(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return prefersReducedMotion();
 }
 
 export function captureListFlipTops(

@@ -3,15 +3,10 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { desktopComposerChipSurfaceClass } from "@/lib/desktop-translucency-surface";
+import { prefersReducedMotion } from "@/lib/reduce-motion";
 import { cn } from "@/lib/utils";
 
 const FADE_MS = 150;
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
 
 export function ComposerScrollToBottomButton({
   visible,

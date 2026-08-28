@@ -10,6 +10,7 @@
 @import "./styles/floating-action-button.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant motion-reduce (&:is(html.spirit-reduce-motion *));
 
 @property --sidebar-mask-top-alpha {
   syntax: "<number>";
@@ -388,10 +389,8 @@ html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
   transition: opacity 500ms ease-out;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
-    transition-duration: 200ms;
-  }
+html.spirit-reduce-motion.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
+  transition-duration: 200ms;
 }
 
 /*
@@ -417,12 +416,10 @@ html.spirit-launch-splash-exiting
   transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.spirit-launch-splash-exiting
-    [data-spirit-surface="app-shell"]
-    > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
-    transition-duration: 200ms;
-  }
+html.spirit-reduce-motion.spirit-launch-splash-exiting
+  [data-spirit-surface="app-shell"]
+  > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
+  transition-duration: 200ms;
 }
 
 @theme inline {
@@ -864,7 +861,7 @@ html.spirit-launch-splash-exiting
     animation-delay: calc(var(--spirit-oobe-block, 0) * 40ms);
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  html.spirit-reduce-motion {
     .spirit-oobe-step-exit-forward,
     .spirit-oobe-step-exit-backward {
       animation: spirit-oobe-step-fade-out 120ms ease-out both;
@@ -875,9 +872,7 @@ html.spirit-launch-splash-exiting
       animation: spirit-oobe-step-fade-in 120ms ease-out both;
       animation-delay: 0ms;
     }
-  }
 
-  @media (prefers-reduced-motion: reduce) {
     .spirit-edit-delta-slide-up,
     .spirit-edit-delta-slide-down {
       animation: none;
