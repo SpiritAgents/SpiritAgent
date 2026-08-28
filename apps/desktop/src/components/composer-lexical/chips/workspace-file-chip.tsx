@@ -33,7 +33,11 @@ export function WorkspaceFileChip({ path, sourceTabId }: WorkspaceFileChipProps)
         />
       </ChipIcon>
       <NavigableChipLabel
-        target={{ kind: "workspaceFile", path: normalized, ...(sourceTabId ? { sourceTabId } : {}) }}
+        target={{
+          kind: "workspaceFile",
+          path: normalized,
+          ...(sourceTabId ? { sourceTabId } : {}),
+        }}
       >
         {workspaceFileBasename(normalized)}
       </NavigableChipLabel>
