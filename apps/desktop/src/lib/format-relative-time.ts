@@ -26,7 +26,7 @@ function createRelativeTimeFormatter(locale: string): {
   }
 }
 
-/** Intl zh-CN relative time has no space by default (e.g. 3分钟前); unify with PR-timeline-style UI copy as 「3 分钟前」. */
+/** Intl zh-CN relative time has no space by default (e.g. 3分钟前); unify with PR-timeline-style UI copy as “3 分钟前”. */
 function addZhRelativeTimeSpaces(text: string): string {
   return text.replace(/(\d)([\u4e00-\u9fff])/g, "$1 $2");
 }

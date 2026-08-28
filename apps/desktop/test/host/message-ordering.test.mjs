@@ -320,7 +320,7 @@ test("isSubagentStatusSurfaceText detects runtime status lines", () => {
   assert.equal(isSubagentStatusSurfaceText("你是想让我：删除目录"), false);
   assert.equal(
     isSubagentStatusSurfaceText(
-      "在 VS Code 里通常分为「暂存」「更改」「未跟踪」。你是想让我：\n* 删除目录",
+      "在 VS Code 里通常分为“暂存”“更改”“未跟踪”。你是想让我：\n* 删除目录",
     ),
     false,
   );

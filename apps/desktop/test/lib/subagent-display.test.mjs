@@ -32,13 +32,13 @@ test("isSubagentStatusSurfaceText rejects assistant prose with colons", () => {
   assert.equal(isSubagentStatusSurfaceText("你是想让我：删除目录"), false);
   assert.equal(
     isSubagentStatusSurfaceText(
-      "「非更改区」我不确定你指的是什么。你是想让我：\n* 删除未跟踪目录？\n* 还是回退提交？",
+      "“非更改区”我不确定你指的是什么。你是想让我：\n* 删除未跟踪目录？\n* 还是回退提交？",
     ),
     false,
   );
   assert.equal(
     isSubagentStatusSurfaceText(
-      "在 VS Code 源代码管理面板里，通常分为「暂存的更改」「更改」和「未跟踪的文件」。你是想让我：",
+      "在 VS Code 源代码管理面板里，通常分为“暂存的更改”“更改”和“未跟踪的文件”。你是想让我：",
     ),
     false,
   );

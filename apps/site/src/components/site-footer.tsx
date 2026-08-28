@@ -98,12 +98,12 @@ export function SiteFooter() {
                         rel="noopener noreferrer"
                         className={itemClassName}
                       >
-                        {/* BYOK: Safari mistranslates to nonsense like「比OK」; drop when quality improves. */}
+                        {/* BYOK: Safari mistranslates to nonsense like “比OK”; drop when quality improves. */}
                         {protectBrandTokens(item.label)}
                       </a>
                     ) : (
                       <a href={item.href} className={itemClassName}>
-                        {/* BYOK: Safari mistranslates to nonsense like「比OK」; drop when quality improves. */}
+                        {/* BYOK: Safari mistranslates to nonsense like “比OK”; drop when quality improves. */}
                         {protectBrandTokens(item.label)}
                       </a>
                     )}

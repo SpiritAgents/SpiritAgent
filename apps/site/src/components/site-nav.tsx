@@ -339,7 +339,7 @@ export function SiteNav() {
                               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             )}
                           >
-                            {/* BYOK: Safari mistranslates to nonsense like「比OK」; drop when quality improves. */}
+                            {/* BYOK: Safari mistranslates to nonsense like “比OK”; drop when quality improves. */}
                             {protectBrandTokens(link.label)}
                           </a>
                         </li>

@@ -79,7 +79,7 @@ Agent Core 在统一运行时背后路由多种推理传输层：
 
 ### 系统上下文组装
 
-Agent Core 决定模型如何「看见」项目上下文：
+Agent Core 决定模型如何“看见”项目上下文：
 
 - **Rules** — `AGENTS.md`、`.spirit/rule.md` 与用户规则槽位合并进 system 段落。
 - **Skills** — 目录与激活 Skill 注入；宿主在磁盘上发现文件。
