@@ -23,7 +23,7 @@ const baseConfig = {
   ],
   activeModel: "gpt-4o-mini",
   recentWorkspaces: [],
-  translucency: true,
+  translucency: "sidebar",
   systemNotifications: true,
   agentMode: "agent",
   webHost: { enabled: false, host: "127.0.0.1", port: 1421 },

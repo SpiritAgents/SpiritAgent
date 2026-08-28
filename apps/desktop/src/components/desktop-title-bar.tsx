@@ -19,8 +19,10 @@ import {
 } from "@/components/ui/menubar";
 
 type DesktopTitleBarProps = {
-  /** Consistent with the root layout's Mica transparency strategy */
+  /** Native window material (Sidebar / All). */
   useTranslucency: boolean;
+  /** All-mode main-content tint; when false with native material on, the trailing title-bar segment is solid. */
+  useContentTranslucency?: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
@@ -235,6 +237,7 @@ function TitleBarMenuCluster({
  */
 export function DesktopTitleBar({
   useTranslucency,
+  useContentTranslucency = false,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -242,8 +245,9 @@ export function DesktopTitleBar({
 }: DesktopTitleBarProps) {
   const headerRef = useRef<HTMLElement>(null);
   const { open: sessionSidebarOpen, widthPx: sessionSidebarWidthPx } = useSessionSidebarChrome();
-  /** Under Blur, the horizontal divider is anchored to the sidebar shell's right edge; it moves in sync with the shell's actual width on collapse/expand. */
+  /** Under Blur, the trailing divider is anchored to the sidebar shell's right edge; it moves in sync with collapse/expand. */
   const partialBorder = useTranslucency;
+  const solidTrailingTitleBar = useTranslucency && !useContentTranslucency;
   const sidebarShellRightInsetPx = useSessionSidebarShellRightInsetPx(headerRef, partialBorder);
 
   return (
@@ -257,11 +261,23 @@ export function DesktopTitleBar({
       )}
     >
       {partialBorder ? (
-        <div
-          className="pointer-events-none absolute bottom-0 right-0 h-px bg-black/5 dark:bg-white/10"
-          style={{ left: sidebarShellRightInsetPx }}
-          aria-hidden
-        />
+        <>
+          {solidTrailingTitleBar ? (
+            <div
+              className="pointer-events-none absolute inset-y-0 right-0 bg-background"
+              style={{ left: sidebarShellRightInsetPx }}
+              aria-hidden
+            />
+          ) : null}
+          <div
+            className={cn(
+              "pointer-events-none absolute bottom-0 right-0 h-px",
+              solidTrailingTitleBar ? "bg-border/55" : "bg-black/5 dark:bg-white/5",
+            )}
+            style={{ left: sidebarShellRightInsetPx }}
+            aria-hidden
+          />
+        </>
       ) : null}
       <div
         className="flex h-full min-h-0 w-fit shrink-0 items-center gap-1 pl-2"

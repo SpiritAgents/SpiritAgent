@@ -161,7 +161,7 @@ export interface CrashPageCopy {
 export interface CrashPageAppearance {
   /**
    * Native window translucent material (Win Mica / macOS Vibrancy) is active. The page then
-   * tints with `bg-background/70` — the same readability mask as the app's main content area
+   * tints with `bg-background/70` — the same readability mask as LaunchSplash / OOBE
    * (DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS) — instead of a solid background.
    */
   translucency?: boolean;

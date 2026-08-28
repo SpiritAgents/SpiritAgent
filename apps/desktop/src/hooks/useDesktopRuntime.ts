@@ -7,6 +7,7 @@ import {
   resolvePendingQuestionsSnapshot,
 } from "@/lib/pane-pending-turn-routing";
 import i18n, { getStoredLanguagePreference } from "@/lib/i18n";
+import { DEFAULT_TRANSLUCENCY, parseTranslucencyPreference } from "@/lib/translucency";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -430,7 +431,7 @@ export function useDesktopRuntime() {
     apiBase: "",
     uiLocale: getStoredLanguagePreference(),
     apiKey: "",
-    translucency: true,
+    translucency: DEFAULT_TRANSLUCENCY,
     systemNotifications: true,
     trayIcon: true,
     onboardingCompleted: false,
@@ -816,7 +817,7 @@ export function useDesktopRuntime() {
           agentMode = "agent";
         }
 
-        const snapshotTranslucency = next.config.translucency !== false;
+        const snapshotTranslucency = parseTranslucencyPreference(next.config.translucency);
         const translucency =
           translucencyInFlightRef.current > 0 && current.translucency !== snapshotTranslucency
             ? current.translucency

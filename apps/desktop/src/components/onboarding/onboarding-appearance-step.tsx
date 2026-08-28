@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { ThemePreviewPicker } from "@/components/theme-preview-picker";
+import { TranslucencyPreferenceToggles } from "@/components/settings/translucency-preference-toggles";
 import {
   Select,
   SelectContent,
@@ -9,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import { DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
 import {
@@ -29,7 +29,7 @@ type OnboardingAppearanceControlsProps = {
 };
 
 /**
- * OOBE appearance step content: three-way theme preview cards + translucency toggle + language
+ * OOBE appearance step content: three-way theme preview cards + translucency preference + language
  * selection. All selections take effect immediately, sharing the same save pipeline as the
  * settings page.
  */
@@ -52,13 +52,11 @@ export function OnboardingAppearanceControls({
 
       {isNativeTranslucencySupported() ? (
         <div className="flex items-center justify-between gap-4">
-          <label htmlFor="onboarding-blur-effect" className={DESKTOP_SETTINGS_LABEL_CLASS}>
-            {t("settings.translucency")}
-          </label>
-          <Switch
-            id="onboarding-blur-effect"
-            checked={settings.translucency}
-            onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
+          <p className={DESKTOP_SETTINGS_LABEL_CLASS}>{t("settings.translucency")}</p>
+          <TranslucencyPreferenceToggles
+            value={settings.translucency}
+            onChange={(value) => void onSavePatch({ translucency: value })}
+            ariaLabel={t("settings.translucency")}
           />
         </div>
       ) : null}

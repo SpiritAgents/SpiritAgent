@@ -19,6 +19,7 @@ import {
 import { shouldPinReasoningEffortToDefault } from "@spiritagent/agent-core/model-thinking-controls";
 
 import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
+import { parseTranslucencyPreference } from "../lib/translucency.js";
 import { parseModelContextLength } from "../lib/context-usage.js";
 import i18n from "../lib/i18n-host.js";
 import type {
@@ -578,7 +579,9 @@ export async function updateConfigCommand(
         state.config.lightweightChatModel = chatRef;
       }
     }
-    state.config.translucency = request.translucency !== false;
+    if (request.translucency !== undefined) {
+      state.config.translucency = parseTranslucencyPreference(request.translucency);
+    }
     if (request.systemNotifications !== undefined) {
       state.config.systemNotifications = request.systemNotifications !== false;
     }

@@ -20,11 +20,11 @@ import {
   desktopFullscreenOverlayTintClass,
 } from "../../src/lib/desktop-translucency-surface.ts";
 
-test("desktopTranslucencyTintClass returns solid background when translucency is off", () => {
+test("desktopTranslucencyTintClass returns solid background when content translucency is off", () => {
   assert.equal(desktopTranslucencyTintClass(false), "bg-background");
 });
 
-test("desktopTranslucencyTintClass returns semi-transparent tint without backdrop-blur when translucency is on", () => {
+test("desktopTranslucencyTintClass returns semi-transparent tint without backdrop-blur when content translucency is on", () => {
   const cls = desktopTranslucencyTintClass(true);
   assert.equal(cls, DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS);
   assert.match(cls, /bg-background\//);
@@ -41,9 +41,9 @@ test("desktopFullscreenOverlayTintClass keeps tint through exit so the whole she
   assert.equal(desktopFullscreenOverlayTintClass(true), DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS);
 });
 
-test("desktopTranslucencyBrowserTintClass uses higher opacity than main content tint", () => {
+test("desktopTranslucencyBrowserTintClass uses a dedicated opacity under translucency", () => {
   assert.equal(desktopTranslucencyBrowserTintClass(true), DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS);
-  assert.notEqual(DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS, DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS);
+  assert.notEqual(DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS, "bg-background");
 });
 
 test("desktopTranslucencyTerminalTintClass keeps high opacity for readability", () => {

@@ -366,6 +366,18 @@ html.spirit-desktop-darwin.spirit-desktop-darwin-fullscreen [data-spirit-surface
   height: 2rem;
 }
 
+/*
+ * Theme switches flip tokens on html. Any utility with transition-colors (dividers, buttons, …)
+ * would interpolate the old computed color into the new one. applyThemeToDocument holds this
+ * class across that paint; hover/layout transitions resume on the next frame.
+ */
+html.spirit-theme-switching,
+html.spirit-theme-switching *,
+html.spirit-theme-switching *::before,
+html.spirit-theme-switching *::after {
+  transition: none !important;
+}
+
 /* On Desktop with native window-level translucent material enabled: make the root layers transparent so the host window can draw the system material; the Web version stays opaque. */
 html.spirit-desktop-native.spirit-desktop-translucency,
 html.spirit-desktop-native.spirit-desktop-translucency body,

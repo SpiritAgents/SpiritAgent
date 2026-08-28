@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { FontSelect } from "@/components/font-select";
 import { SettingsRow } from "@/components/settings/settings-row";
+import { TranslucencyPreferenceToggles } from "@/components/settings/translucency-preference-toggles";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { ThemePreviewPicker } from "@/components/theme-preview-picker";
 import { Switch } from "@/components/ui/switch";
@@ -66,16 +67,13 @@ export function AppearanceSettingsPanel({
               ? t("settings.translucencyDescription")
               : t("settings.translucencyUnsupported")
           }
-          htmlFor="settings-blur-effect"
         >
           {isNativeTranslucencySupported() ? (
-            <div className="flex justify-end">
-              <Switch
-                id="settings-blur-effect"
-                checked={settings.translucency}
-                onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
-              />
-            </div>
+            <TranslucencyPreferenceToggles
+              value={settings.translucency}
+              onChange={(value) => void onSavePatch({ translucency: value })}
+              ariaLabel={t("settings.translucency")}
+            />
           ) : (
             <p className="text-sm text-muted-foreground sm:text-right">—</p>
           )}

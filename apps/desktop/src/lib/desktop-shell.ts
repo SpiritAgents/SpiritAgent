@@ -1,3 +1,11 @@
+import {
+  DEFAULT_TRANSLUCENCY,
+  isContentTranslucencyEnabled,
+  isNativeTranslucencyEnabled,
+  parseTranslucencyPreference,
+  type TranslucencyPreference,
+} from "@/lib/translucency";
+
 /** Current Desktop Electron host platform; `undefined` on Web or when preload was not injected. */
 export function desktopShellPlatform(): NodeJS.Platform | undefined {
   return typeof window !== "undefined" ? window.spiritDesktop?.platform : undefined;
@@ -25,25 +33,41 @@ export function isElectronChrome(): boolean {
 }
 
 /** Aligned with Electron's `readTranslucencyFromDisk`; used to avoid wrongly enabling the translucency transparent layer before the first-paint snapshot is ready. */
-export function readStoredTranslucency(): boolean {
+export function readStoredTranslucencyPreference(): TranslucencyPreference {
   if (!isNativeTranslucencySupported()) {
-    return false;
+    return "off";
   }
   try {
-    return window.spiritDesktop?.readTranslucency() !== false;
+    return parseTranslucencyPreference(window.spiritDesktop?.readTranslucency());
   } catch {
-    return true;
+    return DEFAULT_TRANSLUCENCY;
   }
 }
 
-export function resolveUseTranslucency(translucency: boolean | undefined): boolean {
+export function readStoredTranslucency(): boolean {
+  return isNativeTranslucencyEnabled(readStoredTranslucencyPreference());
+}
+
+export function resolveTranslucencyPreference(
+  translucency: TranslucencyPreference | undefined,
+): TranslucencyPreference {
   if (!isNativeTranslucencySupported()) {
-    return false;
+    return "off";
   }
   if (translucency === undefined) {
-    return readStoredTranslucency();
+    return readStoredTranslucencyPreference();
   }
-  return translucency !== false;
+  return parseTranslucencyPreference(translucency);
+}
+
+export function resolveUseTranslucency(translucency: TranslucencyPreference | undefined): boolean {
+  return isNativeTranslucencyEnabled(resolveTranslucencyPreference(translucency));
+}
+
+export function resolveUseContentTranslucency(
+  translucency: TranslucencyPreference | undefined,
+): boolean {
+  return isContentTranslucencyEnabled(resolveTranslucencyPreference(translucency));
 }
 
 /**

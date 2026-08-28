@@ -79,6 +79,18 @@ export const DESKTOP_GHOST_SELECT_TRIGGER =
 export const DESKTOP_SHELL_LAYOUT_TRANSITION =
   "transition-[width,margin,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0";
 
+/** Pane split line on a solid surface (session sidebar Off, workspace tools). */
+export const DESKTOP_PANE_SPLIT_LINE_CLASS =
+  "bg-border/40 transition-colors group-hover:bg-border/55";
+
+/** Session-sidebar split when only the sidebar is translucent against a solid main. */
+export const DESKTOP_SIDEBAR_ONLY_SPLIT_LINE_CLASS =
+  "bg-border/55 transition-colors group-hover:bg-border/70";
+
+/** Session-sidebar split in All-mode translucency (pre-diff hairline on tinted surfaces). */
+export const DESKTOP_ALL_TRANSLUCENCY_SPLIT_LINE_CLASS =
+  "bg-black/5 transition-colors group-hover:bg-black/10 dark:bg-white/5 dark:group-hover:bg-white/9";
+
 /** Default title-bar text/icon color, aligned with the sidebar's `sidebarItemDefaultTextClass` */
 export const DESKTOP_CHROME_MUTED_TEXT = "text-sidebar-action-foreground";
 

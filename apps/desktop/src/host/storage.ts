@@ -6,6 +6,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import i18n from "../lib/i18n-host.js";
+import {
+  DEFAULT_TRANSLUCENCY,
+  parseTranslucencyPreference,
+  type TranslucencyPreference,
+} from "../lib/translucency.js";
 import { deleteKeyringPassword, getKeyringPassword, setKeyringPassword } from "./keyring-secret.js";
 import {
   configureLlmClientVersion,
@@ -150,7 +155,7 @@ export interface DesktopConfigFile {
   /** Last project workspace root before switching to `none`; used when re-selecting a workspace. */
   lastProjectWorkspaceRoot?: string;
   uiLocale?: string;
-  translucency?: boolean;
+  translucency?: TranslucencyPreference;
   systemNotifications?: boolean;
   /** Whether to show the menu bar / tray status icon; defaults to true. */
   trayIcon?: boolean;
@@ -854,7 +859,7 @@ function defaultConfig(): DesktopConfigFile {
     providerGroups: [],
     activeModel: emptyModelRef(),
     recentWorkspaces: [],
-    translucency: true,
+    translucency: DEFAULT_TRANSLUCENCY,
     systemNotifications: true,
     trayIcon: true,
     onboardingCompleted: false,
@@ -1200,7 +1205,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
     ...(typeof raw.uiLocale === "string" && raw.uiLocale.trim()
       ? { uiLocale: raw.uiLocale.trim() }
       : {}),
-    translucency: raw.translucency !== false,
+    translucency: parseTranslucencyPreference(raw.translucency),
     systemNotifications: raw.systemNotifications !== false,
     trayIcon: raw.trayIcon !== false,
     onboardingCompleted: raw.onboardingCompleted === true,

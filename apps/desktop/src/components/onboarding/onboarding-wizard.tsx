@@ -74,7 +74,7 @@ type LeavingStepState = {
 type OnboardingWizardProps = {
   /** When true the wizard is shown; when it becomes false, it plays the fade-out and then unmounts. */
   active: boolean;
-  /** translucency (Win Mica / macOS Vibrancy): consistent with launch-splash / the conversation main area; when enabled, uses the main-area semi-transparent tint. */
+  /** translucency (Win Mica / macOS Vibrancy): consistent with launch-splash; when enabled, uses the fullscreen overlay tint. */
   useTranslucency?: boolean;
   settings: SettingsFormState;
   onSavePatch: (patch: Partial<SettingsFormState>) => Promise<void>;

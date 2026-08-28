@@ -13,6 +13,7 @@ import type { LspWriteDiagnosticsUi, PermissionMemoryTarget } from "@spiritagent
 
 import type { DesktopAgentMode } from "./lib/agent-mode.js";
 import type { DesktopAutomationTrigger } from "./lib/automation-trigger.js";
+import type { TranslucencyPreference } from "./lib/translucency.js";
 
 export type { DesktopAgentMode };
 import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult } from "@spiritagent/host-internal/workspace-file-reference-query";
@@ -88,8 +89,8 @@ export interface UpdateConfigRequest {
   thinkingEnabled?: boolean;
   uiLocale?: string;
   apiKey?: string;
-  /** Desktop window-level translucent material (Win Mica / macOS Vibrancy); absent means no change to the saved toggle. */
-  translucency?: boolean;
+  /** Desktop window-level translucent material (Off / Sidebar / All); absent means no change to the saved value. */
+  translucency?: TranslucencyPreference;
   /** When off, do not send desktop system notifications (including Windows taskbar attention). Defaults to true. */
   systemNotifications?: boolean;
   /** When off, do not show the menu bar / tray status icon. Defaults to true. */
@@ -1144,8 +1145,8 @@ export interface DesktopConfigSnapshot {
   lightweightChatModel?: ModelRef;
   uiLocale?: string;
   activeApiKeyConfigured: boolean;
-  /** Whether the desktop host enables the window-level translucent material; treated as true when the field is absent. */
-  translucency?: boolean;
+  /** Window-level translucent material: Off / Sidebar / All; treated as Sidebar when the field is absent or unknown. */
+  translucency?: TranslucencyPreference;
   /** Whether to send system notifications; treated as true when the field is absent. */
   systemNotifications?: boolean;
   /** Whether to show the menu bar / tray status icon; treated as true when the field is absent. */

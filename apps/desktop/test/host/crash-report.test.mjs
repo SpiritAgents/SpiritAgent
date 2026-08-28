@@ -176,7 +176,7 @@ test("crash page body follows the translucency appearance", () => {
   const translucent = buildCrashPageHtml({ title: "t", description: "d" }, "log", {
     translucency: true,
   });
-  // Same readability tint as the app's main content area (bg-background/70).
+  // Same readability tint as LaunchSplash / OOBE (bg-background/70).
   assert.match(
     translucent,
     /background: color-mix\(in srgb, var\(--background\) 70%, transparent\)/,

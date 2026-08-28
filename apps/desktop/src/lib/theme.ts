@@ -58,11 +58,49 @@ export function desktopNativeThemeForPreference(
   return "light";
 }
 
+/** Held on `<html>` while theme tokens flip, so `transition-colors` etc. do not interpolate old → new. */
+export const THEME_SWITCHING_CLASS = "spirit-theme-switching" as const;
+
+let themeSwitchEpoch = 0;
+
+function afterNextPaint(callback: () => void): void {
+  const raf = globalThis.requestAnimationFrame?.bind(globalThis);
+  if (typeof raf === "function") {
+    raf(() => {
+      raf(callback);
+    });
+    return;
+  }
+  globalThis.setTimeout(callback, 0);
+}
+
+function runWithoutCssTransitions(mutate: () => void): void {
+  const root = document.documentElement;
+  const epoch = ++themeSwitchEpoch;
+  root.classList.add(THEME_SWITCHING_CLASS);
+  mutate();
+  // Flush the new tokens under transition:none so interpolation never starts.
+  void root.offsetHeight;
+  afterNextPaint(() => {
+    if (epoch !== themeSwitchEpoch) {
+      return;
+    }
+    root.classList.remove(THEME_SWITCHING_CLASS);
+  });
+}
+
 function setDocumentDark(dark: boolean): void {
-  document.documentElement.classList.toggle("dark", dark);
-  // data-spirit-theme is maintained directly at the document level (previously on the app-shell JSX):
-  // avoids App subscribing to the theme context for this, which would re-render the whole tree on theme switches
-  document.documentElement.dataset.spiritTheme = dark ? "dark" : "light";
+  const root = document.documentElement;
+  const nextTheme = dark ? "dark" : "light";
+  if (root.classList.contains("dark") === dark && root.dataset.spiritTheme === nextTheme) {
+    return;
+  }
+  runWithoutCssTransitions(() => {
+    root.classList.toggle("dark", dark);
+    // data-spirit-theme is maintained directly at the document level (previously on the app-shell JSX):
+    // avoids App subscribing to the theme context for this, which would re-render the whole tree on theme switches
+    root.dataset.spiritTheme = nextTheme;
+  });
 }
 
 export type ApplyThemeToDocumentOptions = {

@@ -18,7 +18,7 @@ type Phase = "running" | "leaving" | "gone";
 type LaunchSplashProps = {
   /** When true the loading state is shown; when it becomes false, the exit animation plays and then it unmounts */
   active: boolean;
-  /** translucency (Win Mica / macOS Vibrancy): consistent with app-shell / the conversation main area; when enabled, uses the main-area semi-transparent tint. */
+  /** translucency (Win Mica / macOS Vibrancy): when enabled, uses the fullscreen overlay tint (`bg-background/70`). */
   useTranslucency?: boolean;
   /** Phase changes during the mount lifetime (so the host does not reveal app-body early, before leaving). */
   onPhaseChange?: (phase: ShellOverlayPhase) => void;
@@ -27,8 +27,7 @@ type LaunchSplashProps = {
 /**
  * First-screen launch: centered brand icon + skeleton-style linear shimmer, fading out once the
  * host is ready.
- * When Blur is enabled, uses the same main-area semi-transparent tint as the conversation page
- * (`bg-background/70`).
+ * When Blur is enabled, uses the fullscreen overlay tint (`bg-background/70`).
  * On exit, the whole layer (including the background tint) fades out with the container opacity;
  * the app-body below is hidden early by a styles.css rule via opacity and kept rasterized, fading
  * in with a compensation curve during the exit — background and main content thus cross-fade into

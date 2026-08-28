@@ -1,6 +1,7 @@
 import type { SettingsSidebarTab } from "@/components/session-sidebar";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { FontPreference } from "@/lib/font";
+import type { TranslucencyPreference } from "@/lib/translucency";
 import type {
   AddModelRequest,
   AddMcpServerRequest,
@@ -34,7 +35,7 @@ export type SettingsFormState = {
   apiBase: string;
   uiLocale: string;
   apiKey: string;
-  translucency: boolean;
+  translucency: TranslucencyPreference;
   systemNotifications: boolean;
   trayIcon: boolean;
   /** Whether first-run onboarding (OOBE) has completed. */

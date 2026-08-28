@@ -54,6 +54,7 @@ import {
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_LIST_GAP,
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
+  DESKTOP_PANE_SPLIT_LINE_CLASS,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import {
@@ -224,7 +225,7 @@ export type WorkspaceToolsDockProps = {
   ) => Promise<import("@/types").GitCommitMessageSnapshot>;
   submitGitChip: (request: SubmitGitChipRequest) => Promise<boolean>;
   className?: string;
-  /** Windows Mica / macOS Vibrancy: the workspace panel uses a semi-transparent themed base color. */
+  /** Windows Mica / macOS Vibrancy: forwarded to nested surfaces; the panel shell uses the solid main-area background. */
   useTranslucency?: boolean;
   /** AI completion in the workspace Monaco editor; defaults to true. */
   codeCompletionEnabled?: boolean;
@@ -436,7 +437,10 @@ function WorkspaceToolsDockShell({
           onPointerCancel={endResize}
         >
           <div
-            className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+            className={cn(
+              "pointer-events-none absolute inset-y-0 left-0 w-px",
+              DESKTOP_PANE_SPLIT_LINE_CLASS,
+            )}
             aria-hidden
           />
         </div>

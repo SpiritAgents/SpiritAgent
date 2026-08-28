@@ -1,4 +1,4 @@
-/** Background opacity of the main content area when translucency is on (tint only; no CSS backdrop-blur stacked). */
+/** LaunchSplash / OOBE overlay tint when translucency is on (tint only; no CSS backdrop-blur stacked). */
 export const DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS = "bg-background/70";
 
 /** Translucent background of the Composer input (dark mode overlays a faint input layer); shared source for non-translucency overlays */
@@ -39,13 +39,13 @@ export function desktopComposerChipSurfaceClass(useTranslucency: boolean): strin
   ].join(" ");
 }
 
-/** Sidebar: a light tint under translucency, lighter than the content area, keeping the system material legible. */
+/** Sidebar: a light tint under translucency so the system material stays legible. */
 export const DESKTOP_TRANSLUCENCY_SIDEBAR_TINT_CLASS = "bg-background/45";
 
-/** Windows custom-drawn title bar: full-bar tint under translucency, same opacity as the sidebar; independent of the sidebar-width layout. */
+/** Windows custom-drawn title bar: leading segment matches the sidebar tint; the trailing (main-area) segment is solid. */
 export const DESKTOP_TRANSLUCENCY_TITLE_BAR_TINT_CLASS = DESKTOP_TRANSLUCENCY_SIDEBAR_TINT_CLASS;
 
-/** Workspace browser page slot: slightly more opaque than the main area to reduce WebView show-through flicker. */
+/** Workspace browser page slot: slightly more opaque under translucency to reduce WebView show-through flicker. */
 export const DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS = "bg-background/80";
 
 /** Workspace terminal: keeps higher opacity for ANSI legibility. */
@@ -60,7 +60,9 @@ export const DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS = "bg-background/30";
 const SOLID_BACKGROUND_CLASS = "bg-background";
 const TRANSPARENT_BACKGROUND_CLASS = "bg-transparent";
 
-/** Outer layer of the main content area: translucent theme tint under translucency, solid background otherwise. */
+/**
+ * Outer layer of the main content area: All-mode translucent theme tint, solid background otherwise.
+ */
 export function desktopTranslucencyTintClass(useTranslucency: boolean): string {
   return useTranslucency ? DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS : SOLID_BACKGROUND_CLASS;
 }
@@ -72,7 +74,7 @@ export function desktopTranslucencyTintClass(useTranslucency: boolean): string {
  * to transparent mid-way.
  */
 export function desktopFullscreenOverlayTintClass(useTranslucency: boolean): string {
-  return desktopTranslucencyTintClass(useTranslucency);
+  return useTranslucency ? DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS : SOLID_BACKGROUND_CLASS;
 }
 
 /** Inner layer of the main content area: transparent under translucency to avoid stacking multiple alpha layers darker, solid background otherwise. */
@@ -102,7 +104,7 @@ export function desktopTranslucencyFileDetailSurfaceClass(useTranslucency: boole
   return useTranslucency ? TRANSPARENT_BACKGROUND_CLASS : DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS;
 }
 
-/** Windows custom-drawn title bar: full-bar translucent background under translucency, solid sidebar color otherwise. */
+/** Windows custom-drawn title bar: sidebar-matched tint on the leading segment under translucency, solid sidebar color otherwise. */
 export function desktopTranslucencyTitleBarTintClass(useTranslucency: boolean): string {
   return useTranslucency ? DESKTOP_TRANSLUCENCY_TITLE_BAR_TINT_CLASS : "bg-sidebar";
 }

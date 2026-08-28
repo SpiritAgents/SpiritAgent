@@ -86,6 +86,12 @@ import {
 } from "./crash-report.js";
 
 import type { DesktopLiveUpdate, DesktopSnapshot } from "../src/types.js";
+import {
+  DEFAULT_TRANSLUCENCY,
+  isNativeTranslucencyEnabled,
+  parseTranslucencyPreference,
+  type TranslucencyPreference,
+} from "../src/lib/translucency.js";
 
 registerSpiritGeneratedAssetPrivilegedScheme();
 registerSpiritNotificationProtocolClient();
@@ -585,7 +591,12 @@ function electronRootBackgroundForBackdrop(
 
 /** Config keys read synchronously for first-frame renderer IPC (Win Mica / macOS Vibrancy, OOBE). */
 let cachedDesktopConfigFlags:
-  | { mtimeMs: number; size: number; translucency: boolean; onboardingCompleted: boolean }
+  | {
+      mtimeMs: number;
+      size: number;
+      translucency: TranslucencyPreference;
+      onboardingCompleted: boolean;
+    }
   | undefined;
 
 /**
@@ -596,7 +607,7 @@ let cachedDesktopConfigFlags:
  * config file changes.
  */
 function readDesktopConfigFlagsFromDisk(): {
-  translucency: boolean;
+  translucency: TranslucencyPreference;
   onboardingCompleted: boolean;
 } {
   const filePath = configFilePath();
@@ -607,7 +618,7 @@ function readDesktopConfigFlagsFromDisk(): {
     mtimeMs = stats.mtimeMs;
     size = stats.size;
   } catch {
-    return { translucency: true, onboardingCompleted: false };
+    return { translucency: DEFAULT_TRANSLUCENCY, onboardingCompleted: false };
   }
   if (
     cachedDesktopConfigFlags &&
@@ -620,24 +631,24 @@ function readDesktopConfigFlagsFromDisk(): {
     };
   }
 
-  let translucency = true;
+  let translucency: TranslucencyPreference = DEFAULT_TRANSLUCENCY;
   let onboardingCompleted = false;
   try {
     const parsed = JSON.parse(readFileSync(filePath, "utf8")) as {
-      translucency?: boolean;
+      translucency?: unknown;
       onboardingCompleted?: boolean;
     };
-    translucency = parsed.translucency !== false;
+    translucency = parseTranslucencyPreference(parsed.translucency);
     onboardingCompleted = parsed.onboardingCompleted === true;
   } catch {
-    translucency = true;
+    translucency = DEFAULT_TRANSLUCENCY;
     onboardingCompleted = false;
   }
   cachedDesktopConfigFlags = { mtimeMs, size, translucency, onboardingCompleted };
   return { translucency, onboardingCompleted };
 }
 
-function readTranslucencyFromDisk(): boolean {
+function readTranslucencyFromDisk(): TranslucencyPreference {
   return readDesktopConfigFlagsFromDisk().translucency;
 }
 
@@ -741,7 +752,8 @@ function applyNativeWindowBackdrop(
   darkContent: boolean,
   translucencyOverride?: boolean,
 ): void {
-  const translucencyEnabled = translucencyOverride ?? readTranslucencyFromDisk();
+  const translucencyEnabled =
+    translucencyOverride ?? isNativeTranslucencyEnabled(readTranslucencyFromDisk());
 
   if (process.platform === "win32") {
     try {
@@ -818,7 +830,11 @@ function showRendererCrashPage(window: BrowserWindow, details: CrashSceneDetails
       lang: i18nHost.language,
     },
     logText,
-    { translucency: nativeTranslucencyActive(readTranslucencyFromDisk()) },
+    {
+      translucency: nativeTranslucencyActive(
+        isNativeTranslucencyEnabled(readTranslucencyFromDisk()),
+      ),
+    },
     { url: feedbackUrl },
   );
   // The crash page has no scripts, so the feedback link navigates in-window; intercept it
@@ -914,7 +930,7 @@ function registerRendererCrashPage(window: BrowserWindow): void {
 }
 
 async function createMainWindow(): Promise<BrowserWindow> {
-  const translucencyOnDisk = readTranslucencyFromDisk();
+  const translucencyOnDisk = isNativeTranslucencyEnabled(readTranslucencyFromDisk());
   const initialDark = nativeTheme.shouldUseDarkColors;
   const initialBg = electronRootBackgroundForBackdrop(
     nativeTranslucencyActive(translucencyOnDisk),

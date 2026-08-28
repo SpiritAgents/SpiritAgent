@@ -55,6 +55,7 @@ import {
   isElectronChrome,
   isWin32ElectronShell,
   readStoredOnboardingCompleted,
+  resolveUseContentTranslucency,
   resolveUseTranslucency,
   syncLaunchSplashChromeToDocument,
   type ShellOverlayPhase,
@@ -90,10 +91,11 @@ export default function App() {
   const winElectronChrome = isWin32ElectronShell();
   const darwinElectronChrome = isDarwinElectronShell();
   const desktopTitleBarChrome = winElectronChrome || darwinElectronChrome;
-  // Read from disk while the snapshot is not ready, so the settings default translucency:true does not wrongly enable transparency/material during the launch overlay
-  const useTranslucency = resolveUseTranslucency(
-    snapshot != null ? runtime.settings.translucency : undefined,
-  );
+  // Read from disk while the snapshot is not ready, so the settings default cannot
+  // wrongly enable transparency/material during the launch overlay
+  const translucencySetting = snapshot != null ? runtime.settings.translucency : undefined;
+  const useTranslucency = resolveUseTranslucency(translucencySetting);
+  const useContentTranslucency = resolveUseContentTranslucency(translucencySetting);
 
   useDesktopShellEffects({
     isElectronShell,
@@ -353,6 +355,7 @@ export default function App() {
           {winElectronChrome ? (
             <DesktopTitleBar
               useTranslucency={useTranslucency}
+              useContentTranslucency={useContentTranslucency}
               onZoomIn={uiLayoutScale.zoomIn}
               onZoomOut={uiLayoutScale.zoomOut}
               onZoomReset={uiLayoutScale.resetScale}
@@ -425,7 +428,10 @@ export default function App() {
                       composerAutomationApiRef={composerAutomationApiRef}
                     />
                     <ConversationTypingFocusRedirectBridge enabled={focusComposerEnabled} />
-                    <SessionSidebarShell useTranslucency={useTranslucency}>
+                    <SessionSidebarShell
+                      useTranslucency={useTranslucency}
+                      useContentTranslucency={useContentTranslucency}
+                    >
                       <SessionSidebar
                         narrow={false}
                         mode={surfaceNav.settingsMode ? "settings" : "sessions"}
@@ -486,7 +492,7 @@ export default function App() {
                         data-spirit-surface="settings-shell"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopTranslucencyTintClass(useTranslucency),
+                          desktopTranslucencyTintClass(useContentTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -569,7 +575,7 @@ export default function App() {
                         data-spirit-surface="automations-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopTranslucencyTintClass(useTranslucency),
+                          desktopTranslucencyTintClass(useContentTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -661,7 +667,7 @@ export default function App() {
                         data-spirit-surface="marketplace-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopTranslucencyTintClass(useTranslucency),
+                          desktopTranslucencyTintClass(useContentTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -669,7 +675,7 @@ export default function App() {
                           showWorkspaceToggle={false}
                         />
                         <MarketplaceView
-                          useTranslucency={useTranslucency}
+                          useTranslucency={useContentTranslucency}
                           snapshot={snapshot}
                           apiReady={runtime.apiReady}
                           busyAction={runtime.busyAction}
@@ -688,7 +694,7 @@ export default function App() {
                       <div
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
-                          desktopTranslucencyTintInnerClass(useTranslucency),
+                          desktopTranslucencyTintInnerClass(useContentTranslucency),
                           surfaceNav.settingsMode && "hidden",
                         )}
                         aria-hidden={surfaceNav.settingsMode}
@@ -696,7 +702,7 @@ export default function App() {
                         <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
                           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                             <ConversationSplitRoot
-                              useTranslucency={useTranslucency}
+                              useTranslucency={useContentTranslucency}
                               renderPane={(pane) => (
                                 <ConversationPaneHost
                                   key={pane.paneId}
@@ -723,7 +729,7 @@ export default function App() {
                                   paneDropOverlayActive={pane.paneDropOverlayActive}
                                   paneDragSourcePaneId={pane.paneDragSourcePaneId}
                                   sidebarSessionDragActive={pane.sidebarSessionDragActive}
-                                  useTranslucency={useTranslucency}
+                                  useTranslucency={useContentTranslucency}
                                   subagentViewActive={subagentViewActive}
                                   subagentViewer={subagentViewer}
                                   compactionDemo={compactionDemo}
@@ -754,7 +760,7 @@ export default function App() {
                             />
                           </div>
                           <ConversationWorkspaceToolsDock
-                            useTranslucency={useTranslucency}
+                            useTranslucency={useContentTranslucency}
                             snapshot={snapshot}
                             runtime={runtime}
                             conversation={conversation}

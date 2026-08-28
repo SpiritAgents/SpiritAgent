@@ -22,6 +22,7 @@ import {
   type DesktopConfigFile,
   type HostMetadataSummary,
 } from "./storage.js";
+import { parseTranslucencyPreference } from "../lib/translucency.js";
 import { buildAvailableWorkspaces, buildWebHostSnapshot } from "./service-utils.js";
 import { resolveDesktopHomeDirectory } from "./storage.js";
 import type { DesktopLspSnapshot } from "../types.js";
@@ -105,7 +106,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
         : {}),
       ...(input.config.uiLocale ? { uiLocale: input.config.uiLocale } : {}),
       activeApiKeyConfigured: input.activeApiKeyConfigured,
-      translucency: input.config.translucency !== false,
+      translucency: parseTranslucencyPreference(input.config.translucency),
       systemNotifications: input.config.systemNotifications !== false,
       trayIcon: input.config.trayIcon !== false,
       onboardingCompleted: input.config.onboardingCompleted === true,

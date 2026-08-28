@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next";
 
 import {
+  DESKTOP_ALL_TRANSLUCENCY_SPLIT_LINE_CLASS,
+  DESKTOP_PANE_SPLIT_LINE_CLASS,
+  DESKTOP_SIDEBAR_ONLY_SPLIT_LINE_CLASS,
   SESSION_SIDEBAR_MIN_WIDTH_PX,
   computeSessionSidebarMaxWidthPx,
   sessionSidebarShellWidth,
@@ -15,6 +18,8 @@ export type SessionSidebarShellProps = {
   minWidthPx?: number;
   maxWidthPx?: number;
   useTranslucency?: boolean;
+  /** All-mode content tint; when false with native material on, the split uses the stronger Sidebar-only line. */
+  useContentTranslucency?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -23,6 +28,7 @@ export function SessionSidebarShell({
   minWidthPx = SESSION_SIDEBAR_MIN_WIDTH_PX,
   maxWidthPx: maxWidthPxProp,
   useTranslucency = false,
+  useContentTranslucency = false,
   children,
   className,
 }: SessionSidebarShellProps) {
@@ -135,10 +141,12 @@ export function SessionSidebarShell({
         <div
           data-spirit-edge="session-sidebar-divider"
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 w-px transition-colors",
-            useTranslucency
-              ? "bg-black/5 group-hover:bg-black/10 dark:bg-white/10 dark:group-hover:bg-white/14"
-              : "bg-border/40 group-hover:bg-border/55",
+            "pointer-events-none absolute inset-y-0 right-0 w-px",
+            useContentTranslucency
+              ? DESKTOP_ALL_TRANSLUCENCY_SPLIT_LINE_CLASS
+              : useTranslucency
+                ? DESKTOP_SIDEBAR_ONLY_SPLIT_LINE_CLASS
+                : DESKTOP_PANE_SPLIT_LINE_CLASS,
           )}
           aria-hidden
         />
